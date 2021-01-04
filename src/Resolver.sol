@@ -6,19 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Resolver is Ownable, AddressStorage {
-  enum DataType {PaymentToken}
+    enum DataType {PaymentToken}
 
-  function getPaymentToken(uint8 _pt) public view returns (IERC20) {
-    return
-      IERC20(
-        getAddress(keccak256(abi.encodePacked(DataType.PaymentToken, _pt)))
-      );
-  }
+    function getPaymentToken(uint8 _pt) public view returns (IERC20) {
+        return IERC20(getAddress(keccak256(abi.encodePacked(DataType.PaymentToken, _pt))));
+    }
 
-  function setPaymentToken(uint8 _pt, IERC20 _v) public onlyOwner {
-    _setAddress(
-      keccak256(abi.encodePacked(DataType.PaymentToken, _pt)),
-      address(_v)
-    );
-  }
+    function setPaymentToken(uint8 _pt, IERC20 _v) public onlyOwner {
+        _setAddress(keccak256(abi.encodePacked(DataType.PaymentToken, _pt)), address(_v));
+    }
 }
