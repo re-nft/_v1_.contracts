@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0 <0.8.0;
+pragma solidity >=0.8.0 <0.9.0;
 import "./Resolver.sol";
 // import "./ChiGasSaver.sol";
 
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
+import "openzeppelin-solidity/contracts/access/Ownable.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/ERC721Holder.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
 
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     using SafeERC20 for IERC20;
@@ -139,7 +139,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             uint256 tokenId = _tokenId[i];
             IERC721 nft = _nft[i];
             nft.safeTransferFrom(msg.sender, address(this), tokenId);
-            /// @dev to avoid stack to deep. Access and assign, then reuse.
             uint16 maxRentDuration = _maxRentDuration[i];
             uint32 dailyRentPrice = _dailyRentPrice[i];
             uint32 nftPrice = _nftPrice[i];
@@ -169,8 +168,11 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
+            IERC721 nft = _nft[i];
+            uint256 tokenId = _tokenId[i];
+            uint256 renftId = _id[i];
             LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i])
+                abi.encodePacked(address(nft), tokenId, renftId)
             )];
             require(item.renting.rentDuration == 0, "already rented");
             require(msg.sender != item.lending.lenderAddress, "can't rent own nft");
@@ -182,8 +184,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             item.renting.renterAddress = msg.sender;
             item.renting.rentDuration = _rentDuration[i];
             item.renting.rentedAt = uint32(block.timestamp);
-            _nft[i].transferFrom(address(this), msg.sender, _tokenId[i]);
-            emit Rented(address(_nft[i]), _tokenId[i], _id[i], msg.sender, _rentDuration[i], uint32(block.timestamp));
+            nft.transferFrom(address(this), msg.sender, tokenId);
+            emit Rented(address(nft), tokenId, renftId, msg.sender, _rentDuration[i], uint32(block.timestamp));
         }
     }
 

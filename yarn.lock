@@ -503,11 +503,6 @@
     safe-buffer "^5.1.1"
     util.promisify "^1.0.0"
 
-"@openzeppelin/contracts@^3.2.1-solc-0.7":
-  version "3.2.1-solc-0.7"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.2.1-solc-0.7.tgz#067a60918b935d4733208edb3d7e35cd1d51026b"
-  integrity sha512-VfKZE9L2HNaZVBR7l5yHbRmap3EiVw9F5iVXRRDdgfnA9vQ1yFanrs0VYmdo2VIXC+EsI9wPPYZY9Ic7/qDBdw==
-
 "@sentry/core@5.27.1":
   version "5.27.1"
   resolved "https://registry.yarnpkg.com/@sentry/core/-/core-5.27.1.tgz#489604054d821e1de155f80fe650085b37cad235"
@@ -6141,6 +6136,10 @@ onetime@^2.0.0:
   integrity sha1-BnQoIw/WdEOyeUsiu6UotoZ5YtQ=
   dependencies:
     mimic-fn "^1.0.0"
+
+"openzeppelin-solidity@https://github.com/andrekorol/openzeppelin-contracts#38aadc57a10896e52dacbae408e043def36d7960":
+  version "3.3.0"
+  resolved "https://github.com/andrekorol/openzeppelin-contracts#38aadc57a10896e52dacbae408e043def36d7960"
 
 optionator@^0.8.2:
   version "0.8.3"
