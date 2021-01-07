@@ -23,7 +23,7 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 interface MyERC721Interface extends ethers.utils.Interface {
   functions: {
     "approve(address,uint256)": FunctionFragment;
-    "award(string)": FunctionFragment;
+    "award()": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "baseURI()": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
@@ -45,7 +45,7 @@ interface MyERC721Interface extends ethers.utils.Interface {
     functionFragment: "approve",
     values: [string, BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "award", values: [string]): string;
+  encodeFunctionData(functionFragment: "award", values?: undefined): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(functionFragment: "baseURI", values?: undefined): string;
   encodeFunctionData(
@@ -179,15 +179,9 @@ export class MyERC721 extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
-    award(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<ContractTransaction>;
+    award(overrides?: Overrides): Promise<ContractTransaction>;
 
-    "award(string)"(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<ContractTransaction>;
+    "award()"(overrides?: Overrides): Promise<ContractTransaction>;
 
     balanceOf(owner: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
@@ -340,12 +334,9 @@ export class MyERC721 extends Contract {
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
-  award(_tokenURI: string, overrides?: Overrides): Promise<ContractTransaction>;
+  award(overrides?: Overrides): Promise<ContractTransaction>;
 
-  "award(string)"(
-    _tokenURI: string,
-    overrides?: Overrides
-  ): Promise<ContractTransaction>;
+  "award()"(overrides?: Overrides): Promise<ContractTransaction>;
 
   balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -492,12 +483,9 @@ export class MyERC721 extends Contract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    award(_tokenURI: string, overrides?: CallOverrides): Promise<BigNumber>;
+    award(overrides?: CallOverrides): Promise<BigNumber>;
 
-    "award(string)"(
-      _tokenURI: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    "award()"(overrides?: CallOverrides): Promise<BigNumber>;
 
     balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -671,12 +659,9 @@ export class MyERC721 extends Contract {
       overrides?: Overrides
     ): Promise<BigNumber>;
 
-    award(_tokenURI: string, overrides?: Overrides): Promise<BigNumber>;
+    award(overrides?: Overrides): Promise<BigNumber>;
 
-    "award(string)"(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<BigNumber>;
+    "award()"(overrides?: Overrides): Promise<BigNumber>;
 
     balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -830,15 +815,9 @@ export class MyERC721 extends Contract {
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
 
-    award(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<PopulatedTransaction>;
+    award(overrides?: Overrides): Promise<PopulatedTransaction>;
 
-    "award(string)"(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<PopulatedTransaction>;
+    "award()"(overrides?: Overrides): Promise<PopulatedTransaction>;
 
     balanceOf(
       owner: string,

@@ -48,7 +48,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint16 maxRentDuration,
         uint32 dailyRentPrice,
         uint32 nftPrice,
-        PaymentToken paymentToken
+        Resolver.PaymentToken paymentToken
     );
 
     event Rented(
@@ -92,7 +92,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         // 240 bits
         uint32 nftPrice;
         // 248 bits
-        PaymentToken paymentToken;
+        Resolver.PaymentToken paymentToken;
     }
 
     struct Renting {
@@ -109,13 +109,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         Renting renting;
     }
 
-    enum PaymentToken {
-        DAI, // 0
-        USDC, // 1
-        USDT, // 2
-        TUSD // 3
-    }
-
     // 32 bytes key to 64 bytes struct
     mapping(bytes32 => LendingRenting) private lendingRenting;
 
@@ -130,7 +123,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint16[] memory _maxRentDuration,
         uint32[] memory _dailyRentPrice,
         uint32[] memory _nftPrice,
-        PaymentToken[] memory _paymentToken,
+        Resolver.PaymentToken[] memory _paymentToken,
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
@@ -169,9 +162,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i])
-            )];
+            LendingRenting storage item =
+                lendingRenting[keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i]))];
             require(item.renting.rentDuration == 0, "already rented");
             require(msg.sender != item.lending.lenderAddress, "can't rent own nft");
             require(_rentDuration[i] <= item.lending.maxRentDuration, "max duration exceeded");
@@ -253,9 +245,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i])
-            )];
+            LendingRenting storage item =
+                lendingRenting[keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i]))];
             require(item.renting.renterAddress == msg.sender, "not renter");
             uint256 secondsSinceRentStart = block.timestamp - item.renting.rentedAt;
             uint16 durationInDays = uint16(secondsSinceRentStart / 86400);
@@ -274,9 +265,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i])
-            )];
+            LendingRenting storage item =
+                lendingRenting[keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i]))];
             _distributeClaimPayment(_nft[i], _tokenId[i], _id[i]);
             delete item.lending;
             delete item.renting;

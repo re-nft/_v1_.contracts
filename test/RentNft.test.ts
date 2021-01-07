@@ -3,7 +3,14 @@ import {ethers, deployments} from 'hardhat';
 import {RentNft as RentNftT} from '../typechain/RentNft';
 import {Resolver as ResolverT} from '../typechain/Resolver';
 import {ERC20 as ERC20T} from '../typechain/ERC20';
-import {ERC721 as ERC721T} from '../typechain/ERC721';
+import {MyERC721 as ERC721T} from '../typechain/MyERC721';
+
+// default values
+const MAX_RENT_DURATION = 1;
+const DAILY_RENT_PRICE = 2;
+const NFT_PRICE = 3;
+const PAYMENT_TOKEN = 0;
+const GAS_SPONSOR = '';
 
 const setup = deployments.createFixture(async () => {
   await deployments.fixture('Resolver');
@@ -11,18 +18,39 @@ const setup = deployments.createFixture(async () => {
   await deployments.fixture('ERC721');
   await deployments.fixture('RentNft');
   const signers = await ethers.getSigners();
+  const resolver = (await ethers.getContract('Resolver')) as ResolverT;
+  const myERC20 = (await ethers.getContract('MyERC20')) as ERC20T;
+  const myERC721 = (await ethers.getContract('MyERC721')) as ERC721T;
+  await resolver.setPaymentToken(0, myERC20.address);
+  await myERC721.award();
   return {
-    Resolver: (await ethers.getContract('Resolver')) as ResolverT,
+    Resolver: resolver,
     RentNft: (await ethers.getContract('RentNft')) as RentNftT,
-    ERC20: (await ethers.getContract('ERC20')) as ERC20T,
-    ERC721: (await ethers.getContract('ERC721')) as ERC721T,
+    ERC20: myERC20,
+    ERC721: myERC721,
     signers: signers.map((acc, ix) => ({[ix]: acc})),
   };
 });
 
+// test cases
+// normal flows for each. single + batch
+//
+
 describe('RentNft', function () {
   describe('Lending', async function () {
-    const {RentNft} = await setup();
+    it('lends', async function () {
+      const {RentNft, ERC721} = await setup();
+      const tokenId = 1;
+      await RentNft.lend(
+        [ERC721.address],
+        [tokenId],
+        [MAX_RENT_DURATION],
+        [DAILY_RENT_PRICE],
+        [NFT_PRICE],
+        [PAYMENT_TOKEN],
+        GAS_SPONSOR
+      );
+    });
   });
   describe('Renting', async function () {});
   describe('Returning', async function () {});
