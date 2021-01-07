@@ -1,11 +1,14 @@
 import {expect} from './chai-setup';
 import {ethers, deployments, getUnnamedAccounts} from 'hardhat';
-import { RentNft as RentNftT } from "../typechain/RentNft"
+import {RentNft as RentNftT} from '../typechain/RentNft';
+import {Resolver as ResolverT} from '../typechain/Resolver';
+import {ERC20 as ERC20T} from '../typechain/ERC20';
+import {ERC721 as ERC721T} from '../typechain/ERC721';
 
 const setup = deployments.createFixture(async () => {
   await deployments.fixture('RentNft');
   await deployments.fixture('ERC20');
-  await deployments.fixture('ERC721')
+  await deployments.fixture('ERC721');
   const signers = await ethers.getSigners();
   return {
     RentNft: (await ethers.getContract('RentNft')) as RentNftT,
@@ -16,13 +19,12 @@ const setup = deployments.createFixture(async () => {
 });
 
 describe('RentNft', function () {
-  describe("Lending", async function() {
-    const { RentNft } = await setup();
-
+  describe('Lending', async function () {
+    const {RentNft} = await setup();
   });
-  describe("Renting", async function() {});
-  describe("Returning", async function() {});
-  describe("Collateral Claiming", async function() {});
+  describe('Renting', async function () {});
+  describe('Returning', async function () {});
+  describe('Collateral Claiming', async function () {});
   // it('calling it directly without pre-approval result in Allowance error', async function () {
   //   const {ERC20Consumer} = await setup();
   //   await expect(ERC20Consumer.purchase(1)).to.be.revertedWith(

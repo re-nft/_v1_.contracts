@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import "./configuration/AddressStorage.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 
-contract Resolver is Ownable, AddressStorage {
-    enum DataType {PaymentToken}
+contract Resolver is Ownable {
+    mapping(uint8 => IERC20) private addresses;
+
     function getPaymentToken(uint8 _pt) public view returns (IERC20) {
-        return IERC20(getAddress(keccak256(abi.encodePacked(DataType.PaymentToken, _pt))));
+        return addresses[_pt];
     }
+
     function setPaymentToken(uint8 _pt, IERC20 _v) public onlyOwner {
-        _setAddress(keccak256(abi.encodePacked(DataType.PaymentToken, _pt)), address(_v));
+        addresses[_pt] = _v;
     }
 }

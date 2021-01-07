@@ -29,13 +29,13 @@
     "cross-env": "^7.0.2",
     "dotenv": "^8.2.0",
     "eslint": "^7.7.0",
-    "eslint-config-prettier": "^6.11.0",
-    "ethers": "^5.0.17",
+    "eslint-config-prettier": "^7.1.0",
+    "ethers": "^5.0.24",
     "fs-extra": "^9.0.1",
-    "hardhat": "^2.0.4",
-    "hardhat-deploy": "^0.7.0-beta.33",
+    "hardhat": "^2.0.7",
+    "hardhat-deploy": "^0.7.0-beta.42",
     "hardhat-deploy-ethers": "^0.3.0-beta.7",
-    "hardhat-gas-reporter": "^1.0.1",
+    "hardhat-gas-reporter": "^1.0.4",
     "mocha": "^8.1.1",
     "openzeppelin-solidity": "https://github.com/andrekorol/openzeppelin-contracts#38aadc57a10896e52dacbae408e043def36d7960",
     "prettier": "^2.2.1",
@@ -81,6 +81,7 @@
     "@typechain/ethers-v5": "^5.0.0",
     "hardhat-typechain": "^0.3.4",
     "ts-generator": "^0.1.1",
-    "typechain": "^4.0.1"
+    "typechain": "^4.0.1",
+    "websocket": "1.0.33"
   }
 }

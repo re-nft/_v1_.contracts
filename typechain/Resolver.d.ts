@@ -22,7 +22,6 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
 interface ResolverInterface extends ethers.utils.Interface {
   functions: {
-    "getAddress(bytes32)": FunctionFragment;
     "getPaymentToken(uint8)": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
@@ -30,10 +29,6 @@ interface ResolverInterface extends ethers.utils.Interface {
     "transferOwnership(address)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "getAddress",
-    values: [BytesLike]
-  ): string;
   encodeFunctionData(
     functionFragment: "getPaymentToken",
     values: [BigNumberish]
@@ -52,7 +47,6 @@ interface ResolverInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
 
-  decodeFunctionResult(functionFragment: "getAddress", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getPaymentToken",
     data: BytesLike
@@ -92,13 +86,6 @@ export class Resolver extends Contract {
   interface: ResolverInterface;
 
   functions: {
-    getAddress(_key: BytesLike, overrides?: CallOverrides): Promise<[string]>;
-
-    "getAddress(bytes32)"(
-      _key: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[string]>;
-
     getPaymentToken(
       _pt: BigNumberish,
       overrides?: CallOverrides
@@ -139,13 +126,6 @@ export class Resolver extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
   };
-
-  getAddress(_key: BytesLike, overrides?: CallOverrides): Promise<string>;
-
-  "getAddress(bytes32)"(
-    _key: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<string>;
 
   getPaymentToken(
     _pt: BigNumberish,
@@ -188,13 +168,6 @@ export class Resolver extends Contract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    getAddress(_key: BytesLike, overrides?: CallOverrides): Promise<string>;
-
-    "getAddress(bytes32)"(
-      _key: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<string>;
-
     getPaymentToken(
       _pt: BigNumberish,
       overrides?: CallOverrides
@@ -244,13 +217,6 @@ export class Resolver extends Contract {
   };
 
   estimateGas: {
-    getAddress(_key: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
-
-    "getAddress(bytes32)"(
-      _key: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     getPaymentToken(
       _pt: BigNumberish,
       overrides?: CallOverrides
@@ -293,16 +259,6 @@ export class Resolver extends Contract {
   };
 
   populateTransaction: {
-    getAddress(
-      _key: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    "getAddress(bytes32)"(
-      _key: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     getPaymentToken(
       _pt: BigNumberish,
       overrides?: CallOverrides

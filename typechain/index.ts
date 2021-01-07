@@ -13,12 +13,11 @@ export type { IERC721Enumerable } from "./IERC721Enumerable";
 export type { IERC721Metadata } from "./IERC721Metadata";
 export type { IERC721Receiver } from "./IERC721Receiver";
 export type { IFreeFromUpTo } from "./IFreeFromUpTo";
-export type { AddressStorage } from "./AddressStorage";
 export type { RentNft } from "./RentNft";
 export type { Resolver } from "./Resolver";
 export type { Faucet } from "./Faucet";
-export type { GanFaceNft } from "./GanFaceNft";
-export type { PaymentToken } from "./PaymentToken";
+export type { MyERC20 } from "./MyERC20";
+export type { MyERC721 } from "./MyERC721";
 
 export { Ownable__factory } from "./factories/Ownable__factory";
 export { ERC165__factory } from "./factories/ERC165__factory";
@@ -32,9 +31,8 @@ export { IERC721Enumerable__factory } from "./factories/IERC721Enumerable__facto
 export { IERC721Metadata__factory } from "./factories/IERC721Metadata__factory";
 export { IERC721Receiver__factory } from "./factories/IERC721Receiver__factory";
 export { IFreeFromUpTo__factory } from "./factories/IFreeFromUpTo__factory";
-export { AddressStorage__factory } from "./factories/AddressStorage__factory";
 export { RentNft__factory } from "./factories/RentNft__factory";
 export { Resolver__factory } from "./factories/Resolver__factory";
 export { Faucet__factory } from "./factories/Faucet__factory";
-export { GanFaceNft__factory } from "./factories/GanFaceNft__factory";
-export { PaymentToken__factory } from "./factories/PaymentToken__factory";
+export { MyERC20__factory } from "./factories/MyERC20__factory";
+export { MyERC721__factory } from "./factories/MyERC721__factory";
