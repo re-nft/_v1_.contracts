@@ -38,9 +38,9 @@
     "hardhat-gas-reporter": "^1.0.1",
     "mocha": "^8.1.1",
     "openzeppelin-solidity": "https://github.com/andrekorol/openzeppelin-contracts#38aadc57a10896e52dacbae408e043def36d7960",
-    "prettier": "^2.0.5",
-    "prettier-plugin-solidity": "^1.0.0-alpha.57",
-    "solhint": "^3.3.1",
+    "prettier": "^2.2.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.3",
+    "solhint": "^3.3.2",
     "solhint-plugin-prettier": "^0.0.5",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5"
@@ -76,5 +76,11 @@
     "mainnet:deploy": "hardhat --network mainnet deploy",
     "mainnet:export": "hardhat --network mainnet export",
     "mainnet:run": "cross-env HARDHAT_NETWORK=mainnet ts-node --files"
+  },
+  "dependencies": {
+    "@typechain/ethers-v5": "^5.0.0",
+    "hardhat-typechain": "^0.3.4",
+    "ts-generator": "^0.1.1",
+    "typechain": "^4.0.1"
   }
 }

@@ -113,8 +113,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         DAI, // 0
         USDC, // 1
         USDT, // 2
-        TUSD, // 3
-        NAZ // 4
+        TUSD // 3
     }
 
     // 32 bytes key to 64 bytes struct
