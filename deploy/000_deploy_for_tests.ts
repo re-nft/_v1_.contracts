@@ -7,14 +7,16 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {deployer} = await getNamedAccounts();
   await deploy('PaymentToken', {
     from: deployer,
-    log: true
-    // not owner when testing
-    // deterministicDeployment: true,
+    log: true,
   });
   await deploy('GanFaceNft', {
     from: deployer,
-    log: true
-  })
+    log: true,
+  });
+  await deploy('Resolver', {
+    from: deployer,
+    log: true,
+  });
 };
 export default func;
-func.tags = ['PaymentToken', 'GanFaceNft'];
+func.tags = ['PaymentToken', 'GanFaceNft', 'Resolver'];

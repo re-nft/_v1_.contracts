@@ -1,16 +1,18 @@
 import {expect} from './chai-setup';
-import {ethers, deployments, getUnnamedAccounts} from 'hardhat';
+import {ethers, deployments} from 'hardhat';
 import {RentNft as RentNftT} from '../typechain/RentNft';
 import {Resolver as ResolverT} from '../typechain/Resolver';
 import {ERC20 as ERC20T} from '../typechain/ERC20';
 import {ERC721 as ERC721T} from '../typechain/ERC721';
 
 const setup = deployments.createFixture(async () => {
-  await deployments.fixture('RentNft');
+  await deployments.fixture('Resolver');
   await deployments.fixture('ERC20');
   await deployments.fixture('ERC721');
+  await deployments.fixture('RentNft');
   const signers = await ethers.getSigners();
   return {
+    Resolver: (await ethers.getContract('Resolver')) as ResolverT,
     RentNft: (await ethers.getContract('RentNft')) as RentNftT,
     ERC20: (await ethers.getContract('ERC20')) as ERC20T,
     ERC721: (await ethers.getContract('ERC721')) as ERC721T,
