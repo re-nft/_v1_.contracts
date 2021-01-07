@@ -126,34 +126,36 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function lend(
-        IERC721[] calldata _nft,
-        uint256[] calldata _tokenId,
-        uint16[] calldata _maxRentDuration,
-        uint32[] calldata _dailyRentPrice,
-        uint32[] calldata _nftPrice,
-        PaymentToken[] calldata _paymentToken,
+        IERC721[] memory _nft,
+        uint256[] memory _tokenId,
+        uint16[] memory _maxRentDuration,
+        uint32[] memory _dailyRentPrice,
+        uint32[] memory _nftPrice,
+        PaymentToken[] memory _paymentToken,
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
             require(_maxRentDuration[i] > 0, "at least one day");
-            uint256 tokenId = _tokenId[i];
-            IERC721 nft = _nft[i];
-            nft.safeTransferFrom(msg.sender, address(this), tokenId);
-            uint16 maxRentDuration = _maxRentDuration[i];
-            uint32 dailyRentPrice = _dailyRentPrice[i];
-            uint32 nftPrice = _nftPrice[i];
-            PaymentToken paymentToken = _paymentToken[i];
-            address nftAddress = address(nft);
-            bytes32 itemHash = keccak256(abi.encodePacked(nftAddress, tokenId, id));
+            _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i]);
+            bytes32 itemHash = keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], id));
             LendingRenting storage item = lendingRenting[itemHash];
             item.lending = Lending({
                 lenderAddress: msg.sender,
-                maxRentDuration: maxRentDuration,
-                dailyRentPrice: dailyRentPrice,
-                nftPrice: nftPrice,
-                paymentToken: paymentToken
+                maxRentDuration: _maxRentDuration[i],
+                dailyRentPrice: _dailyRentPrice[i],
+                nftPrice: _nftPrice[i],
+                paymentToken: _paymentToken[i]
             });
-            emit Lent(nftAddress, tokenId, id, msg.sender, maxRentDuration, dailyRentPrice, nftPrice, paymentToken);
+            emit Lent(
+                address(_nft[i]),
+                _tokenId[i],
+                id,
+                msg.sender,
+                _maxRentDuration[i],
+                _dailyRentPrice[i],
+                _nftPrice[i],
+                _paymentToken[i]
+            );
             // changing from non-zero to something else costs 5000 gas
             // however, changing from zero to something else costs 20k gas
             id++;
@@ -161,18 +163,15 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function rent(
-        IERC721[] calldata _nft,
-        uint256[] calldata _tokenId,
-        uint256[] calldata _id,
-        uint16[] calldata _rentDuration,
+        IERC721[] memory _nft,
+        uint256[] memory _tokenId,
+        uint256[] memory _id,
+        uint16[] memory _rentDuration,
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
-            IERC721 nft = _nft[i];
-            uint256 tokenId = _tokenId[i];
-            uint256 renftId = _id[i];
             LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(address(nft), tokenId, renftId)
+                abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i])
             )];
             require(item.renting.rentDuration == 0, "already rented");
             require(msg.sender != item.lending.lenderAddress, "can't rent own nft");
@@ -184,8 +183,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             item.renting.renterAddress = msg.sender;
             item.renting.rentDuration = _rentDuration[i];
             item.renting.rentedAt = uint32(block.timestamp);
-            nft.transferFrom(address(this), msg.sender, tokenId);
-            emit Rented(address(nft), tokenId, renftId, msg.sender, _rentDuration[i], uint32(block.timestamp));
+            _nft[i].transferFrom(address(this), msg.sender, _tokenId[i]);
+            emit Rented(address(_nft[i]), _tokenId[i], _id[i], msg.sender, _rentDuration[i], uint32(block.timestamp));
         }
     }
 
@@ -249,9 +248,9 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function returnIt(
-        IERC721[] calldata _nft,
-        uint256[] calldata _tokenId,
-        uint256[] calldata _id,
+        IERC721[] memory _nft,
+        uint256[] memory _tokenId,
+        uint256[] memory _id,
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
@@ -270,9 +269,9 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function claimCollateral(
-        IERC721[] calldata _nft,
-        uint256[] calldata _tokenId,
-        uint256[] calldata _id,
+        IERC721[] memory _nft,
+        uint256[] memory _tokenId,
+        uint256[] memory _id,
         address payable _gasSponsor
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
@@ -287,9 +286,9 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function stopLending(
-        IERC721[] calldata _nft,
-        uint256[] calldata _tokenId,
-        uint256[] calldata _id,
+        IERC721[] memory _nft,
+        uint256[] memory _tokenId,
+        uint256[] memory _id,
         address _gasSponsor
     ) public {
         for (uint256 i = 0; i < _nft.length; i++) {
