@@ -10,7 +10,7 @@ const MAX_RENT_DURATION = 1;
 const DAILY_RENT_PRICE = 2;
 const NFT_PRICE = 3;
 const PAYMENT_TOKEN = 0;
-const GAS_SPONSOR = '';
+const GAS_SPONSOR = ethers.constants.AddressZero;
 
 const setup = deployments.createFixture(async () => {
   await deployments.fixture('Resolver');
@@ -21,23 +21,21 @@ const setup = deployments.createFixture(async () => {
   const resolver = (await ethers.getContract('Resolver')) as ResolverT;
   const myERC20 = (await ethers.getContract('MyERC20')) as ERC20T;
   const myERC721 = (await ethers.getContract('MyERC721')) as ERC721T;
+  const renft = (await ethers.getContract('RentNft')) as RentNftT;
   await resolver.setPaymentToken(0, myERC20.address);
   await myERC721.award();
+  await myERC721.setApprovalForAll(renft.address, true);
   return {
     Resolver: resolver,
-    RentNft: (await ethers.getContract('RentNft')) as RentNftT,
+    RentNft: renft,
     ERC20: myERC20,
     ERC721: myERC721,
     signers: signers.map((acc, ix) => ({[ix]: acc})),
   };
 });
 
-// test cases
-// normal flows for each. single + batch
-//
-
 describe('RentNft', function () {
-  describe('Lending', async function () {
+  context('Lending', async function () {
     it('lends', async function () {
       const {RentNft, ERC721} = await setup();
       const tokenId = 1;
@@ -50,11 +48,12 @@ describe('RentNft', function () {
         [PAYMENT_TOKEN],
         GAS_SPONSOR
       );
+      console.log('lent it')
     });
   });
-  describe('Renting', async function () {});
-  describe('Returning', async function () {});
-  describe('Collateral Claiming', async function () {});
+  // describe('Renting', async function () {});
+  // describe('Returning', async function () {});
+  // describe('Collateral Claiming', async function () {});
   // it('calling it directly without pre-approval result in Allowance error', async function () {
   //   const {ERC20Consumer} = await setup();
   //   await expect(ERC20Consumer.purchase(1)).to.be.revertedWith(

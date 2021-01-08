@@ -19,22 +19,25 @@ import { BytesLike } from "@ethersproject/bytes";
 import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
-interface AddressStorageInterface extends ethers.utils.Interface {
+interface IERC165Interface extends ethers.utils.Interface {
   functions: {
-    "getAddress(bytes32)": FunctionFragment;
+    "supportsInterface(bytes4)": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "getAddress",
+    functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
 
-  decodeFunctionResult(functionFragment: "getAddress", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "supportsInterface",
+    data: BytesLike
+  ): Result;
 
   events: {};
 }
 
-export class AddressStorage extends Contract {
+export class IERC165 extends Contract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -45,52 +48,64 @@ export class AddressStorage extends Contract {
   removeAllListeners(eventName: EventFilter | string): this;
   removeListener(eventName: any, listener: Listener): this;
 
-  interface: AddressStorageInterface;
+  interface: IERC165Interface;
 
   functions: {
-    getAddress(_key: BytesLike, overrides?: CallOverrides): Promise<[string]>;
-
-    "getAddress(bytes32)"(
-      _key: BytesLike,
+    supportsInterface(
+      interfaceId: BytesLike,
       overrides?: CallOverrides
-    ): Promise<[string]>;
+    ): Promise<[boolean]>;
+
+    "supportsInterface(bytes4)"(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
   };
 
-  getAddress(_key: BytesLike, overrides?: CallOverrides): Promise<string>;
-
-  "getAddress(bytes32)"(
-    _key: BytesLike,
+  supportsInterface(
+    interfaceId: BytesLike,
     overrides?: CallOverrides
-  ): Promise<string>;
+  ): Promise<boolean>;
+
+  "supportsInterface(bytes4)"(
+    interfaceId: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   callStatic: {
-    getAddress(_key: BytesLike, overrides?: CallOverrides): Promise<string>;
-
-    "getAddress(bytes32)"(
-      _key: BytesLike,
+    supportsInterface(
+      interfaceId: BytesLike,
       overrides?: CallOverrides
-    ): Promise<string>;
+    ): Promise<boolean>;
+
+    "supportsInterface(bytes4)"(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
   };
 
   filters: {};
 
   estimateGas: {
-    getAddress(_key: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
-    "getAddress(bytes32)"(
-      _key: BytesLike,
+    "supportsInterface(bytes4)"(
+      interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    getAddress(
-      _key: BytesLike,
+    supportsInterface(
+      interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    "getAddress(bytes32)"(
-      _key: BytesLike,
+    "supportsInterface(bytes4)"(
+      interfaceId: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };

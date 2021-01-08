@@ -3,12 +3,15 @@ import {HardhatUserConfig} from 'hardhat/types';
 import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
 import 'hardhat-gas-reporter';
+import '@nomiclabs/hardhat-etherscan';
+import '@symfoni/hardhat-react';
 import 'hardhat-typechain';
+import '@typechain/ethers-v5';
 import {node_url, accounts} from './utils/network';
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.0',
+    version: '0.7.6',
     settings: {
       optimizer: {
         enabled: true,

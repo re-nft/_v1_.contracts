@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity >=0.7.0 <0.8.0;
 import "./Resolver.sol";
 // import "./ChiGasSaver.sol";
-
-import "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
-import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
-import "openzeppelin-solidity/contracts/access/Ownable.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/ERC721Holder.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     using SafeERC20 for IERC20;
-
     // 256 bits -> 32 bytes
     // address - 20 byte value -> 160 bits
     uint256 private id = 1;
@@ -153,7 +150,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             id++;
         }
     }
-
     function rent(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
@@ -178,7 +174,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             emit Rented(address(_nft[i]), _tokenId[i], _id[i], msg.sender, _rentDuration[i], uint32(block.timestamp));
         }
     }
-
     function _takeFee(
         uint256 nftPrice,
         uint256 rent,
@@ -188,7 +183,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         paymentToken.safeTransfer(beneficiary, fee);
         fee /= 2;
     }
-
     function _distributePayments(
         IERC721 _nft,
         uint256 _tokenId,
@@ -219,7 +213,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         require(sendLenderAmt >= sendLenderAmt - halfFee, "try again");
         paymentToken.safeTransfer(item.lending.lenderAddress, sendLenderAmt - halfFee);
     }
-
     function _distributeClaimPayment(
         IERC721 _nft,
         uint256 _tokenId,
@@ -237,7 +230,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         require(finalAmt >= finalAmt - halfFee, "maybe next time");
         paymentToken.safeTransfer(item.lending.lenderAddress, finalAmt - halfFee);
     }
-
     function returnIt(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
@@ -257,7 +249,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             delete item.renting;
         }
     }
-
     function claimCollateral(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
@@ -273,7 +264,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             emit CollateralClaimed(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
         }
     }
-
     function stopLending(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
@@ -289,7 +279,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             emit LendingStopped(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
         }
     }
-
     // We can't use uint256 for prices in the struct because
     // we must fit our struct in a single 32 byte chunk.
     // Since, no-one in their right mind will ever pay
@@ -341,15 +330,12 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint256 price = d + w;
         return price;
     }
-
     function setRentFee(uint256 _rentFee) public onlyOwner {
         rentFee = _rentFee;
     }
-
     function setNftPriceFee(uint256 _nftPriceFee) public onlyOwner {
         nftPriceFee = _nftPriceFee;
     }
-
     function setBeneficiary(address payable _newBeneficiary) public onlyOwner {
         beneficiary = _newBeneficiary;
     }

@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
-
+pragma solidity >=0.7.0 <0.8.0;
 abstract contract IFreeFromUpTo {
     function freeFromUpTo(address from, uint256 value) external virtual returns (uint256 freed);
 }
-
 contract ChiGasSaver {
     modifier saveGas(address payable sponsor) {
         uint256 gasStart = gasleft();

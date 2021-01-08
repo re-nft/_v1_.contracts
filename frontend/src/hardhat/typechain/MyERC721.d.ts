@@ -20,10 +20,10 @@ import { BytesLike } from "@ethersproject/bytes";
 import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
-interface GanFaceNftInterface extends ethers.utils.Interface {
+interface MyERC721Interface extends ethers.utils.Interface {
   functions: {
     "approve(address,uint256)": FunctionFragment;
-    "awardGanFace(string)": FunctionFragment;
+    "award()": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "baseURI()": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
@@ -45,10 +45,7 @@ interface GanFaceNftInterface extends ethers.utils.Interface {
     functionFragment: "approve",
     values: [string, BigNumberish]
   ): string;
-  encodeFunctionData(
-    functionFragment: "awardGanFace",
-    values: [string]
-  ): string;
+  encodeFunctionData(functionFragment: "award", values?: undefined): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(functionFragment: "baseURI", values?: undefined): string;
   encodeFunctionData(
@@ -99,10 +96,7 @@ interface GanFaceNftInterface extends ethers.utils.Interface {
   ): string;
 
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "awardGanFace",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "award", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "baseURI", data: BytesLike): Result;
   decodeFunctionResult(
@@ -159,7 +153,7 @@ interface GanFaceNftInterface extends ethers.utils.Interface {
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
 }
 
-export class GanFaceNft extends Contract {
+export class MyERC721 extends Contract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -170,7 +164,7 @@ export class GanFaceNft extends Contract {
   removeAllListeners(eventName: EventFilter | string): this;
   removeListener(eventName: any, listener: Listener): this;
 
-  interface: GanFaceNftInterface;
+  interface: MyERC721Interface;
 
   functions: {
     approve(
@@ -185,15 +179,9 @@ export class GanFaceNft extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
-    awardGanFace(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<ContractTransaction>;
+    award(overrides?: Overrides): Promise<ContractTransaction>;
 
-    "awardGanFace(string)"(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<ContractTransaction>;
+    "award()"(overrides?: Overrides): Promise<ContractTransaction>;
 
     balanceOf(owner: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
@@ -346,15 +334,9 @@ export class GanFaceNft extends Contract {
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
-  awardGanFace(
-    _tokenURI: string,
-    overrides?: Overrides
-  ): Promise<ContractTransaction>;
+  award(overrides?: Overrides): Promise<ContractTransaction>;
 
-  "awardGanFace(string)"(
-    _tokenURI: string,
-    overrides?: Overrides
-  ): Promise<ContractTransaction>;
+  "award()"(overrides?: Overrides): Promise<ContractTransaction>;
 
   balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -501,15 +483,9 @@ export class GanFaceNft extends Contract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    awardGanFace(
-      _tokenURI: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    award(overrides?: CallOverrides): Promise<BigNumber>;
 
-    "awardGanFace(string)"(
-      _tokenURI: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    "award()"(overrides?: CallOverrides): Promise<BigNumber>;
 
     balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -683,12 +659,9 @@ export class GanFaceNft extends Contract {
       overrides?: Overrides
     ): Promise<BigNumber>;
 
-    awardGanFace(_tokenURI: string, overrides?: Overrides): Promise<BigNumber>;
+    award(overrides?: Overrides): Promise<BigNumber>;
 
-    "awardGanFace(string)"(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<BigNumber>;
+    "award()"(overrides?: Overrides): Promise<BigNumber>;
 
     balanceOf(owner: string, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -842,15 +815,9 @@ export class GanFaceNft extends Contract {
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
 
-    awardGanFace(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<PopulatedTransaction>;
+    award(overrides?: Overrides): Promise<PopulatedTransaction>;
 
-    "awardGanFace(string)"(
-      _tokenURI: string,
-      overrides?: Overrides
-    ): Promise<PopulatedTransaction>;
+    "award()"(overrides?: Overrides): Promise<PopulatedTransaction>;
 
     balanceOf(
       owner: string,
