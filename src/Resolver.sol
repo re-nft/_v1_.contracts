@@ -5,9 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Resolver is Ownable {
     mapping(uint8 => IERC20) private addresses;
     enum PaymentToken {
-        DAI, // 0
-        USDC, // 1
-        USDT, // 2
+        SENTINEL, // 0
+        DAI, // 1
+        USDC, // 2
+        USDT, // 3
         TUSD // ...
     }
     function getPaymentToken(uint8 _pt) public view returns (IERC20) {

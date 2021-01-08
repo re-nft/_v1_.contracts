@@ -1,6 +1,6 @@
 import {expect} from './chai-setup';
 import {ethers, deployments, getNamedAccounts} from 'hardhat';
-import {Event} from "@ethersproject/contracts/lib"
+import {Event} from '@ethersproject/contracts/lib';
 import {RentNft as RentNftT} from '../typechain/RentNft';
 import {Resolver as ResolverT} from '../typechain/Resolver';
 import {ERC20 as ERC20T} from '../typechain/ERC20';
@@ -13,18 +13,9 @@ const NFT_PRICE = 3;
 const PAYMENT_TOKEN = 0;
 const GAS_SPONSOR = ethers.constants.AddressZero;
 
-const LendingId = 1;
-
-const getEvent = (events: Event[], name: string) => {
-  let evt: Event | undefined = undefined;
-  for (const event of events) {
-    if (event?.event?.toLowerCase() === name.toLocaleLowerCase()) {
-      evt = event;
-      break;
-    }
-  }
-  return evt;
-}
+const getEvents = (events: Event[], name: string) => {
+  return events.filter((e) => e?.event?.toLowerCase() === name.toLowerCase());
+};
 
 const setup = deployments.createFixture(async () => {
   await deployments.fixture('Resolver');
@@ -37,8 +28,12 @@ const setup = deployments.createFixture(async () => {
   const myERC20 = (await ethers.getContract('MyERC20')) as ERC20T;
   const myERC721 = (await ethers.getContract('MyERC721')) as ERC721T;
   const renft = (await ethers.getContract('RentNft')) as RentNftT;
-  await resolver.setPaymentToken(0, myERC20.address);
-  await myERC721.award();
+  await resolver.setPaymentToken(1, myERC20.address);
+  // * Ramda.repeat(await myERC721.award(), 10) does not work like I expected
+  // * const award = Ramda.repeat(myERC721.award(), 10); await Promise.all(award) doesn't either
+  for (let i = 0; i < 10; i++) {
+    await myERC721.award();
+  }
   await myERC721.setApprovalForAll(renft.address, true);
   return {
     Resolver: resolver,
@@ -62,41 +57,105 @@ const setup = deployments.createFixture(async () => {
 
 describe('RentNft', function () {
   context('Lending', async function () {
-    it('lends', async function () {
-      const {RentNft, ERC721, deployer } = await setup();
-      const tokenId = 1;
+    type lendBatchArgs = {
+      tokenIds: number[];
+      maxRentDurations?: number[];
+      dailyRentPrices?: number[];
+      nftPrices?: number[];
+      expectedLendingIds?: number[];
+    };
+
+    let RentNft: RentNftT;
+    let ERC721: ERC721T;
+    let deployer: string;
+
+    const lendBatch = async ({
+      tokenIds,
+      maxRentDurations = [],
+      dailyRentPrices = [],
+      nftPrices = [],
+      expectedLendingIds = [],
+    }: lendBatchArgs) => {
+      let _maxRentDurations = maxRentDurations;
+      let _dailyRentPrices = dailyRentPrices;
+      let _nftPrices = nftPrices;
+      let _expectedLendingIds = expectedLendingIds;
+      if (maxRentDurations.length === 0) {
+        _maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION);
+      }
+      if (dailyRentPrices.length === 0) {
+        _dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE);
+      }
+      if (nftPrices.length === 0) {
+        _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
+      }
+      if (expectedLendingIds.length === 0) {
+        _expectedLendingIds = tokenIds.map((v, ix) => ix + 1);
+      }
       const txn = await RentNft.lend(
-        [ERC721.address],
-        [tokenId],
-        [MAX_RENT_DURATION],
-        [DAILY_RENT_PRICE],
-        [NFT_PRICE],
-        [PAYMENT_TOKEN],
+        Array(tokenIds.length).fill(ERC721.address),
+        tokenIds,
+        _maxRentDurations,
+        _dailyRentPrices,
+        _nftPrices,
+        Array(tokenIds.length).fill(PAYMENT_TOKEN),
         GAS_SPONSOR
       );
       const receipt = await txn.wait();
-      const e = getEvent(receipt.events ?? [], "Lent");
-      if (!e || !e?.args) throw new Error("Lent event not emitted");
-      const {
-        nftAddress,
-        tokenId: _tokenId,
-        lendingId,
-        lenderAddress,
-        maxRentDuration,
-        dailyRentPrice,
-        nftPrice,
-        paymentToken
-      } = e.args;
-      expect(nftAddress).to.eq(ERC721.address);
-      expect(_tokenId).to.eq(tokenId);
-      expect(lendingId).to.eq(LendingId);
-      expect(lenderAddress).to.eq(deployer);
-      expect(maxRentDuration).to.eq(MAX_RENT_DURATION);
-      expect(dailyRentPrice).to.eq(DAILY_RENT_PRICE);
-      expect(nftPrice).to.eq(NFT_PRICE);
-      expect(paymentToken).to.eq(PAYMENT_TOKEN);
-      const newNftOwner = await ERC721.ownerOf(tokenId);
-      expect(newNftOwner).to.eq(RentNft.address);
+      const e = getEvents(receipt.events ?? [], 'Lent');
+      expect(e.length).to.eq(tokenIds.length);
+      for (let i = 0; i < tokenIds.length; i++) {
+        const event = e[i].args;
+        if (!event) throw new Error('No args');
+        const {
+          nftAddress,
+          tokenId: _tokenId,
+          lendingId,
+          lenderAddress,
+          maxRentDuration,
+          dailyRentPrice,
+          nftPrice,
+          paymentToken,
+        } = event;
+        expect(nftAddress).to.eq(ERC721.address);
+        expect(_tokenId).to.eq(tokenIds[i]);
+        expect(lendingId).to.eq(_expectedLendingIds[i]);
+        expect(lenderAddress).to.eq(deployer);
+        expect(maxRentDuration).to.eq(MAX_RENT_DURATION);
+        expect(dailyRentPrice).to.eq(DAILY_RENT_PRICE);
+        expect(nftPrice).to.eq(NFT_PRICE);
+        expect(paymentToken).to.eq(PAYMENT_TOKEN);
+        const newNftOwner = await ERC721.ownerOf(tokenIds[i]);
+        expect(newNftOwner).to.eq(RentNft.address);
+      }
+    };
+
+    beforeEach(async () => {
+      const setupObj = await setup();
+      RentNft = setupObj.RentNft;
+      ERC721 = setupObj.ERC721;
+      deployer = setupObj.deployer;
+    });
+
+    it('lends one', async function () {
+      const tokenIds = [1];
+      await lendBatch({tokenIds});
+    });
+    it('lends two - one after another', async function () {
+      const tokenIds = [1, 2];
+      await lendBatch({tokenIds: [tokenIds[0]], expectedLendingIds: [1]});
+      await lendBatch({tokenIds: [tokenIds[1]], expectedLendingIds: [2]});
+    });
+    it('lends in a batch', async function () {
+      const tokenIds = [1, 2];
+      await lendBatch({tokenIds});
+    });
+    it('reverts if tries to lend again', async function () {
+      const tokenIds = [1];
+      await lendBatch({tokenIds});
+      await expect(lendBatch({tokenIds})).to.be.revertedWith(
+        'ERC721: transfer of token that is not own'
+      );
     });
   });
 

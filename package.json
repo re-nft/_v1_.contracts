@@ -82,7 +82,9 @@
     "@openzeppelin/contracts": "^3.3.0",
     "@symfoni/hardhat-react": "^0.1.6",
     "@typechain/ethers-v5": "^5.0.0",
+    "@types/ramda": "^0.27.34",
     "hardhat-typechain": "^0.3.4",
+    "ramda": "^0.27.1",
     "ts-generator": "^0.1.1",
     "typechain": "^4.0.0",
     "websocket": "1.0.33"
