@@ -10,7 +10,7 @@ import {MyERC721 as ERC721T} from '../typechain/MyERC721';
 const MAX_RENT_DURATION = 1;
 const DAILY_RENT_PRICE = 2;
 const NFT_PRICE = 3;
-const PAYMENT_TOKEN = 0;
+const PAYMENT_TOKEN = 2;
 const GAS_SPONSOR = ethers.constants.AddressZero;
 
 const getEvents = (events: Event[], name: string) => {
@@ -28,7 +28,7 @@ const setup = deployments.createFixture(async () => {
   const myERC20 = (await ethers.getContract('MyERC20')) as ERC20T;
   const myERC721 = (await ethers.getContract('MyERC721')) as ERC721T;
   const renft = (await ethers.getContract('RentNft')) as RentNftT;
-  await resolver.setPaymentToken(1, myERC20.address);
+  await resolver.setPaymentToken(PAYMENT_TOKEN, myERC20.address);
   // * Ramda.repeat(await myERC721.award(), 10) does not work like I expected
   // * const award = Ramda.repeat(myERC721.award(), 10); await Promise.all(award) doesn't either
   for (let i = 0; i < 10; i++) {
@@ -64,11 +64,9 @@ describe('RentNft', function () {
       nftPrices?: number[];
       expectedLendingIds?: number[];
     };
-
     let RentNft: RentNftT;
     let ERC721: ERC721T;
     let deployer: string;
-
     const lendBatch = async ({
       tokenIds,
       maxRentDurations = [],
@@ -129,14 +127,12 @@ describe('RentNft', function () {
         expect(newNftOwner).to.eq(RentNft.address);
       }
     };
-
     beforeEach(async () => {
       const setupObj = await setup();
       RentNft = setupObj.RentNft;
       ERC721 = setupObj.ERC721;
       deployer = setupObj.deployer;
     });
-
     it('lends one', async function () {
       const tokenIds = [1];
       await lendBatch({tokenIds});
@@ -157,46 +153,31 @@ describe('RentNft', function () {
         'ERC721: transfer of token that is not own'
       );
     });
+    it('disallows zero day lend', async () => {
+      const tokenIds = [1];
+      await expect(
+        lendBatch({tokenIds, maxRentDurations: [0]})
+      ).to.be.revertedWith('must be at least one day lend');
+    });
+    it('disallows args diff length', async () => {
+      const tokenIds = [1];
+      const longerThanTokenIds = [1, 2];
+      await expect(
+        lendBatch({tokenIds, maxRentDurations: longerThanTokenIds})
+      ).to.be.revertedWith('arg arrs diff length');
+    });
   });
-
-  // address indexed nftAddress,
-  // uint256 indexed tokenId,
-  // uint256 lendingId,
-  // address indexed lenderAddress,
-  // uint16 maxRentDuration,
-  // uint32 dailyRentPrice,
-  // uint32 nftPrice,
-  // Resolver.PaymentToken paymentToken
-
-  // describe('Renting', async function () {});
-  // describe('Returning', async function () {});
-  // describe('Collateral Claiming', async function () {});
-  // it('calling it directly without pre-approval result in Allowance error', async function () {
-  //   const {ERC20Consumer} = await setup();
-  //   await expect(ERC20Consumer.purchase(1)).to.be.revertedWith(
-  //     'NOT_ENOUGH_ALLOWANCE'
-  //   );
-  // });
-  // it('calling it via erc20transfer gateway works', async function () {
-  //   const {ERC20Consumer, ERC20TransferGateway, ERC20Token} = await setup();
-  //   const {data, to} = await ERC20Consumer.populateTransaction.purchase(1);
-  //   await ERC20TransferGateway.transferERC20AndCall(
-  //     ERC20Token.address,
-  //     '500000000000000000',
-  //     to,
-  //     data
-  //   );
-  // });
-  // it('calling it via erc20transfer gateway but with wrong amount fails', async function () {
-  //   const {ERC20Consumer, ERC20TransferGateway, ERC20Token} = await setup();
-  //   const {data, to} = await ERC20Consumer.populateTransaction.purchase(1);
-  //   await expect(
-  //     ERC20TransferGateway.transferERC20AndCall(
-  //       ERC20Token.address,
-  //       '400000000000000000',
-  //       to,
-  //       data
-  //     )
-  //   ).to.be.revertedWith('UNEXPECTED_AMOUNT');
-  // });
+  context('Renting', async function () {
+    let RentNft: RentNftT;
+    let ERC721: ERC721T;
+    let deployer: string;
+    beforeEach(async () => {
+      const setupObj = await setup();
+      RentNft = setupObj.RentNft;
+      ERC721 = setupObj.ERC721;
+      deployer = setupObj.deployer;
+    });
+  });
+  context('Returning', async function () {});
+  context('Collateral Claiming', async function () {});
 });

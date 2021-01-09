@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     using SafeERC20 for IERC20;
     // 256 bits -> 32 bytes
@@ -122,9 +123,14 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint32[] memory _nftPrice,
         Resolver.PaymentToken[] memory _paymentToken,
         address payable _gasSponsor
-    ) public nonReentrant {
+    ) external nonReentrant {
+        require(_nft.length == _tokenId.length, "arg arrs diff length");
+        require(_tokenId.length == _maxRentDuration.length, "arg arrs diff length");
+        require(_maxRentDuration.length == _dailyRentPrice.length, "arg arrs diff length");
+        require(_nftPrice.length == _paymentToken.length, "arg arrs diff length");
         for (uint256 i = 0; i < _nft.length; i++) {
-            require(_maxRentDuration[i] > 0, "at least one day");
+            require(_maxRentDuration[i] > 0, "must be at least one day lend");
+            require(_maxRentDuration[i] <= 1825, "must be less than five years");
             _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i]);
             bytes32 itemHash = keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], id));
             LendingRenting storage item = lendingRenting[itemHash];
@@ -150,23 +156,36 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             id++;
         }
     }
+
     function rent(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id,
         uint16[] memory _rentDuration,
         address payable _gasSponsor
-    ) public nonReentrant {
+    ) external payable nonReentrant {
+        require(_nft.length == _tokenId.length, "arg arrs diff length");
+        require(_tokenId.length == _id.length, "arg arrs diff length");
+        require(_id.length == _rentDuration.length, "arg arrs diff length");
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item =
                 lendingRenting[keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i]))];
+            require(item.renting.renterAddress == address(0), "already rented");
             require(item.renting.rentDuration == 0, "already rented");
-            require(msg.sender != item.lending.lenderAddress, "can't rent own nft");
-            require(_rentDuration[i] <= item.lending.maxRentDuration, "max duration exceeded");
+            require(item.renting.rentedAt == 0, "already rented");
+            require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
+            require(_rentDuration[i] > 0, "should rent for at least a day");
+            require(_rentDuration[i] <= item.lending.maxRentDuration, "max rent duration exceeded");
+            // max is 1825 * 65535. Nowhere near the overflow
             uint256 rentPrice = _rentDuration[i] * _unpackPrice(bytes4(item.lending.dailyRentPrice));
             uint256 nftPrice = _unpackPrice(bytes4(item.lending.nftPrice));
+            uint256 upfrontPayment = rentPrice + nftPrice;
+            // * this can now be an ether payment too, at index 1
+            if (item.lending.paymentToken == Resolver.PaymentToken.ETH) {
+                require(msg.value == upfrontPayment, "insufficient amount");
+            }
             IERC20 paymentToken = resolver.getPaymentToken(uint8(item.lending.paymentToken));
-            paymentToken.safeTransferFrom(msg.sender, address(this), rentPrice + nftPrice);
+            paymentToken.safeTransferFrom(msg.sender, address(this), upfrontPayment);
             item.renting.renterAddress = msg.sender;
             item.renting.rentDuration = _rentDuration[i];
             item.renting.rentedAt = uint32(block.timestamp);
@@ -174,6 +193,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             emit Rented(address(_nft[i]), _tokenId[i], _id[i], msg.sender, _rentDuration[i], uint32(block.timestamp));
         }
     }
+
     function _takeFee(
         uint256 nftPrice,
         uint256 rent,
@@ -183,6 +203,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         paymentToken.safeTransfer(beneficiary, fee);
         fee /= 2;
     }
+
     function _distributePayments(
         IERC721 _nft,
         uint256 _tokenId,
@@ -213,6 +234,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         require(sendLenderAmt >= sendLenderAmt - halfFee, "try again");
         paymentToken.safeTransfer(item.lending.lenderAddress, sendLenderAmt - halfFee);
     }
+
     function _distributeClaimPayment(
         IERC721 _nft,
         uint256 _tokenId,
@@ -230,6 +252,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         require(finalAmt >= finalAmt - halfFee, "maybe next time");
         paymentToken.safeTransfer(item.lending.lenderAddress, finalAmt - halfFee);
     }
+
     function returnIt(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
@@ -249,6 +272,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             delete item.renting;
         }
     }
+
     function claimCollateral(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
@@ -264,6 +288,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             emit CollateralClaimed(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
         }
     }
+
     function stopLending(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
@@ -279,6 +304,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             emit LendingStopped(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
         }
     }
+
     // We can't use uint256 for prices in the struct because
     // we must fit our struct in a single 32 byte chunk.
     // Since, no-one in their right mind will ever pay
@@ -330,12 +356,15 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint256 price = d + w;
         return price;
     }
+
     function setRentFee(uint256 _rentFee) public onlyOwner {
         rentFee = _rentFee;
     }
+
     function setNftPriceFee(uint256 _nftPriceFee) public onlyOwner {
         nftPriceFee = _nftPriceFee;
     }
+
     function setBeneficiary(address payable _newBeneficiary) public onlyOwner {
         beneficiary = _newBeneficiary;
     }

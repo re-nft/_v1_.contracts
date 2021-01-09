@@ -14,6 +14,7 @@ import {
   Contract,
   ContractTransaction,
   Overrides,
+  PayableOverrides,
   CallOverrides,
 } from "@ethersproject/contracts";
 import { BytesLike } from "@ethersproject/bytes";
@@ -239,7 +240,7 @@ export class RentNft extends Contract {
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       _gasSponsor: string,
-      overrides?: Overrides
+      overrides?: PayableOverrides
     ): Promise<ContractTransaction>;
 
     "rent(address[],uint256[],uint256[],uint16[],address)"(
@@ -248,7 +249,7 @@ export class RentNft extends Contract {
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       _gasSponsor: string,
-      overrides?: Overrides
+      overrides?: PayableOverrides
     ): Promise<ContractTransaction>;
 
     rentFee(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -400,7 +401,7 @@ export class RentNft extends Contract {
     _id: BigNumberish[],
     _rentDuration: BigNumberish[],
     _gasSponsor: string,
-    overrides?: Overrides
+    overrides?: PayableOverrides
   ): Promise<ContractTransaction>;
 
   "rent(address[],uint256[],uint256[],uint16[],address)"(
@@ -409,7 +410,7 @@ export class RentNft extends Contract {
     _id: BigNumberish[],
     _rentDuration: BigNumberish[],
     _gasSponsor: string,
-    overrides?: Overrides
+    overrides?: PayableOverrides
   ): Promise<ContractTransaction>;
 
   rentFee(overrides?: CallOverrides): Promise<BigNumber>;
@@ -772,7 +773,7 @@ export class RentNft extends Contract {
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       _gasSponsor: string,
-      overrides?: Overrides
+      overrides?: PayableOverrides
     ): Promise<BigNumber>;
 
     "rent(address[],uint256[],uint256[],uint16[],address)"(
@@ -781,7 +782,7 @@ export class RentNft extends Contract {
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       _gasSponsor: string,
-      overrides?: Overrides
+      overrides?: PayableOverrides
     ): Promise<BigNumber>;
 
     rentFee(overrides?: CallOverrides): Promise<BigNumber>;
@@ -934,7 +935,7 @@ export class RentNft extends Contract {
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       _gasSponsor: string,
-      overrides?: Overrides
+      overrides?: PayableOverrides
     ): Promise<PopulatedTransaction>;
 
     "rent(address[],uint256[],uint256[],uint16[],address)"(
@@ -943,7 +944,7 @@ export class RentNft extends Contract {
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       _gasSponsor: string,
-      overrides?: Overrides
+      overrides?: PayableOverrides
     ): Promise<PopulatedTransaction>;
 
     rentFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
