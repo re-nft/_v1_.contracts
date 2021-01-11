@@ -118,8 +118,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint16[] memory _maxRentDuration,
         uint32[] memory _dailyRentPrice,
         uint32[] memory _nftPrice,
-        Resolver.PaymentToken[] memory _paymentToken,
-        address payable _gasSponsor
+        Resolver.PaymentToken[] memory _paymentToken
     ) external nonReentrant {
         require(_nft.length == _tokenId.length, "arg arrs diff length");
         require(_tokenId.length == _maxRentDuration.length, "arg arrs diff length");
@@ -158,8 +157,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id,
-        uint16[] memory _rentDuration,
-        address payable _gasSponsor
+        uint16[] memory _rentDuration
     ) external payable nonReentrant {
         require(_nft.length == _tokenId.length, "1 arg arrs diff length");
         require(_tokenId.length == _id.length, "2 arg arrs diff length");
@@ -168,8 +166,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             uint256 __tokenId = _tokenId[i];
             uint256 __id = _id[i];
             IERC721 __nft = _nft[i];
-            LendingRenting storage item =
-                lendingRenting[keccak256(abi.encodePacked(address(__nft), __tokenId, __id))];
+            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(address(__nft), __tokenId, __id))];
             require(item.renting.renterAddress == address(0), "1 already rented");
             require(item.renting.rentDuration == 0, "2 already rented");
             require(item.renting.rentedAt == 0, "3 already rented");
@@ -181,10 +178,11 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             uint8 paymentTokenIx = uint8(item.lending.paymentToken);
             address paymentToken = resolver.getPaymentToken(paymentTokenIx);
             bool isERC20 = paymentTokenIx > 1;
-            if (isERC20) { // 1 marks ETH
+            if (isERC20) {
+                // 1 marks ETH
                 decimals = ERC20(paymentToken).decimals();
             }
-            uint256 rentPrice = _rentDur * _unpackPrice(item.lending.dailyRentPrice, decimals);  // max is 1825 * 65535. Nowhere near the overflow
+            uint256 rentPrice = _rentDur * _unpackPrice(item.lending.dailyRentPrice, decimals); // max is 1825 * 65535. Nowhere near the overflow
             uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
             uint256 upfrontPayment = rentPrice + nftPrice;
             if (isERC20) {
@@ -204,20 +202,16 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
      * We have half fee here because the fee is paid in half
      * by the renter and the lender
      */
-    function _takeFee(
-        uint256 _rent,
-        Resolver.PaymentToken _paymentToken
-    ) internal returns (uint256 fee) {
+    function _takeFee(uint256 _rent, Resolver.PaymentToken _paymentToken) private returns (uint256 fee) {
         fee = _rent * rentFee;
         fee /= 10000; // percentages
         uint8 paymentTokenIx = uint8(_paymentToken);
         if (paymentTokenIx > 1) {
-          ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
-          paymentToken.safeTransfer(beneficiary, fee);
+            ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
+            paymentToken.safeTransfer(beneficiary, fee);
         } else {
-          beneficiary.transfer(fee);
+            beneficiary.transfer(fee);
         }
-        fee /= 2;
     }
 
     /**
@@ -229,13 +223,14 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint256 _tokenId,
         uint256 _id,
         uint256 _secondsSinceRentStart
-    ) internal {
+    ) private {
         LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(address(_nft), _tokenId, _id))];
         uint256 decimals = 18;
         uint8 paymentTokenIx = uint8(item.lending.paymentToken);
         address paymentToken = resolver.getPaymentToken(paymentTokenIx);
         bool isERC20 = paymentTokenIx > 1;
-        if (isERC20) { // 1 marks ETH
+        if (isERC20) {
+            // 1 marks ETH
             decimals = ERC20(paymentToken).decimals();
         }
         uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
@@ -263,19 +258,15 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         // unused
         uint256 sendRenterAmt = renterPayment - sendLenderAmt;
         require(renterPayment > sendRenterAmt, "underflow issues prevention");
-        uint256 halfFee = _takeFee(sendLenderAmt, item.lending.paymentToken);
+        uint256 takenFee = _takeFee(sendLenderAmt, item.lending.paymentToken);
         sendRenterAmt += nftPrice;
-        // underflow safety
-        // todo: potential for underflow here
-        require(sendRenterAmt >= sendRenterAmt - halfFee, "1 underflows shall not pass");
-        require(sendLenderAmt >= sendLenderAmt - halfFee, "2 underflows shall not pass");
         if (isERC20) {
-          ERC20(paymentToken).safeTransfer(item.renting.renterAddress, sendRenterAmt - halfFee);
-          ERC20(paymentToken).safeTransfer(item.lending.lenderAddress, sendLenderAmt - halfFee);
+            ERC20(paymentToken).safeTransfer(item.lending.lenderAddress, sendLenderAmt - takenFee);
+            ERC20(paymentToken).safeTransfer(item.renting.renterAddress, sendRenterAmt);
         } else {
-          // todo: is it possible that through sentinel we get to here?
-          item.renting.renterAddress.transfer(sendRenterAmt - halfFee);
-          item.lending.lenderAddress.transfer(sendLenderAmt - halfFee);
+            require(paymentTokenIx == 1, "sentinels dont pay");
+            item.lending.lenderAddress.transfer(sendLenderAmt - takenFee);
+            item.renting.renterAddress.transfer(sendRenterAmt);
         }
     }
 
@@ -283,27 +274,32 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         IERC721 _nft,
         uint256 _tokenId,
         uint256 _id
-    ) internal {
+    ) private {
         LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(address(_nft), _tokenId, _id))];
-        // todo: will fail for indices 0 and 1
+        uint256 decimals = 18;
         uint8 paymentTokenIx = uint8(item.lending.paymentToken);
-        ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
-        uint256 decimals = paymentToken.decimals();
+        address paymentToken = resolver.getPaymentToken(paymentTokenIx);
+        bool isERC20 = paymentTokenIx > 1;
+        if (isERC20) {
+            // 1 marks ETH
+            decimals = ERC20(paymentToken).decimals();
+        }
         uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
         uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, decimals);
         uint256 maxRentPayment = rentPrice * item.renting.rentDuration;
-        uint256 halfFee = _takeFee(maxRentPayment, Resolver.PaymentToken(paymentTokenIx));
-        halfFee += halfFee;
+        uint256 takenFee = _takeFee(maxRentPayment, Resolver.PaymentToken(paymentTokenIx));
         uint256 finalAmt = maxRentPayment + nftPrice;
-        require(finalAmt >= finalAmt - halfFee, "maybe next time");
-        paymentToken.safeTransfer(item.lending.lenderAddress, finalAmt - halfFee);
+        if (isERC20) {
+            ERC20(paymentToken).safeTransfer(item.lending.lenderAddress, finalAmt - takenFee);
+        } else {
+            item.lending.lenderAddress.transfer(finalAmt - takenFee);
+        }
     }
 
     function returnIt(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
-        uint256[] memory _id,
-        address payable _gasSponsor
+        uint256[] memory _id
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item =
@@ -322,8 +318,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     function claimCollateral(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
-        uint256[] memory _id,
-        address payable _gasSponsor
+        uint256[] memory _id
     ) public nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item =
@@ -338,8 +333,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     function stopLending(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
-        uint256[] memory _id,
-        address _gasSponsor
+        uint256[] memory _id
     ) public {
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
@@ -392,7 +386,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint256 price = w + d;
         require(price >= w, "invalid price");
         if (price == 0) {
-          price = _scale / 10000;
+            price = _scale / 10000;
         }
         return price;
     }
