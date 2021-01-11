@@ -1,9 +1,7 @@
 {
-  "name": "template-ethereum-contracts",
+  "name": "renft-contracts",
   "version": "0.1.0",
-  "description": "Template to develop ethereum smart contracts",
-  "repository": "github:wighawag/template-ethereum-contracts",
-  "author": "wighawag",
+  "author": "nazariyv",
   "license": "MIT",
   "keywords": [
     "ethereum",

@@ -17,10 +17,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
   });
-  await deploy('BitsBobs', {
+  await deploy('Utils', {
     from: deployer,
     log: true,
   });
 };
 export default func;
-func.tags = ['PaymentToken', 'GanFaceNft', 'Resolver', 'BitsBobs'];
+func.tags = ['PaymentToken', 'GanFaceNft', 'Resolver', 'Utils'];

@@ -1,11 +1,11 @@
 import {expect} from './chai-setup';
 import {ethers, deployments, getNamedAccounts} from 'hardhat';
 import {Event} from '@ethersproject/contracts/lib';
-import {RentNft as RentNftT} from '../typechain/RentNft';
-import {Resolver as ResolverT} from '../typechain/Resolver';
-import {ERC20 as ERC20T} from '../typechain/ERC20';
-import {MyERC721 as ERC721T} from '../typechain/MyERC721';
-import {BitsBobs as BitsBobsT} from '../typechain/BitsBobs';
+import {RentNft as RentNftT} from '../frontend/src/hardhat/typechain/RentNft';
+import {Resolver as ResolverT} from '../frontend/src/hardhat/typechain/Resolver';
+import {ERC20 as ERC20T} from '../frontend/src/hardhat/typechain/ERC20';
+import {MyERC721 as ERC721T} from '../frontend/src/hardhat/typechain/MyERC721';
+import {Utils as UtilsT} from '../frontend/src/hardhat/typechain/Utils';
 
 // default values
 const MAX_RENT_DURATION = 1;
@@ -23,13 +23,13 @@ const setup = deployments.createFixture(async () => {
   await deployments.fixture('ERC20');
   await deployments.fixture('ERC721');
   await deployments.fixture('RentNft');
-  await deployments.fixture('BitsBobs');
+  await deployments.fixture('Utils');
   const {deployer, beneficiary} = await getNamedAccounts();
   const signers = await ethers.getSigners();
   const resolver = (await ethers.getContract('Resolver')) as ResolverT;
   const myERC20 = (await ethers.getContract('MyERC20')) as ERC20T;
   const myERC721 = (await ethers.getContract('MyERC721')) as ERC721T;
-  const bitsBobs = (await ethers.getContract('BitsBobs')) as BitsBobsT;
+  const utils = (await ethers.getContract('Utils')) as UtilsT;
   const renft = (await ethers.getContract('RentNft')) as RentNftT;
   await resolver.setPaymentToken(PAYMENT_TOKEN, myERC20.address);
   // * Ramda.repeat(await myERC721.award(), 10) does not work like I expected
@@ -43,7 +43,7 @@ const setup = deployments.createFixture(async () => {
     RentNft: renft,
     ERC20: myERC20,
     ERC721: myERC721,
-    BitsBobs: bitsBobs,
+    Utils: utils,
     signers: signers.map((acc, ix) => ({[ix]: acc})),
     deployer,
     beneficiary,
@@ -100,8 +100,7 @@ describe('RentNft', function () {
         _maxRentDurations,
         _dailyRentPrices,
         _nftPrices,
-        Array(tokenIds.length).fill(PAYMENT_TOKEN),
-        GAS_SPONSOR
+        Array(tokenIds.length).fill(PAYMENT_TOKEN)
       );
       const receipt = await txn.wait();
       const e = getEvents(receipt.events ?? [], 'Lent');
@@ -172,7 +171,7 @@ describe('RentNft', function () {
     });
   });
   context('Price Unpacking', async function () {
-    let Unpacker: BitsBobsT;
+    let Utils: UtilsT;
 
     it('unpacks well', async () => {});
   });
