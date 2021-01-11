@@ -25,7 +25,6 @@ interface RentNftInterface extends ethers.utils.Interface {
   functions: {
     "claimCollateral(address[],uint256[],uint256[],address)": FunctionFragment;
     "lend(address[],uint256[],uint16[],uint32[],uint32[],uint8[],address)": FunctionFragment;
-    "nftPriceFee()": FunctionFragment;
     "onERC721Received(address,address,uint256,bytes)": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
@@ -33,7 +32,6 @@ interface RentNftInterface extends ethers.utils.Interface {
     "rentFee()": FunctionFragment;
     "returnIt(address[],uint256[],uint256[],address)": FunctionFragment;
     "setBeneficiary(address)": FunctionFragment;
-    "setNftPriceFee(uint256)": FunctionFragment;
     "setRentFee(uint256)": FunctionFragment;
     "stopLending(address[],uint256[],uint256[],address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
@@ -54,10 +52,6 @@ interface RentNftInterface extends ethers.utils.Interface {
       BigNumberish[],
       string
     ]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "nftPriceFee",
-    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "onERC721Received",
@@ -82,10 +76,6 @@ interface RentNftInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "setNftPriceFee",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "setRentFee",
     values: [BigNumberish]
   ): string;
@@ -104,10 +94,6 @@ interface RentNftInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "lend", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "nftPriceFee",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "onERC721Received",
     data: BytesLike
   ): Result;
@@ -121,10 +107,6 @@ interface RentNftInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "returnIt", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setBeneficiary",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setNftPriceFee",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "setRentFee", data: BytesLike): Result;
@@ -206,10 +188,6 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
-    nftPriceFee(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    "nftPriceFee()"(overrides?: CallOverrides): Promise<[BigNumber]>;
-
     onERC721Received(
       arg0: string,
       arg1: string,
@@ -279,16 +257,6 @@ export class RentNft extends Contract {
 
     "setBeneficiary(address)"(
       _newBeneficiary: string,
-      overrides?: Overrides
-    ): Promise<ContractTransaction>;
-
-    setNftPriceFee(
-      _nftPriceFee: BigNumberish,
-      overrides?: Overrides
-    ): Promise<ContractTransaction>;
-
-    "setNftPriceFee(uint256)"(
-      _nftPriceFee: BigNumberish,
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
@@ -367,10 +335,6 @@ export class RentNft extends Contract {
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
-  nftPriceFee(overrides?: CallOverrides): Promise<BigNumber>;
-
-  "nftPriceFee()"(overrides?: CallOverrides): Promise<BigNumber>;
-
   onERC721Received(
     arg0: string,
     arg1: string,
@@ -440,16 +404,6 @@ export class RentNft extends Contract {
 
   "setBeneficiary(address)"(
     _newBeneficiary: string,
-    overrides?: Overrides
-  ): Promise<ContractTransaction>;
-
-  setNftPriceFee(
-    _nftPriceFee: BigNumberish,
-    overrides?: Overrides
-  ): Promise<ContractTransaction>;
-
-  "setNftPriceFee(uint256)"(
-    _nftPriceFee: BigNumberish,
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
@@ -528,10 +482,6 @@ export class RentNft extends Contract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    nftPriceFee(overrides?: CallOverrides): Promise<BigNumber>;
-
-    "nftPriceFee()"(overrides?: CallOverrides): Promise<BigNumber>;
-
     onERC721Received(
       arg0: string,
       arg1: string,
@@ -601,16 +551,6 @@ export class RentNft extends Contract {
 
     "setBeneficiary(address)"(
       _newBeneficiary: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    setNftPriceFee(
-      _nftPriceFee: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    "setNftPriceFee(uint256)"(
-      _nftPriceFee: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -739,10 +679,6 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<BigNumber>;
 
-    nftPriceFee(overrides?: CallOverrides): Promise<BigNumber>;
-
-    "nftPriceFee()"(overrides?: CallOverrides): Promise<BigNumber>;
-
     onERC721Received(
       arg0: string,
       arg1: string,
@@ -812,16 +748,6 @@ export class RentNft extends Contract {
 
     "setBeneficiary(address)"(
       _newBeneficiary: string,
-      overrides?: Overrides
-    ): Promise<BigNumber>;
-
-    setNftPriceFee(
-      _nftPriceFee: BigNumberish,
-      overrides?: Overrides
-    ): Promise<BigNumber>;
-
-    "setNftPriceFee(uint256)"(
-      _nftPriceFee: BigNumberish,
       overrides?: Overrides
     ): Promise<BigNumber>;
 
@@ -901,10 +827,6 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
 
-    nftPriceFee(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    "nftPriceFee()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     onERC721Received(
       arg0: string,
       arg1: string,
@@ -974,16 +896,6 @@ export class RentNft extends Contract {
 
     "setBeneficiary(address)"(
       _newBeneficiary: string,
-      overrides?: Overrides
-    ): Promise<PopulatedTransaction>;
-
-    setNftPriceFee(
-      _nftPriceFee: BigNumberish,
-      overrides?: Overrides
-    ): Promise<PopulatedTransaction>;
-
-    "setNftPriceFee(uint256)"(
-      _nftPriceFee: BigNumberish,
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
 

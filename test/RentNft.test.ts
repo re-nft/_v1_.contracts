@@ -5,6 +5,7 @@ import {RentNft as RentNftT} from '../typechain/RentNft';
 import {Resolver as ResolverT} from '../typechain/Resolver';
 import {ERC20 as ERC20T} from '../typechain/ERC20';
 import {MyERC721 as ERC721T} from '../typechain/MyERC721';
+import {BitsBobs as BitsBobsT} from '../typechain/BitsBobs';
 
 // default values
 const MAX_RENT_DURATION = 1;
@@ -22,11 +23,13 @@ const setup = deployments.createFixture(async () => {
   await deployments.fixture('ERC20');
   await deployments.fixture('ERC721');
   await deployments.fixture('RentNft');
+  await deployments.fixture('BitsBobs');
   const {deployer, beneficiary} = await getNamedAccounts();
   const signers = await ethers.getSigners();
   const resolver = (await ethers.getContract('Resolver')) as ResolverT;
   const myERC20 = (await ethers.getContract('MyERC20')) as ERC20T;
   const myERC721 = (await ethers.getContract('MyERC721')) as ERC721T;
+  const bitsBobs = (await ethers.getContract('BitsBobs')) as BitsBobsT;
   const renft = (await ethers.getContract('RentNft')) as RentNftT;
   await resolver.setPaymentToken(PAYMENT_TOKEN, myERC20.address);
   // * Ramda.repeat(await myERC721.award(), 10) does not work like I expected
@@ -40,6 +43,7 @@ const setup = deployments.createFixture(async () => {
     RentNft: renft,
     ERC20: myERC20,
     ERC721: myERC721,
+    BitsBobs: bitsBobs,
     signers: signers.map((acc, ix) => ({[ix]: acc})),
     deployer,
     beneficiary,
@@ -166,6 +170,11 @@ describe('RentNft', function () {
         lendBatch({tokenIds, maxRentDurations: longerThanTokenIds})
       ).to.be.revertedWith('arg arrs diff length');
     });
+  });
+  context('Price Unpacking', async function () {
+    let Unpacker: BitsBobsT;
+
+    it('unpacks well', async () => {});
   });
   context('Renting', async function () {
     let RentNft: RentNftT;

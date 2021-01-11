@@ -1,24 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7.0 <0.8.0;
-import "./Resolver.sol";
 // import "./ChiGasSaver.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "./Resolver.sol";
 
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
     // 256 bits -> 32 bytes
     // address - 20 byte value -> 160 bits
     uint256 private id = 1;
     // settable by owner and chargeable on the final rent price
     uint256 public rentFee = 0;
-    // settable by owner and chargeable on collateral amounts
-    // for gas efficiency, both of the above are not sent immediately
-    // only owner can withdraw the accrued amounts
-    uint256 public nftPriceFee = 0;
     // option 1 - transfer fee amounts on every txn
     //          - +: easy implementation
     //          - -: extra 20k gas cost for the sender
@@ -82,20 +79,20 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
 
     struct Lending {
         // 160 bits
-        address lenderAddress;
+        address payable lenderAddress;
         // 176 bits
         uint16 maxRentDuration;
         // 208 bits
-        uint32 dailyRentPrice;
+        bytes4 dailyRentPrice;
         // 240 bits
-        uint32 nftPrice;
+        bytes4 nftPrice;
         // 248 bits
         Resolver.PaymentToken paymentToken;
     }
 
     struct Renting {
         // 160 bits
-        address renterAddress;
+        address payable renterAddress;
         // 176 bits
         uint16 rentDuration;
         // 198 bits
@@ -137,8 +134,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             item.lending = Lending({
                 lenderAddress: msg.sender,
                 maxRentDuration: _maxRentDuration[i],
-                dailyRentPrice: _dailyRentPrice[i],
-                nftPrice: _nftPrice[i],
+                dailyRentPrice: bytes4(_dailyRentPrice[i]),
+                nftPrice: bytes4(_nftPrice[i]),
                 paymentToken: _paymentToken[i]
             });
             emit Lent(
@@ -164,46 +161,69 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint16[] memory _rentDuration,
         address payable _gasSponsor
     ) external payable nonReentrant {
-        require(_nft.length == _tokenId.length, "arg arrs diff length");
-        require(_tokenId.length == _id.length, "arg arrs diff length");
-        require(_id.length == _rentDuration.length, "arg arrs diff length");
+        require(_nft.length == _tokenId.length, "1 arg arrs diff length");
+        require(_tokenId.length == _id.length, "2 arg arrs diff length");
+        require(_id.length == _rentDuration.length, "3 arg arrs diff length");
         for (uint256 i = 0; i < _nft.length; i++) {
+            uint256 __tokenId = _tokenId[i];
+            uint256 __id = _id[i];
+            IERC721 __nft = _nft[i];
             LendingRenting storage item =
-                lendingRenting[keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i]))];
-            require(item.renting.renterAddress == address(0), "already rented");
-            require(item.renting.rentDuration == 0, "already rented");
-            require(item.renting.rentedAt == 0, "already rented");
+                lendingRenting[keccak256(abi.encodePacked(address(__nft), __tokenId, __id))];
+            require(item.renting.renterAddress == address(0), "1 already rented");
+            require(item.renting.rentDuration == 0, "2 already rented");
+            require(item.renting.rentedAt == 0, "3 already rented");
             require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
-            require(_rentDuration[i] > 0, "should rent for at least a day");
-            require(_rentDuration[i] <= item.lending.maxRentDuration, "max rent duration exceeded");
-            // max is 1825 * 65535. Nowhere near the overflow
-            uint256 rentPrice = _rentDuration[i] * _unpackPrice(bytes4(item.lending.dailyRentPrice));
-            uint256 nftPrice = _unpackPrice(bytes4(item.lending.nftPrice));
+            uint16 _rentDur = _rentDuration[i];
+            require(_rentDur > 0, "should rent for at least a day");
+            require(_rentDur <= item.lending.maxRentDuration, "max rent duration exceeded");
+            uint256 decimals = 18;
+            uint8 paymentTokenIx = uint8(item.lending.paymentToken);
+            address paymentToken = resolver.getPaymentToken(paymentTokenIx);
+            bool isERC20 = paymentTokenIx > 1;
+            if (isERC20) { // 1 marks ETH
+                decimals = ERC20(paymentToken).decimals();
+            }
+            uint256 rentPrice = _rentDur * _unpackPrice(item.lending.dailyRentPrice, decimals);  // max is 1825 * 65535. Nowhere near the overflow
+            uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
             uint256 upfrontPayment = rentPrice + nftPrice;
-            // * this can now be an ether payment too, at index 1
-            if (item.lending.paymentToken == Resolver.PaymentToken.ETH) {
+            if (isERC20) {
+                ERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
+            } else {
                 require(msg.value == upfrontPayment, "insufficient amount");
             }
-            IERC20 paymentToken = resolver.getPaymentToken(uint8(item.lending.paymentToken));
-            paymentToken.safeTransferFrom(msg.sender, address(this), upfrontPayment);
             item.renting.renterAddress = msg.sender;
-            item.renting.rentDuration = _rentDuration[i];
+            item.renting.rentDuration = _rentDur;
             item.renting.rentedAt = uint32(block.timestamp);
-            _nft[i].transferFrom(address(this), msg.sender, _tokenId[i]);
-            emit Rented(address(_nft[i]), _tokenId[i], _id[i], msg.sender, _rentDuration[i], uint32(block.timestamp));
+            __nft.transferFrom(address(this), msg.sender, __tokenId);
+            emit Rented(address(__nft), __tokenId, __id, msg.sender, _rentDur, uint32(block.timestamp));
         }
     }
 
+    /**
+     * We have half fee here because the fee is paid in half
+     * by the renter and the lender
+     */
     function _takeFee(
-        uint256 nftPrice,
-        uint256 rent,
-        IERC20 paymentToken
+        uint256 _rent,
+        Resolver.PaymentToken _paymentToken
     ) internal returns (uint256 fee) {
-        fee = nftPrice * nftPriceFee + rent * rentFee;
-        paymentToken.safeTransfer(beneficiary, fee);
+        fee = _rent * rentFee;
+        fee /= 10000; // percentages
+        uint8 paymentTokenIx = uint8(_paymentToken);
+        if (paymentTokenIx > 1) {
+          ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
+          paymentToken.safeTransfer(beneficiary, fee);
+        } else {
+          beneficiary.transfer(fee);
+        }
         fee /= 2;
     }
 
+    /**
+     * Gets called only when the NFT is returned.
+     * _takeFee is here and in distributeClaimPayments
+     */
     function _distributePayments(
         IERC721 _nft,
         uint256 _tokenId,
@@ -211,28 +231,52 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint256 _secondsSinceRentStart
     ) internal {
         LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(address(_nft), _tokenId, _id))];
-        IERC20 paymentToken = resolver.getPaymentToken(uint8(item.lending.paymentToken));
-        uint256 nftPrice = _unpackPrice(bytes4(item.lending.nftPrice));
-        uint256 rentPrice = _unpackPrice(bytes4(item.lending.dailyRentPrice));
+        uint256 decimals = 18;
+        uint8 paymentTokenIx = uint8(item.lending.paymentToken);
+        address paymentToken = resolver.getPaymentToken(paymentTokenIx);
+        bool isERC20 = paymentTokenIx > 1;
+        if (isERC20) { // 1 marks ETH
+            decimals = ERC20(paymentToken).decimals();
+        }
+        uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
+        uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, decimals);
         // compute money owed from the rentedAt period until block.timestamp
         // max is the uint16 for maxRentDuration
         // the largest value here is max(uint16) * 86400
-        // i.e. 65535 * 86400 -> 5662224000, 5 billion, way of uint256 overflow
-        // seconds in a day
+        // i.e. 65535 * 86400 -> 5662224000, 5 billion
         uint256 renterMaxSeconds = item.renting.rentDuration * 86400;
-        // daily rent price * daily rent duration = payment sent by the renter
-        uint256 renterPayment = rentPrice * item.renting.rentDuration;
         require(renterMaxSeconds >= _secondsSinceRentStart, "attempt to return after deadline");
-        uint256 sendLenderAmt = (_secondsSinceRentStart * renterPayment) / renterMaxSeconds;
-        require(renterPayment >= sendLenderAmt, "maxRentPmt less than lender amount");
-        uint256 sendRenterBackAmt = renterPayment - sendLenderAmt;
-        require(sendLenderAmt + sendRenterBackAmt == renterPayment, "must equal to renter payment");
-        uint256 halfFee = _takeFee(nftPrice, sendRenterBackAmt + sendLenderAmt, paymentToken);
-        sendRenterBackAmt += nftPrice;
-        require(sendRenterBackAmt >= sendRenterBackAmt - halfFee, "lol");
-        paymentToken.safeTransfer(item.renting.renterAddress, sendRenterBackAmt - halfFee);
-        require(sendLenderAmt >= sendLenderAmt - halfFee, "try again");
-        paymentToken.safeTransfer(item.lending.lenderAddress, sendLenderAmt - halfFee);
+        // need to convert daily price to price per second
+        // daily price = x, then price per second is x / 86400 = y
+        // we now multiply y by the number of seconds that the NFT was
+        // rented out for.
+        // final formula is (_secondsSinceRentStart *  x) / 86400
+        uint256 renterPayment = rentPrice * item.renting.rentDuration;
+        // if a * b < c then lender will get 0.
+        // rentPrice can't be zero, if the token is 18 decimals, below
+        // calc is guaranteed to return a meaningful result
+        uint256 sendLenderAmt = (_secondsSinceRentStart * rentPrice) / 86400;
+        // this will block the return and so lender will be able to claim the collateral
+        // equality happens when the renter returns at the very last second. This is
+        // extremely unlikely to happen
+        require(renterPayment >= sendLenderAmt, "lender receiving more than renter pmt");
+        // unused
+        uint256 sendRenterAmt = renterPayment - sendLenderAmt;
+        require(renterPayment > sendRenterAmt, "underflow issues prevention");
+        uint256 halfFee = _takeFee(sendLenderAmt, item.lending.paymentToken);
+        sendRenterAmt += nftPrice;
+        // underflow safety
+        // todo: potential for underflow here
+        require(sendRenterAmt >= sendRenterAmt - halfFee, "1 underflows shall not pass");
+        require(sendLenderAmt >= sendLenderAmt - halfFee, "2 underflows shall not pass");
+        if (isERC20) {
+          ERC20(paymentToken).safeTransfer(item.renting.renterAddress, sendRenterAmt - halfFee);
+          ERC20(paymentToken).safeTransfer(item.lending.lenderAddress, sendLenderAmt - halfFee);
+        } else {
+          // todo: is it possible that through sentinel we get to here?
+          item.renting.renterAddress.transfer(sendRenterAmt - halfFee);
+          item.lending.lenderAddress.transfer(sendLenderAmt - halfFee);
+        }
     }
 
     function _distributeClaimPayment(
@@ -241,12 +285,14 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         uint256 _id
     ) internal {
         LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(address(_nft), _tokenId, _id))];
-        IERC20 paymentToken = resolver.getPaymentToken(uint8(item.lending.paymentToken));
-        uint256 nftPrice = _unpackPrice(bytes4(item.lending.nftPrice));
-        uint256 rentPrice = _unpackPrice(bytes4(item.lending.dailyRentPrice));
-        // !: implicit type conversion from uint16 * uint32 to uint256
+        // todo: will fail for indices 0 and 1
+        uint8 paymentTokenIx = uint8(item.lending.paymentToken);
+        ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
+        uint256 decimals = paymentToken.decimals();
+        uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
+        uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, decimals);
         uint256 maxRentPayment = rentPrice * item.renting.rentDuration;
-        uint256 halfFee = _takeFee(nftPrice, maxRentPayment, paymentToken);
+        uint256 halfFee = _takeFee(maxRentPayment, Resolver.PaymentToken(paymentTokenIx));
         halfFee += halfFee;
         uint256 finalAmt = maxRentPayment + nftPrice;
         require(finalAmt >= finalAmt - halfFee, "maybe next time");
@@ -310,62 +356,53 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     // Since, no-one in their right mind will ever pay
     // $65k to rent an NFT for a single day, we have
     // set up this constraint on the prices that they
-    // both are uint32. It is possible we may use
-    // uint40 for collateral and uint24 for dailyRentPrice.
-    // Anyhow, this constraint helps save us some extra 40k
+    // both are uint32.
+    // This constraint helps save us some extra 40k
     // in gas, that you dear lender and reader would pay.
-    // So working under this constraints, the first 4 hexbytes
+    // So working under these constraints, the first 4 hexbytes
     // of the packed price contain the whole number information,
     // whereas the last 4 bytes represent the decimal portion
-    // ! assumes 18 decimal places !
-    // TODO: not the most efficient way of packing. Operating on
-    // the bit level would allow us to give some extra precision
-    // for the whole part. We are only using about 1/6th of the space
-    // available for the decimal part. Our decimal part spans from 0 to 9999
-    // but we have extra 65535 - 9999 numbers that could be used in the
-    // whole part! Potentially, making the maximum 65535 + 65535 - 9999 =
-    // 120000 + 11070 - 10000 + 1 = 120000 + 1071 = 121071
     // ----- Examples
     // 0x000f000f is 16.0016
     // 0x001f0001 is 17.0001
     // ----- Constraints
     // The maximum whole number is therefore 65535
     // The maximum decimal is 0.9999
-    // Therefore the prices can be in [0, 65535.9999]
-    function _unpackPrice(bytes4 _price) internal pure returns (uint256) {
-        bytes2 who = bytes2(_price);
-        bytes2 dec = bytes2(_price << 16);
-        uint16 whole = uint16(who);
-        uint16 decimal = uint16(dec);
-        uint256 w = uint256(whole) * 1e18;
+    // Therefore the prices can be in [0.0001, 65535.9999]
+    function _unpackPrice(bytes4 _price, uint256 _scale) private pure returns (uint256) {
+        uint16 whole = uint16(bytes2(_price));
+        uint16 decimal = uint16(bytes2(_price << 16));
+        uint256 w = whole * _scale;
+        // reason this is not more is:
+        // can't express 0.7 or 0.8 if allow 1 to 65535
+        // if 0 to 9999 then you can
         if (decimal > 9999) {
             decimal = 9999;
         }
-        bool find = true;
-        uint16 divisor = 10;
-        uint16 res = 1;
-        while (find) {
-            res = decimal / divisor;
-            if (res == 0) {
-                find = false;
-            } else {
-                divisor *= 10;
-            }
+        // scaling appropriately the decimal
+        // appropriately means by: _scale / (10 * (5 - num digits in decimal))
+        uint16 remainder = decimal;
+        uint8 decimals = 0;
+        while (remainder != 0) {
+            remainder = remainder / 10;
+            decimals++;
         }
-        uint256 d = decimal * (1e18 / uint256(divisor));
-        uint256 price = d + w;
+        require(_scale > decimals, "invalid");
+        uint256 d = (decimal * _scale) / decimals;
+        uint256 price = w + d;
+        require(price >= w, "invalid price");
+        if (price == 0) {
+          price = _scale / 10000;
+        }
         return price;
     }
 
-    function setRentFee(uint256 _rentFee) public onlyOwner {
+    function setRentFee(uint256 _rentFee) external onlyOwner {
+        require(_rentFee < 10000, "1 cannot be taking 100 pct fee");
         rentFee = _rentFee;
     }
 
-    function setNftPriceFee(uint256 _nftPriceFee) public onlyOwner {
-        nftPriceFee = _nftPriceFee;
-    }
-
-    function setBeneficiary(address payable _newBeneficiary) public onlyOwner {
+    function setBeneficiary(address payable _newBeneficiary) external onlyOwner {
         beneficiary = _newBeneficiary;
     }
 }
