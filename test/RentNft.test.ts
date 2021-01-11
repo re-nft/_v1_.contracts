@@ -59,15 +59,16 @@ const setup = deployments.createFixture(async () => {
 
 // - fork off the mainnet to test the ChiGasSaver
 
+type lendBatchArgs = {
+  tokenIds: number[];
+  maxRentDurations?: number[];
+  dailyRentPrices?: number[];
+  nftPrices?: number[];
+  expectedLendingIds?: number[];
+};
+
 describe('RentNft', function () {
   context('Lending', async function () {
-    type lendBatchArgs = {
-      tokenIds: number[];
-      maxRentDurations?: number[];
-      dailyRentPrices?: number[];
-      nftPrices?: number[];
-      expectedLendingIds?: number[];
-    };
     let RentNft: RentNftT;
     let ERC721: ERC721T;
     let deployer: string;
@@ -215,6 +216,72 @@ describe('RentNft', function () {
       RentNft = setupObj.RentNft;
       ERC721 = setupObj.ERC721;
       deployer = setupObj.deployer;
+    });
+    // todo: test with various paymentTokens in a single array?
+    const lendBatch = async ({
+      tokenIds,
+      paymentTokens,
+      maxRentDurations = [],
+      dailyRentPrices = [],
+      nftPrices = [],
+      expectedLendingIds = [],
+    }: lendBatchArgs & {paymentTokens: number[]}) => {
+      let _maxRentDurations = maxRentDurations;
+      let _dailyRentPrices = dailyRentPrices;
+      let _nftPrices = nftPrices;
+      let _expectedLendingIds = expectedLendingIds;
+      if (maxRentDurations.length === 0) {
+        _maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION);
+      }
+      if (dailyRentPrices.length === 0) {
+        _dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE);
+      }
+      if (nftPrices.length === 0) {
+        _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
+      }
+      if (expectedLendingIds.length === 0) {
+        _expectedLendingIds = tokenIds.map((v, ix) => ix + 1);
+      }
+      const txn = await RentNft.lend(
+        Array(tokenIds.length).fill(ERC721.address),
+        tokenIds,
+        _maxRentDurations,
+        _dailyRentPrices,
+        _nftPrices,
+        paymentTokens
+      );
+      const receipt = await txn.wait();
+      const e = getEvents(receipt.events ?? [], 'Lent');
+      expect(e.length).to.eq(tokenIds.length);
+      for (let i = 0; i < tokenIds.length; i++) {
+        const event = e[i].args;
+        if (!event) throw new Error('No args');
+        const {
+          nftAddress,
+          tokenId: _tokenId,
+          lendingId,
+          lenderAddress,
+          maxRentDuration,
+          dailyRentPrice,
+          nftPrice,
+          paymentToken,
+        } = event;
+        expect(nftAddress).to.eq(ERC721.address);
+        expect(_tokenId).to.eq(tokenIds[i]);
+        expect(lendingId).to.eq(_expectedLendingIds[i]);
+        expect(lenderAddress).to.eq(deployer);
+        expect(maxRentDuration).to.eq(MAX_RENT_DURATION);
+        expect(dailyRentPrice).to.eq(DAILY_RENT_PRICE);
+        expect(nftPrice).to.eq(NFT_PRICE);
+        expect(paymentToken).to.eq(paymentTokens[i]);
+        const newNftOwner = await ERC721.ownerOf(tokenIds[i]);
+        expect(newNftOwner).to.eq(RentNft.address);
+      }
+    };
+    it('rents ok', async () => {
+      const tokenIds = [1];
+      const eth = 1;
+      await lendBatch({tokenIds, paymentTokens: [eth]});
     });
   });
   context('Returning', async function () {});
