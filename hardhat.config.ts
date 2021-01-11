@@ -5,8 +5,12 @@ import 'hardhat-deploy-ethers';
 import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-etherscan';
 import '@symfoni/hardhat-react';
-import 'hardhat-typechain';
-import '@typechain/ethers-v5';
+// * due to auto-generation the tests run much slower
+// * unless this becomes opt-in, remove the comment out
+// * to generate the new types
+// * relating github issue: https://github.com/rhlsthrm/hardhat-typechain/issues/12
+// import 'hardhat-typechain';
+// import '@typechain/ethers-v5';
 import {node_url, accounts} from './utils/network';
 
 const config: HardhatUserConfig = {

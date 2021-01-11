@@ -51,7 +51,7 @@
     "format:fix": "prettier --write \"**/*.{ts,js,sol}\"",
     "compile": "hardhat compile",
     "void:deploy": "hardhat deploy",
-    "test": "cross-env HARDHAT_DEPLOY_FIXTURE=true HARDHAT_COMPILE=true mocha --bail --recursive test",
+    "test": "cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
     "gas": "cross-env REPORT_GAS=true hardhat test",
     "dev": "hardhat node --reset --watch --export contractsInfo.json",
     "local:dev": "hardhat --network localhost deploy --watch",
