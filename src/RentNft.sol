@@ -345,48 +345,22 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         }
     }
 
-    // We can't use uint256 for prices in the struct because
-    // we must fit our struct in a single 32 byte chunk.
-    // Since, no-one in their right mind will ever pay
-    // $65k to rent an NFT for a single day, we have
-    // set up this constraint on the prices that they
-    // both are uint32.
-    // This constraint helps save us some extra 40k
-    // in gas, that you dear lender and reader would pay.
-    // So working under these constraints, the first 4 hexbytes
-    // of the packed price contain the whole number information,
-    // whereas the last 4 bytes represent the decimal portion
-    // ----- Examples
-    // 0x000f000f is 16.0016
-    // 0x001f0001 is 17.0001
-    // ----- Constraints
-    // The maximum whole number is therefore 65535
-    // The maximum decimal is 0.9999
-    // Therefore the prices can be in [0.0001, 65535.9999]
-    function _unpackPrice(bytes4 _price, uint256 _scale) private pure returns (uint256) {
+    function _unpackPrice(bytes4 _price, uint256 _scale) internal pure returns (uint256) {
         uint16 whole = uint16(bytes2(_price));
         uint16 decimal = uint16(bytes2(_price << 16));
+        uint256 decimalScale = _scale / 10000;
+        if (whole > 9999) {
+            whole = 9999;
+        }        
         uint256 w = whole * _scale;
-        // reason this is not more is:
-        // can't express 0.7 or 0.8 if allow 1 to 65535
-        // if 0 to 9999 then you can
         if (decimal > 9999) {
             decimal = 9999;
         }
-        // scaling appropriately the decimal
-        // appropriately means by: _scale / (10 * (5 - num digits in decimal))
-        uint16 remainder = decimal;
-        uint8 decimals = 0;
-        while (remainder != 0) {
-            remainder = remainder / 10;
-            decimals++;
-        }
-        require(_scale > decimals, "invalid");
-        uint256 d = (decimal * _scale) / decimals;
+        uint256 d = decimal * decimalScale;
         uint256 price = w + d;
         require(price >= w, "invalid price");
         if (price == 0) {
-            price = _scale / 10000;
+            price = decimalScale;
         }
         return price;
     }

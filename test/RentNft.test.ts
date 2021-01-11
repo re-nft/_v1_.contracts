@@ -172,8 +172,39 @@ describe('RentNft', function () {
   });
   context('Price Unpacking', async function () {
     let Utils: UtilsT;
-
-    it('unpacks well', async () => {});
+    const DP18 = ethers.utils.parseEther('1');
+    beforeEach(async () => {
+      const o = await setup();
+      Utils = o.Utils;
+    });
+    it('unpacks valid number', async () => {
+      const price = '0x00010001';
+      const unpacked = await Utils._unpackPrice(price, DP18);
+      expect(unpacked).to.be.equal(ethers.utils.parseEther('1.0001'));
+    });
+    it('unpacks zero into 0.0001', async () => {
+      const price = '0x00000000';
+      const unpacked = await Utils._unpackPrice(price, DP18);
+      expect(unpacked).to.be.equal(ethers.utils.parseEther('0.0001'));
+    });
+    it('unpacks max correctly', async () => {
+      const price = '0xffffffff';
+      const unpacked = await Utils._unpackPrice(price, DP18);
+      expect(unpacked).to.be.equal(ethers.utils.parseEther('9999.9999'));
+    });
+    it('unpacks 0.0001 correctly', async () => {
+      const price = '0x00000001';
+      const unpacked = await Utils._unpackPrice(price, DP18);
+      expect(unpacked).to.be.equal(ethers.utils.parseEther('0.0001'));
+    });
+    it('unpacks DP12 corrctly', async () => {
+      const price = '0x00020003';
+      const unpacked = await Utils._unpackPrice(
+        price,
+        ethers.utils.parseUnits('1', 'szabo')
+      );
+      expect(unpacked).to.be.equal(ethers.utils.parseUnits('2.0003', 'szabo'));
+    });
   });
   context('Renting', async function () {
     let RentNft: RentNftT;
