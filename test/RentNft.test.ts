@@ -331,7 +331,7 @@ describe('RentNft', function () {
         expect(_rentedAt).to.be.equal(rentedAt[i]);
       }
     };
-    it('rents ok', async () => {
+    it('rents ok - one eth', async () => {
       const tokenIds = [1];
       const eth = 1;
       await lendBatch({
@@ -348,6 +348,7 @@ describe('RentNft', function () {
       const renftBalancePre = await ethers.provider.getBalance(
         renftDude.address
       );
+      expect(renftBalancePre).to.be.equal(0);
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
         BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
       );
@@ -362,9 +363,8 @@ describe('RentNft', function () {
       const renftBalancePost = await ethers.provider.getBalance(
         renftDude.address
       );
+      expect(renftBalancePost).to.be.equal(pmtAmount);
       const receipt = await tx.wait();
-      console.log('dudeBalancePre', dudeBalancePre.toString());
-      console.log('dudeBalancePost', dudeBalancePost.toString());
       expect(
         dudeBalancePre.sub(receipt.gasUsed.mul(tx.gasPrice)).sub(pmtAmount)
       ).to.be.equal(dudeBalancePost);
@@ -379,8 +379,69 @@ describe('RentNft', function () {
         rentedAt,
         events,
       });
-      // test that the correct amounts have been taken from the renter
-      // and updated in the contract
+    });
+    it('does not rent when insufficient money sent - eth', async () => {
+      const tokenIds = [1];
+      const eth = 1;
+      await lendBatch({
+        tokenIds,
+        paymentTokens: [eth],
+        maxRentDurations: [3],
+      });
+      const renftDude = (await ethers.getContract('RentNft', dude)) as RentNftT;
+      const nftAddress = [ERC721.address];
+      const tokenId = [1];
+      const lendingId = [1];
+      const rentDuration = [2];
+      await expect(
+        renftDude.rent(nftAddress, tokenId, lendingId, rentDuration, {value: 0})
+      ).to.be.revertedWith('insufficient amount');
+    });
+    it('rents ok - one erc20', async () => {
+      const tokenIds = [1];
+      const erc20 = 2;
+      await lendBatch({
+        tokenIds,
+        paymentTokens: [erc20],
+        maxRentDurations: [10],
+      });
+      const renftDude = (await ethers.getContract('RentNft', dude)) as RentNftT;
+      const erc20Dude = (await ethers.getContract('MyERC20', dude)) as ERC20T;
+      const nftAddress = [ERC721.address];
+      const lendingId = [1];
+      const rentDuration = [2];
+      const sendDudeAmt = ethers.utils.parseEther('1000');
+      await ERC20.transfer(dude.address, sendDudeAmt).then(() => true);
+      await erc20Dude.approve(renftDude.address, sendDudeAmt);
+      const dudeBalancePre = await ERC20.balanceOf(dude.address);
+      expect(dudeBalancePre).to.be.equal(sendDudeAmt);
+      const renftBalancePre = await ERC20.balanceOf(renftDude.address);
+      expect(renftBalancePre).to.be.equal(0);
+      const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
+        BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
+      );
+      const tx = await renftDude.rent(
+        nftAddress,
+        tokenIds,
+        lendingId,
+        rentDuration
+      );
+      const receipt = await tx.wait();
+      const dudeBalancePost = await ERC20.balanceOf(dude.address);
+      const renftBalancePost = await ERC20.balanceOf(renftDude.address);
+      expect(renftBalancePost).to.be.equal(pmtAmount);
+      expect(dudeBalancePre.sub(pmtAmount)).to.be.equal(dudeBalancePost);
+      const rentedAt = [(await ethers.provider.getBlock('latest')).timestamp];
+      const events = receipt.events ?? [];
+      validateRented({
+        nftAddress,
+        tokenId: tokenIds,
+        lendingId,
+        renterAddress: [dude.address],
+        rentDuration,
+        rentedAt,
+        events,
+      });
     });
     // does not allow to re-rent the rented NFT
     // fails if the array args of unequal lengths
