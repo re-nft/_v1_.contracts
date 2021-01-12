@@ -349,7 +349,7 @@ describe('RentNft', function () {
         renftDude.address
       );
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
-        unpackPrice(rentDuration[0] * DAILY_RENT_PRICE, DP18)
+        BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
       );
       const tx = await renftDude.rent(
         nftAddress,
