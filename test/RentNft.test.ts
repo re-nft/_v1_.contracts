@@ -18,6 +18,11 @@ const getEvents = (events: Event[], name: string) => {
   return events.filter((e) => e?.event?.toLowerCase() === name.toLowerCase());
 };
 
+const advanceTime = async (seconds: number) => {
+  await ethers.provider.send('evm_increaseTime', [seconds]);
+  await ethers.provider.send('evm_mine', []);
+};
+
 const setup = deployments.createFixture(async () => {
   await deployments.fixture('Resolver');
   await deployments.fixture('ERC20');
@@ -207,6 +212,8 @@ describe('RentNft', function () {
       expect(unpacked).to.be.equal(ethers.utils.parseUnits('2.0003', 'szabo'));
     });
   });
+  // todo: test with various paymentTokens in a single array?
+  // todo: test for max rent duration exceeded
   context('Renting', async function () {
     let RentNft: RentNftT;
     let ERC721: ERC721T;
@@ -221,7 +228,6 @@ describe('RentNft', function () {
       dude = setupObj.signers[1];
       lady = setupObj.signers[2];
     });
-    // todo: test with various paymentTokens in a single array?
     const lendBatch = async ({
       tokenIds,
       paymentTokens,
@@ -241,7 +247,7 @@ describe('RentNft', function () {
       if (nftPrices.length === 0) {
         _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
       }
-      const txn = await RentNft.lend(
+      await RentNft.lend(
         Array(tokenIds.length).fill(ERC721.address),
         tokenIds,
         _maxRentDurations,
@@ -249,24 +255,74 @@ describe('RentNft', function () {
         _nftPrices,
         paymentTokens
       );
-      const receipt = await txn.wait();
-      const e = getEvents(receipt.events ?? [], 'Lent');
-      expect(e.length).to.eq(tokenIds.length);
+    };
+    const validateRented = ({
+      nftAddress,
+      tokenId,
+      lendingId,
+      renterAddress,
+      rentDuration,
+      rentedAt,
+      events,
+    }: {
+      nftAddress: string[];
+      tokenId: number[];
+      lendingId: number[];
+      renterAddress: string[];
+      rentDuration: number[];
+      rentedAt: number[];
+      events: Event[];
+    }) => {
+      const es = getEvents(events, 'Rented');
+      for (let i = 0; i < es.length; i++) {
+        const event = es[i].args;
+        if (!event) throw new Error('no args');
+        const {
+          nftAddress: _nftAddress,
+          tokenId: _tokenId,
+          lendingId: _lendingId,
+          renterAddress: _renterAddress,
+          rentDuration: _rentDuration,
+          rentedAt: _rentedAt,
+        } = event;
+        expect(_nftAddress).to.be.equal(nftAddress[i]);
+        expect(_tokenId).to.be.equal(tokenId[i]);
+        expect(_lendingId).to.be.equal(lendingId[i]);
+        expect(_renterAddress).to.be.equal(renterAddress[i]);
+        expect(_rentDuration).to.be.equal(rentDuration[i]);
+        expect(_rentedAt).to.be.equal(rentedAt[i]);
+      }
     };
     it('rents ok', async () => {
       const tokenIds = [1];
       const eth = 1;
       await lendBatch({tokenIds, paymentTokens: [eth], maxRentDurations: [3]});
-      const renftD = (await ethers.getContract('RentNft', dude)) as RentNftT;
-      const _nft = [ERC721.address];
-      const _tokenId = [1];
-      const _id = [1];
-      const _rentDuration = [2];
-      // todo: test for max rent duration exceeded
-      const tx = await renftD.rent(_nft, _tokenId, _id, _rentDuration);
+      const renftDude = (await ethers.getContract('RentNft', dude)) as RentNftT;
+      const nftAddress = [ERC721.address];
+      const tokenId = [1];
+      const lendingId = [1];
+      const rentDuration = [2];
+      const tx = await renftDude.rent(
+        nftAddress,
+        tokenId,
+        lendingId,
+        rentDuration
+      );
       const receipt = await tx.wait();
+      const rentedAt = [(await ethers.provider.getBlock('latest')).timestamp];
+      const events = receipt.events ?? [];
+      validateRented({
+        nftAddress,
+        tokenId,
+        lendingId,
+        renterAddress: [dude.address],
+        rentDuration,
+        rentedAt,
+        events,
+      });
     });
   });
-  context('Returning', async function () {});
-  context('Collateral Claiming', async function () {});
+
+  // context('Returning', async function () {});
+  // context('Collateral Claiming', async function () {});
 });
