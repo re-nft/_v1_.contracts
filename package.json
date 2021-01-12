@@ -52,7 +52,7 @@
     "compile": "hardhat compile",
     "void:deploy": "hardhat deploy",
     "test": "cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
-    "gas": "cross-env REPORT_GAS=true hardhat test",
+    "gas": "cross-env HARDHAT_DEPLOY_FIXTURE=true REPORT_GAS=true hardhat test",
     "dev": "hardhat node --reset --watch --export contractsInfo.json",
     "local:dev": "hardhat --network localhost deploy --watch",
     "local:deploy": "hardhat --network localhost deploy",

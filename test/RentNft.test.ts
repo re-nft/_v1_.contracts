@@ -7,12 +7,34 @@ import {ERC20 as ERC20T} from '../frontend/src/hardhat/typechain/ERC20';
 import {MyERC721 as ERC721T} from '../frontend/src/hardhat/typechain/MyERC721';
 import {Utils as UtilsT} from '../frontend/src/hardhat/typechain/Utils';
 import {SignerWithAddress} from 'hardhat-deploy-ethers/dist/src/signer-with-address';
+import {BigNumber, BigNumberish} from 'ethers';
 
 // default values
-const MAX_RENT_DURATION = 1;
-const DAILY_RENT_PRICE = 2;
-const NFT_PRICE = 3;
-const PAYMENT_TOKEN = 2;
+const MAX_RENT_DURATION = 1; // 1 day
+const DAILY_RENT_PRICE = 2; // 2 full tokens or 2 ETH
+const NFT_PRICE = 3; // 3 full tokens or 3 ETH
+const PAYMENT_TOKEN = 2; // default token is DAI (our ERC20)
+const PRICE_BITSIZE = 32;
+const DP18 = ethers.utils.parseEther('1');
+
+const decimalToPaddedHexString = (number: number, bitsize: number) => {
+  const byteCount = Math.ceil(bitsize / 8);
+  const maxBinValue = Math.pow(2, bitsize) - 1;
+
+  /* In node.js this function fails for bitsize above 32bits */
+  if (bitsize > 32) throw 'number above maximum value';
+
+  /* Conversion to unsigned form based on  */
+  if (number < 0) number = maxBinValue + number + 1;
+
+  return (
+    '0x' +
+    (number >>> 0)
+      .toString(16)
+      .toUpperCase()
+      .padStart(byteCount * 2, '0')
+  );
+};
 
 const getEvents = (events: Event[], name: string) => {
   return events.filter((e) => e?.event?.toLowerCase() === name.toLowerCase());
@@ -21,6 +43,20 @@ const getEvents = (events: Event[], name: string) => {
 const advanceTime = async (seconds: number) => {
   await ethers.provider.send('evm_increaseTime', [seconds]);
   await ethers.provider.send('evm_mine', []);
+};
+
+// price is bytes4 in Solidity
+const unpackPrice = (price: number, scale: BigNumber) => {
+  // price is from 1 to 4294967295. i.e. from 0x00000001 to 0xffffffff
+  const numHex = decimalToPaddedHexString(price, PRICE_BITSIZE).slice(2);
+  let whole = parseInt(numHex.slice(0, 4), 16);
+  let decimal = parseInt(numHex.slice(4), 16);
+  if (whole > 9999) whole = 9999;
+  if (decimal > 9999) decimal = 9999;
+  const w = BigNumber.from(whole).mul(scale);
+  const d = BigNumber.from(decimal).mul(scale.div(10_000));
+  const _price = w.add(d);
+  return _price;
 };
 
 const setup = deployments.createFixture(async () => {
@@ -178,7 +214,7 @@ describe('RentNft', function () {
   });
   context('Price Unpacking', async function () {
     let Utils: UtilsT;
-    const DP18 = ethers.utils.parseEther('1');
+
     beforeEach(async () => {
       const o = await setup();
       Utils = o.Utils;
@@ -217,6 +253,7 @@ describe('RentNft', function () {
   context('Renting', async function () {
     let RentNft: RentNftT;
     let ERC721: ERC721T;
+    let ERC20: ERC20T;
     let deployer: string;
     let dude: SignerWithAddress;
     let lady: SignerWithAddress;
@@ -224,6 +261,7 @@ describe('RentNft', function () {
       const setupObj = await setup();
       RentNft = setupObj.RentNft;
       ERC721 = setupObj.ERC721;
+      ERC20 = setupObj.ERC20;
       deployer = setupObj.deployer;
       dude = setupObj.signers[1];
       lady = setupObj.signers[2];
@@ -296,19 +334,40 @@ describe('RentNft', function () {
     it('rents ok', async () => {
       const tokenIds = [1];
       const eth = 1;
-      await lendBatch({tokenIds, paymentTokens: [eth], maxRentDurations: [3]});
+      await lendBatch({
+        tokenIds,
+        paymentTokens: [eth],
+        maxRentDurations: [3],
+      });
       const renftDude = (await ethers.getContract('RentNft', dude)) as RentNftT;
       const nftAddress = [ERC721.address];
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [2];
+      const dudeBalancePre = await ethers.provider.getBalance(dude.address);
+      const renftBalancePre = await ethers.provider.getBalance(
+        renftDude.address
+      );
+      const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
+        unpackPrice(rentDuration[0] * DAILY_RENT_PRICE, DP18)
+      );
       const tx = await renftDude.rent(
         nftAddress,
         tokenId,
         lendingId,
-        rentDuration
+        rentDuration,
+        {value: pmtAmount}
+      );
+      const dudeBalancePost = await ethers.provider.getBalance(dude.address);
+      const renftBalancePost = await ethers.provider.getBalance(
+        renftDude.address
       );
       const receipt = await tx.wait();
+      console.log('dudeBalancePre', dudeBalancePre.toString());
+      console.log('dudeBalancePost', dudeBalancePost.toString());
+      expect(
+        dudeBalancePre.sub(receipt.gasUsed.mul(tx.gasPrice)).sub(pmtAmount)
+      ).to.be.equal(dudeBalancePost);
       const rentedAt = [(await ethers.provider.getBlock('latest')).timestamp];
       const events = receipt.events ?? [];
       validateRented({
@@ -320,9 +379,23 @@ describe('RentNft', function () {
         rentedAt,
         events,
       });
+      // test that the correct amounts have been taken from the renter
+      // and updated in the contract
     });
+    // does not allow to re-rent the rented NFT
+    // fails if the array args of unequal lengths
+    // test multiple payment tokens in a single transaction
+    // test one token - eth
+    // test one token - anything else
+    // test one token - anything else different dps
+    // test multiple tokens - no eth
+    // test multiple tokens - one eth
+    // test multiple tokens - two eth
+    // test multiple tokens - diff dps
+    // test multiple tokens - eth and diff dps
   });
 
   // context('Returning', async function () {});
   // context('Collateral Claiming', async function () {});
+  // context('Integration', async function () {});
 });

@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./Resolver.sol";
+import "hardhat/console.sol";
 
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     using SafeERC20 for ERC20;
@@ -177,17 +178,29 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             uint256 decimals = 18;
             uint8 paymentTokenIx = uint8(item.lending.paymentToken);
             address paymentToken = resolver.getPaymentToken(paymentTokenIx);
+            console.log("paymentTokenIx %s", paymentTokenIx);
             bool isERC20 = paymentTokenIx > 1;
+            console.log("is ERC20 %s", isERC20);
             if (isERC20) {
                 // 1 marks ETH
                 decimals = ERC20(paymentToken).decimals();
             }
-            uint256 rentPrice = _rentDur * _unpackPrice(item.lending.dailyRentPrice, decimals); // max is 1825 * 65535. Nowhere near the overflow
-            uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
+            console.log("decimals %s", decimals);
+            // uint256 scale = 10 ** decimals;
+            uint256 rentPrice = _rentDur * _unpackPrice(item.lending.dailyRentPrice, 10 ** decimals); // max is 1825 * 65535. Nowhere near the overflow
+            uint256 nftPrice = _unpackPrice(item.lending.nftPrice, 10 ** decimals);
+            console.log("rentDur %s", _rentDur);
+            console.log("rentPrice %s", rentPrice);
+            console.log("nftPrice %s", nftPrice);
+            // collateral may be set to zero, if the lender wishes so
+            require(rentPrice > 0, "rent price is zero");
             uint256 upfrontPayment = rentPrice + nftPrice;
             if (isERC20) {
+                console.log("sending tokens %s", upfrontPayment);
                 ERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
             } else {
+                console.log("upfrontPayment %s", upfrontPayment);
+                console.log("msg.value to rent %s", msg.value);
                 require(msg.value == upfrontPayment, "insufficient amount");
             }
             item.renting.renterAddress = msg.sender;
@@ -233,8 +246,9 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             // 1 marks ETH
             decimals = ERC20(paymentToken).decimals();
         }
-        uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
-        uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, decimals);
+        uint256 scale = 10 ** decimals;
+        uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
+        uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, scale);
         // compute money owed from the rentedAt period until block.timestamp
         // max is the uint16 for maxRentDuration
         // the largest value here is max(uint16) * 86400
@@ -284,8 +298,9 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             // 1 marks ETH
             decimals = ERC20(paymentToken).decimals();
         }
-        uint256 nftPrice = _unpackPrice(item.lending.nftPrice, decimals);
-        uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, decimals);
+        uint256 scale = 10 ** decimals;
+        uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
+        uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, scale);
         uint256 maxRentPayment = rentPrice * item.renting.rentDuration;
         uint256 takenFee = _takeFee(maxRentPayment, Resolver.PaymentToken(paymentTokenIx));
         uint256 finalAmt = maxRentPayment + nftPrice;
@@ -345,19 +360,27 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         }
     }
 
-    function _unpackPrice(bytes4 _price, uint256 _scale) internal pure returns (uint256) {
+    /**
+     * @param _scale - if 18 decimal places, then should 1000000000000000000
+     */
+    function _unpackPrice(bytes4 _price, uint256 _scale) internal view returns (uint256) {
+        console.log("_unpackPrice: _price %s, _scale: %s", uint32(_price), _scale);
         uint16 whole = uint16(bytes2(_price));
         uint16 decimal = uint16(bytes2(_price << 16));
+        console.log("_unpackPrice: whole %s, decimal %s", whole, decimal);
         uint256 decimalScale = _scale / 10000;
         if (whole > 9999) {
             whole = 9999;
-        }        
+        }
         uint256 w = whole * _scale;
         if (decimal > 9999) {
             decimal = 9999;
         }
+        console.log("_unpackPrice: decimalScale %s", decimalScale);
         uint256 d = decimal * decimalScale;
+        console.log("_unpackPrice: d %s", d);
         uint256 price = w + d;
+        console.log("_unpackPrice: price %s", price);
         require(price >= w, "invalid price");
         if (price == 0) {
             price = decimalScale;
