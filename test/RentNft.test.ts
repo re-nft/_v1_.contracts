@@ -843,7 +843,41 @@ describe('RentNft', function () {
     });
   });
 
-  // context('Returning', async function () {});
-  // context('Collateral Claiming', async function () {});
-  // context('Integration', async function () {});
+  context('Returning', async function () {
+    it('returns ok - one eth', async () => {});
+    it('returns ok - one eth one erc20', async () => {});
+    it('reverts if one of the returned NFTs is past the rent date', async () => {});
+  });
+
+  context('Collateral Claiming', async function () {
+    it('claims collateral ok - one eth', async () => {});
+
+    it('claims colalteral ok - one eth one erc20', async () => {});
+
+    it('claims collateral ok - two eth', async () => {});
+
+    it('claims collateral ok - two eth one erc20', async () => {});
+
+    it('claims collateral ok - two eth two erc20', async () => {});
+
+    it('claims collateral ok - one erc20', async () => {});
+
+    it('claims collateral ok - two erc20', async () => {});
+
+    it('does not claim collateral if not time', async () => {});
+
+    it('does not claim collateral on returned NFTs', async () => {});
+
+    it('does not claim collateral on unrented NFTs', async () => {});
+
+    it('reverts the batch if one claim is invalid', async () => {});
+  });
+
+  context('Integration', async function () {
+    it('relends ok', async () => {});
+
+    it('A lends, B rents, B lends, C rents, C defaults', async () => {});
+
+    it('relends 10 times ok', async () => {});
+  });
 });
