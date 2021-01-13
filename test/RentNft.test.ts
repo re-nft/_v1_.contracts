@@ -1,7 +1,10 @@
 import {expect} from './chai-setup';
 import {ethers, deployments, getNamedAccounts} from 'hardhat';
 import {Event} from '@ethersproject/contracts/lib';
-import {RentNft as RentNftT} from '../frontend/src/hardhat/typechain/RentNft';
+import {
+  RentNft,
+  RentNft as RentNftT,
+} from '../frontend/src/hardhat/typechain/RentNft';
 import {Resolver as ResolverT} from '../frontend/src/hardhat/typechain/Resolver';
 import {ERC20 as ERC20T} from '../frontend/src/hardhat/typechain/ERC20';
 import {MyERC721 as ERC721T} from '../frontend/src/hardhat/typechain/MyERC721';
@@ -57,6 +60,33 @@ const unpackPrice = (price: number, scale: BigNumber) => {
   const d = BigNumber.from(decimal).mul(scale.div(10_000));
   const _price = w.add(d);
   return _price;
+};
+
+// given the target price, give back the hex equivalent
+const packPrice = (price: number) => {
+  if (price > 9999.9999) throw new Error('too high');
+  if (price < 0.0001) throw new Error('too low');
+  const stringVersion = price.toString();
+  const parts = stringVersion.split('.');
+  let res: number;
+  if (parts.length == 2) {
+    const whole = parts[0];
+    let decimal = parts[1];
+    while (decimal.length < 4) {
+      decimal += '0';
+    }
+    const wholeHex = decimalToPaddedHexString(Number(whole), 16);
+    const decimalHex = decimalToPaddedHexString(Number(decimal), 16);
+    const hexRepr = wholeHex.slice(2).concat(decimalHex.slice(2));
+    res = parseInt(hexRepr, 16);
+  } else {
+    if (parts.length != 1) throw new Error('price packing issue');
+    const whole = parts[0];
+    const wholeHex = decimalToPaddedHexString(Number(whole), 16);
+    const decimalHex = '0000';
+    res = parseInt(wholeHex.slice(2).concat(decimalHex), 16);
+  }
+  return res;
 };
 
 const setup = deployments.createFixture(async () => {
@@ -844,9 +874,160 @@ describe('RentNft', function () {
   });
 
   context('Returning', async function () {
-    it('returns ok - one eth', async () => {});
-    it('returns ok - one eth one erc20', async () => {});
+    let RentNft: RentNftT;
+    let ERC721: ERC721T;
+    let dude: SignerWithAddress;
+
+    beforeEach(async () => {
+      const setupObj = await setup();
+      RentNft = setupObj.RentNft;
+      ERC721 = setupObj.ERC721;
+      dude = setupObj.signers[1];
+    });
+
+    const lendBatch = async ({
+      tokenIds,
+      paymentTokens,
+      maxRentDurations = [],
+      dailyRentPrices = [],
+      nftPrices = [],
+    }: lendBatchArgs & {paymentTokens: number[]}) => {
+      let _maxRentDurations = maxRentDurations;
+      let _dailyRentPrices = dailyRentPrices;
+      let _nftPrices = nftPrices;
+      if (maxRentDurations.length === 0) {
+        _maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION);
+      }
+      if (dailyRentPrices.length === 0) {
+        _dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE);
+      }
+      if (nftPrices.length === 0) {
+        _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
+      }
+      await RentNft.lend(
+        Array(tokenIds.length).fill(ERC721.address),
+        tokenIds,
+        _maxRentDurations,
+        _dailyRentPrices,
+        _nftPrices,
+        paymentTokens
+      );
+    };
+
+    const validateReturned = ({
+      nftAddress,
+      tokenId,
+      lendingId,
+      renterAddress,
+      returnedAt,
+      events,
+    }: {
+      nftAddress: string[];
+      tokenId: number[];
+      lendingId: number[];
+      renterAddress: string[];
+      returnedAt: number[];
+      events: Event[];
+    }) => {
+      const es = getEvents(events, 'Rented');
+      for (let i = 0; i < es.length; i++) {
+        const event = es[i].args;
+        if (!event) throw new Error('no args');
+        const {
+          nftAddress: _nftAddress,
+          tokenId: _tokenId,
+          lendingId: _lendingId,
+          renterAddress: _renterAddress,
+          returnedAt: returnedAt,
+        } = event;
+        expect(_nftAddress).to.be.equal(nftAddress[i]);
+        expect(_tokenId).to.be.equal(tokenId[i]);
+        expect(_lendingId).to.be.equal(lendingId[i]);
+        expect(_renterAddress).to.be.equal(renterAddress[i]);
+        expect(returnedAt).to.be.equal(returnedAt[i]);
+      }
+    };
+
+    it('returns ok - one eth', async () => {
+      const rentDuration = 1;
+      const dailyRentPrice = packPrice(1.6921);
+      const nftPrice = packPrice(0.0001);
+      await lendBatch({
+        tokenIds: [1],
+        paymentTokens: [1],
+        maxRentDurations: [1],
+        dailyRentPrices: [dailyRentPrice],
+        nftPrices: [nftPrice],
+      });
+      const rentNftDude = (await ethers.getContract(
+        'RentNft',
+        dude.address
+      )) as RentNftT;
+      const erc721Dude = (await ethers.getContract(
+        'MyERC721',
+        dude.address
+      )) as ERC721T;
+      const pmtAmt = ethers.utils.parseEther(
+        (rentDuration * 1.6921 + 0.0001).toString()
+      );
+      await rentNftDude.rent([ERC721.address], [1], [1], [rentDuration], {
+        value: pmtAmt,
+      });
+      await erc721Dude.setApprovalForAll(rentNftDude.address, true);
+      const tx = await rentNftDude.returnIt([ERC721.address], [1], [1]);
+      const latestBlock = await ethers.provider.getBlock('latest');
+      const receipt = await tx.wait();
+      validateReturned({
+        events: receipt.events ?? [],
+        nftAddress: [ERC721.address],
+        tokenId: [1],
+        lendingId: [1],
+        renterAddress: [dude.address],
+        returnedAt: [latestBlock.timestamp],
+      });
+      // todo validate that the correct amounts have been returned to me
+    });
+    it('returns ok - one eth one erc20', async () => {
+      const rentDuration = 1;
+      const dailyRentPrice = packPrice(1.6921);
+      const nftPrice = packPrice(0.0001);
+      await lendBatch({
+        tokenIds: [1],
+        paymentTokens: [1],
+        maxRentDurations: [1],
+        dailyRentPrices: [dailyRentPrice],
+        nftPrices: [nftPrice],
+      });
+      const rentNftDude = (await ethers.getContract(
+        'RentNft',
+        dude.address
+      )) as RentNftT;
+      const erc721Dude = (await ethers.getContract(
+        'MyERC721',
+        dude.address
+      )) as ERC721T;
+      const pmtAmt = ethers.utils.parseEther(
+        (rentDuration * 1.6921 + 0.0001).toString()
+      );
+      await rentNftDude.rent([ERC721.address], [1], [1], [rentDuration], {
+        value: pmtAmt,
+      });
+      await erc721Dude.setApprovalForAll(rentNftDude.address, true);
+      const tx = await rentNftDude.returnIt([ERC721.address], [1], [1]);
+      const latestBlock = await ethers.provider.getBlock('latest');
+      const receipt = await tx.wait();
+      validateReturned({
+        events: receipt.events ?? [],
+        nftAddress: [ERC721.address],
+        tokenId: [1],
+        lendingId: [1],
+        renterAddress: [dude.address],
+        returnedAt: [latestBlock.timestamp],
+      });
+    });
     it('reverts if one of the returned NFTs is past the rent date', async () => {});
+    it('does not return if you are not the renter', async () => {});
+
   });
 
   context('Collateral Claiming', async function () {
@@ -879,5 +1060,10 @@ describe('RentNft', function () {
     it('A lends, B rents, B lends, C rents, C defaults', async () => {});
 
     it('relends 10 times ok', async () => {});
+  });
+
+  context('Admin', async () => {
+    it('sets the rentFee', async () => {});
+    it('sets the beneficiary', async () => {});
   });
 });

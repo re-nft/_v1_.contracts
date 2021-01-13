@@ -15,7 +15,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     // address - 20 byte value -> 160 bits
     uint256 private id = 1;
     // settable by owner and chargeable on the final rent price
-    uint256 public rentFee = 0;
+    uint256 public rentFee = 500;
     // option 1 - transfer fee amounts on every txn
     //          - +: easy implementation
     //          - -: extra 20k gas cost for the sender
