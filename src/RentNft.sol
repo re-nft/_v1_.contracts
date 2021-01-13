@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./Resolver.sol";
-import "hardhat/console.sol";
 
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     using SafeERC20 for ERC20;
@@ -154,6 +153,23 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         }
     }
 
+    struct RentCutie {
+        uint256 tokenId;
+        uint256 id;
+        IERC721 nft;
+        uint256 ethPmtRequired;
+        uint16 rentDuration;
+        uint256 decimals;
+        uint8 paymentTokenIndex;
+        uint256 scale;
+        address paymentToken;
+        bool isERC20;
+        uint256 rentPrice;
+        uint256 nftPrice;
+        uint256 upfrontPayment;
+        uint256 nftLen;
+    }
+
     function rent(
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
@@ -163,51 +179,50 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         require(_nft.length == _tokenId.length, "1 arg arrs diff length");
         require(_tokenId.length == _id.length, "2 arg arrs diff length");
         require(_id.length == _rentDuration.length, "3 arg arrs diff length");
+        RentCutie memory rc;
+        rc.ethPmtRequired = 0;
+        rc.nftLen = _nft.length - 1;
         for (uint256 i = 0; i < _nft.length; i++) {
-            uint256 __tokenId = _tokenId[i];
-            uint256 __id = _id[i];
-            IERC721 __nft = _nft[i];
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(address(__nft), __tokenId, __id))];
+            rc.tokenId = _tokenId[i];
+            rc.id = _id[i];
+            rc.nft = _nft[i];
+            LendingRenting storage item =
+                lendingRenting[keccak256(abi.encodePacked(address(rc.nft), rc.tokenId, rc.id))];
             require(item.renting.renterAddress == address(0), "1 already rented");
             require(item.renting.rentDuration == 0, "2 already rented");
             require(item.renting.rentedAt == 0, "3 already rented");
             require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
-            uint16 _rentDur = _rentDuration[i];
-            require(_rentDur > 0, "should rent for at least a day");
-            require(_rentDur <= item.lending.maxRentDuration, "max rent duration exceeded");
-            uint256 decimals = 18;
-            uint8 paymentTokenIx = uint8(item.lending.paymentToken);
-            address paymentToken = resolver.getPaymentToken(paymentTokenIx);
-            console.log("paymentTokenIx %s", paymentTokenIx);
-            bool isERC20 = paymentTokenIx > 1;
-            console.log("is ERC20 %s", isERC20);
-            if (isERC20) {
+            rc.rentDuration = _rentDuration[i];
+            require(rc.rentDuration > 0, "should rent for at least a day");
+            require(rc.rentDuration <= item.lending.maxRentDuration, "max rent duration exceeded");
+            rc.decimals = 18;
+            rc.paymentTokenIndex = uint8(item.lending.paymentToken);
+            rc.paymentToken = resolver.getPaymentToken(rc.paymentTokenIndex);
+            rc.isERC20 = rc.paymentTokenIndex > 1;
+            if (rc.isERC20) {
                 // 1 marks ETH
-                decimals = ERC20(paymentToken).decimals();
+                rc.decimals = ERC20(rc.paymentToken).decimals();
             }
-            console.log("decimals %s", decimals);
-            // uint256 scale = 10 ** decimals;
-            uint256 rentPrice = _rentDur * _unpackPrice(item.lending.dailyRentPrice, 10 ** decimals); // max is 1825 * 65535. Nowhere near the overflow
-            uint256 nftPrice = _unpackPrice(item.lending.nftPrice, 10 ** decimals);
-            console.log("rentDur %s", _rentDur);
-            console.log("rentPrice %s", rentPrice);
-            console.log("nftPrice %s", nftPrice);
+            rc.scale = 10**rc.decimals;
+            rc.rentPrice = rc.rentDuration * _unpackPrice(item.lending.dailyRentPrice, rc.scale); // max is 1825 * 65535. Nowhere near the overflow
+            rc.nftPrice = _unpackPrice(item.lending.nftPrice, rc.scale);
             // collateral may be set to zero, if the lender wishes so
-            require(rentPrice > 0, "rent price is zero");
-            uint256 upfrontPayment = rentPrice + nftPrice;
-            if (isERC20) {
-                console.log("sending tokens %s", upfrontPayment);
-                ERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
+            require(rc.rentPrice > 0, "rent price is zero");
+            rc.upfrontPayment = rc.rentPrice + rc.nftPrice;
+            if (rc.isERC20) {
+                ERC20(rc.paymentToken).safeTransferFrom(msg.sender, address(this), rc.upfrontPayment);
             } else {
-                console.log("upfrontPayment %s", upfrontPayment);
-                console.log("msg.value to rent %s", msg.value);
-                require(msg.value == upfrontPayment, "insufficient amount");
+                rc.ethPmtRequired += rc.upfrontPayment;
+                // require(msg.value == upfrontPayment, "insufficient amount");
+            }
+            if (i == rc.nftLen) {
+                require(msg.value == rc.ethPmtRequired, "insufficient amount");
             }
             item.renting.renterAddress = msg.sender;
-            item.renting.rentDuration = _rentDur;
+            item.renting.rentDuration = rc.rentDuration;
             item.renting.rentedAt = uint32(block.timestamp);
-            __nft.transferFrom(address(this), msg.sender, __tokenId);
-            emit Rented(address(__nft), __tokenId, __id, msg.sender, _rentDur, uint32(block.timestamp));
+            rc.nft.transferFrom(address(this), msg.sender, rc.tokenId);
+            emit Rented(address(rc.nft), rc.tokenId, rc.id, msg.sender, rc.rentDuration, uint32(block.timestamp));
         }
     }
 
@@ -246,7 +261,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             // 1 marks ETH
             decimals = ERC20(paymentToken).decimals();
         }
-        uint256 scale = 10 ** decimals;
+        uint256 scale = 10**decimals;
         uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
         uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, scale);
         // compute money owed from the rentedAt period until block.timestamp
@@ -298,7 +313,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             // 1 marks ETH
             decimals = ERC20(paymentToken).decimals();
         }
-        uint256 scale = 10 ** decimals;
+        uint256 scale = 10**decimals;
         uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
         uint256 rentPrice = _unpackPrice(item.lending.dailyRentPrice, scale);
         uint256 maxRentPayment = rentPrice * item.renting.rentDuration;
@@ -363,11 +378,9 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     /**
      * @param _scale - if 18 decimal places, then should 1000000000000000000
      */
-    function _unpackPrice(bytes4 _price, uint256 _scale) internal view returns (uint256) {
-        console.log("_unpackPrice: _price %s, _scale: %s", uint32(_price), _scale);
+    function _unpackPrice(bytes4 _price, uint256 _scale) internal pure returns (uint256) {
         uint16 whole = uint16(bytes2(_price));
         uint16 decimal = uint16(bytes2(_price << 16));
-        console.log("_unpackPrice: whole %s, decimal %s", whole, decimal);
         uint256 decimalScale = _scale / 10000;
         if (whole > 9999) {
             whole = 9999;
@@ -376,11 +389,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         if (decimal > 9999) {
             decimal = 9999;
         }
-        console.log("_unpackPrice: decimalScale %s", decimalScale);
         uint256 d = decimal * decimalScale;
-        console.log("_unpackPrice: d %s", d);
         uint256 price = w + d;
-        console.log("_unpackPrice: price %s", price);
         require(price >= w, "invalid price");
         if (price == 0) {
             price = decimalScale;
