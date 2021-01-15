@@ -1015,10 +1015,7 @@ describe('RentNft', function () {
       );
       let latestBlock = await getLatestBlock();
       const rentedAt = latestBlock.timestamp;
-      const lenderBalancePre = await getErc20Balance(
-        renter.erc20,
-        renter.address
-      );
+      const lenderBalancePre = await renter.erc20.balanceOf(lender.address);
       const warpTime = 10_000;
       await advanceTime(warpTime);
       const renterBalancePre = await renter.erc20.balanceOf(renter.address);
@@ -1026,14 +1023,8 @@ describe('RentNft', function () {
       latestBlock = await getLatestBlock();
       const returnedAt = latestBlock.timestamp;
       const _rentDuration = returnedAt - rentedAt;
-      const lenderBalancePost = await getErc20Balance(
-        renter.erc20,
-        lender.address
-      );
-      const renterBalancePost = await getErc20Balance(
-        renter.erc20,
-        renter.address
-      );
+      const lenderBalancePost = await renter.erc20.balanceOf(lender.address);
+      const renterBalancePost = await renter.erc20.balanceOf(renter.address);
       let sendLenderAmt = pmtAmtWoCollateral
         .mul(_rentDuration)
         .div(rentDuration * SECONDS_IN_A_DAY);
@@ -1058,44 +1049,117 @@ describe('RentNft', function () {
       expect(renterBalanceDiff).to.be.equal(sendRenterAmt);
     });
 
-    // it('returns ok - one eth one erc20', async () => {
-    //   const rentDuration = 1;
-    //   const dailyRentPrice = packPrice(1.6921);
-    //   const nftPrice = packPrice(0.0001);
-    //   await lendBatch({
-    //     tokenIds: [1],
-    //     paymentTokens: [1],
-    //     maxRentDurations: [1],
-    //     dailyRentPrices: [dailyRentPrice],
-    //     nftPrices: [nftPrice],
-    //   });
-    //   const rentNftDude = (await getContract(
-    //     'RentNft',
-    //     dude.address
-    //   )) as RentNftT;
-    //   const erc721Dude = (await getContract(
-    //     'MyERC721',
-    //     dude.address
-    //   )) as ERC721T;
-    //   const pmtAmt = ethers.utils.parseEther(
-    //     (rentDuration * 1.6921 + 0.0001).toString()
-    //   );
-    //   await rentNftDude.rent([ERC721.address], [1], [1], [rentDuration], {
-    //     value: pmtAmt,
-    //   });
-    //   await erc721Dude.setApprovalForAll(rentNftDude.address, true);
-    //   const tx = await rentNftDude.returnIt([ERC721.address], [1], [1]);
-    //   const latestBlock = await getLatestBlock();
-    //   const receipt = await tx.wait();
-    //   validateReturned({
-    //     events: receipt.events ?? [],
-    //     nftAddress: [ERC721.address],
-    //     tokenId: [1],
-    //     lendingId: [1],
-    //     renterAddress: [dude.address],
-    //     returnedAt: [latestBlock.timestamp],
-    //   });
-    // });
+    it('returns ok - one eth one erc20', async () => {
+      const rentDurations = [2, 4];
+      const drpEth = 1.6921; // acronym for dailry rental price
+      const colEth = 0.0001; // denotes collateral
+      const drpErc20 = 19.1199;
+      const colErc20 = 8.1929;
+      const dailyRentPriceEth = packPrice(drpEth);
+      const nftPriceEth = packPrice(colEth);
+      const dailyRentPriceErc20 = packPrice(drpErc20);
+      const nftPriceErc20 = packPrice(colErc20);
+      await lendBatch({
+        tokenIds: [1, 2],
+        paymentTokens: [1, 2],
+        maxRentDurations: [3, 365],
+        dailyRentPrices: [dailyRentPriceEth, dailyRentPriceErc20],
+        nftPrices: [nftPriceEth, nftPriceErc20],
+      });
+      // todo: a class like events.args where you can access the members
+      // via both the index and the name. In fact, just copy that class
+      // into my personal utils file (npm package?)
+      const pmtAmts = [
+        ethers.utils.parseEther(
+          (rentDurations[0] * drpEth + colEth).toString()
+        ),
+        ethers.utils.parseEther(
+          (rentDurations[1] * drpErc20 + colErc20).toString()
+        ),
+      ];
+      const pmtAmtsWoCol = [
+        ethers.utils.parseEther((rentDurations[0] * drpEth).toString()),
+        ethers.utils.parseEther((rentDurations[1] * drpErc20).toString()),
+      ];
+
+      await renter.renft.rent(
+        [renter.erc721.address, renter.erc721.address],
+        [1, 2],
+        [1, 2],
+        rentDurations,
+        {
+          value: pmtAmts[0],
+        }
+      );
+
+      let latestBlock = await getLatestBlock();
+      const rentedAt = latestBlock.timestamp;
+      await advanceTime(SECONDS_IN_A_DAY + 1969);
+      const lenderBalancePreEth = await getBalance(lender.address);
+      const renterBalancePreEth = await getBalance(renter.address);
+      const lenderBalancePreErc20 = await renter.erc20.balanceOf(
+        lender.address
+      );
+      const renterBalancePreErc20 = await renter.erc20.balanceOf(
+        renter.address
+      );
+
+      const tx = await renter.renft.returnIt(
+        [renter.erc721.address, renter.erc721.address],
+        [1, 2],
+        [1, 2]
+      );
+
+      latestBlock = await getLatestBlock();
+      const returnedAt = latestBlock.timestamp;
+      const _rentDuration = returnedAt - rentedAt;
+      const lenderBalancePostEth = await getBalance(lender.address);
+      const renterBalancePostEth = await getBalance(renter.address);
+      const lenderBalancePostErc20 = await renter.erc20.balanceOf(
+        lender.address
+      );
+      const renterBalancePostErc20 = await renter.erc20.balanceOf(
+        renter.address
+      );
+      let sendLenderAmtEth = pmtAmtsWoCol[0]
+        .mul(_rentDuration)
+        .div(rentDurations[0] * SECONDS_IN_A_DAY);
+      const sendRenterAmtEth = pmtAmtsWoCol[0]
+        .sub(sendLenderAmtEth)
+        .add(ethers.utils.parseEther(colEth.toString()));
+      let sendLenderAmtErc20 = pmtAmtsWoCol[1]
+        .mul(_rentDuration)
+        .div(rentDurations[1] * SECONDS_IN_A_DAY);
+      const sendRenterAmtErc20 = pmtAmtsWoCol[1]
+        .sub(sendLenderAmtErc20)
+        .add(ethers.utils.parseEther(colErc20.toString()));
+      const feeEth = takeFee(sendLenderAmtEth, rentFee);
+      sendLenderAmtEth = sendLenderAmtEth.sub(feeEth);
+      const feeErc20 = takeFee(sendLenderAmtErc20, rentFee);
+      sendLenderAmtErc20 = sendLenderAmtErc20.sub(feeErc20);
+      const receipt = await tx.wait();
+      validateReturned({
+        events: receipt.events ?? [],
+        nftAddress: [renter.erc721.address, renter.erc721.address],
+        tokenId: [1, 2],
+        lendingId: [1, 2],
+        renterAddress: [renter.address, renter.address],
+        returnedAt: Array(2).fill((await getLatestBlock()).timestamp),
+      });
+      const txGasCost = receipt.gasUsed.mul(tx.gasPrice);
+      expect(lenderBalancePostEth.sub(lenderBalancePreEth)).to.be.equal(
+        sendLenderAmtEth
+      );
+      const renterDiffEth = renterBalancePostEth
+        .sub(renterBalancePreEth)
+        .add(txGasCost);
+      expect(sendRenterAmtEth).to.be.equal(renterDiffEth);
+      expect(lenderBalancePostErc20.sub(lenderBalancePreErc20)).to.be.equal(
+        sendLenderAmtErc20
+      );
+      const renterDiffErc20 = renterBalancePostErc20.sub(renterBalancePreErc20);
+      expect(sendRenterAmtErc20).to.be.equal(renterDiffErc20);
+    });
     it('reverts if one of the returned NFTs is past the rent date', async () => {});
     it('does not return if you are not the renter', async () => {});
   });

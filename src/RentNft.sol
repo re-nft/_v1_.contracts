@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./Resolver.sol";
-import "hardhat/console.sol";
 
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     using SafeERC20 for ERC20;
@@ -278,23 +277,18 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         // final formula is (_secondsSinceRentStart *  x) / 86400
         // the fee is NOT taken from the collateral paid by the renter
         uint256 renterPayment = rentPrice * item.renting.rentDuration;
-        console.log("== renterPayment == %s", renterPayment);
         // if a * b < c then lender will get 0.
         // rentPrice can't be zero, if the token is 18 decimals, below
         // calc is guaranteed to return a meaningful result
         uint256 sendLenderAmt = (_secondsSinceRentStart * rentPrice) / 86400;
-        console.log("== sendLenderAmt == %s", sendLenderAmt);
         // this will block the return and so lender will be able to claim the collateral
         // equality happens when the renter returns at the very last second. This is
         // extremely unlikely to happen
         require(renterPayment >= sendLenderAmt, "lender receiving more than renter pmt");
         uint256 sendRenterAmt = renterPayment - sendLenderAmt;
-        console.log("== sendRenterAmt == %s", sendRenterAmt);
         require(renterPayment > sendRenterAmt, "underflow issues prevention");
         uint256 takenFee = _takeFee(sendLenderAmt, item.lending.paymentToken);
         sendRenterAmt += nftPrice;
-        console.log("== nftPrice == %s", nftPrice);
-        console.log("== sentRenterAmt == %s", sendRenterAmt);
         if (isERC20) {
             ERC20(paymentToken).safeTransfer(item.lending.lenderAddress, sendLenderAmt - takenFee);
             ERC20(paymentToken).safeTransfer(item.renting.renterAddress, sendRenterAmt);
