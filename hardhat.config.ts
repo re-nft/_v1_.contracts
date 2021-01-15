@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import {HardhatUserConfig} from 'hardhat/types';
+import { HardhatUserConfig } from 'hardhat/types';
 import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
 import 'hardhat-gas-reporter';
@@ -11,7 +11,7 @@ import '@symfoni/hardhat-react';
 // * relating github issue: https://github.com/rhlsthrm/hardhat-typechain/issues/12
 // import 'hardhat-typechain';
 // import '@typechain/ethers-v5';
-import {node_url, accounts} from './utils/network';
+import { node_url, accounts } from './utils/network';
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -26,6 +26,8 @@ const config: HardhatUserConfig = {
   namedAccounts: {
     deployer: 0,
     beneficiary: 1,
+    lender: 2,
+    renter: 3,
   },
   networks: {
     hardhat: {
