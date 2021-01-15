@@ -1160,8 +1160,55 @@ describe('RentNft', function () {
       const renterDiffErc20 = renterBalancePostErc20.sub(renterBalancePreErc20);
       expect(sendRenterAmtErc20).to.be.equal(renterDiffErc20);
     });
-    it('reverts if one of the returned NFTs is past the rent date', async () => {});
-    it('does not return if you are not the renter', async () => {});
+    it('reverts if one of the returned NFTs is past the rent date', async () => {
+      const rentDurations = [1, 4];
+      const drpEth = 1.9999; // acronym for dailry rental price
+      const colEth = 0.1001; // denotes collateral
+      const drpErc20 = 0.9199;
+      const colErc20 = 8.1929;
+      const dailyRentPriceEth = packPrice(drpEth);
+      const nftPriceEth = packPrice(colEth);
+      const dailyRentPriceErc20 = packPrice(drpErc20);
+      const nftPriceErc20 = packPrice(colErc20);
+      await lendBatch({
+        tokenIds: [1, 2],
+        paymentTokens: [1, 2],
+        maxRentDurations: [3, 365],
+        dailyRentPrices: [dailyRentPriceEth, dailyRentPriceErc20],
+        nftPrices: [nftPriceEth, nftPriceErc20],
+      });
+      // todo: a class like events.args where you can access the members
+      // via both the index and the name. In fact, just copy that class
+      // into my personal utils file (npm package?)
+      const pmtAmts = [
+        ethers.utils.parseEther(
+          (rentDurations[0] * drpEth + colEth).toString()
+        ),
+        ethers.utils.parseEther(
+          (rentDurations[1] * drpErc20 + colErc20).toString()
+        ),
+      ];
+
+      await renter.renft.rent(
+        [renter.erc721.address, renter.erc721.address],
+        [1, 2],
+        [1, 2],
+        rentDurations,
+        {
+          value: pmtAmts[0],
+        }
+      );
+
+      await advanceTime(SECONDS_IN_A_DAY + 100);
+
+      await expect(
+        renter.renft.returnIt(
+          [renter.erc721.address, renter.erc721.address],
+          [1, 2],
+          [1, 2]
+        )
+      ).to.be.revertedWith('attempt to return after deadline');
+    });
   });
 
   context('Collateral Claiming', async function () {
