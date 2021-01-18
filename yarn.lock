@@ -5022,10 +5022,10 @@ hardhat-deploy-ethers@^0.3.0-beta.7:
   resolved "https://registry.yarnpkg.com/hardhat-deploy-ethers/-/hardhat-deploy-ethers-0.3.0-beta.7.tgz#860d86b84ed3c4fdef64283ccf1e8d5623454d02"
   integrity sha512-JKMNte6vudu9LSNqgmBtNxc1gfxp3NUcPKVAf/FANHfl9pa/mBGg6hpQO7tD8CLkAbe6f4K5BjyYIPWX3p7MKw==
 
-hardhat-deploy@^0.7.0-beta.42:
-  version "0.7.0-beta.42"
-  resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.7.0-beta.42.tgz#39fe68687b5529b3e28e8269859218d04e1cc16e"
-  integrity sha512-Rm933vi9DlRqGu838dm+vsCkRvtsrp237fI+H9TAg7tuB+aUN7OhQrVmEzPoKwTBVGjbKg/KOY+KWgX/tSz/Hg==
+hardhat-deploy@^0.7.0-beta.44:
+  version "0.7.0-beta.44"
+  resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.7.0-beta.44.tgz#e03eb60765d4ecc3711dc7aadaba60c64b1d381c"
+  integrity sha512-eIM8RrLDgD12wINTdduYshxqNP/uz9qMCgao37jl6iiZ2LwHkNTL/X+RtTVfq/vS7bvLW7qpjymHJiak5rd1Pg==
   dependencies:
     "@ethersproject/abi" "^5.0.2"
     "@ethersproject/abstract-signer" "^5.0.2"
@@ -9884,18 +9884,6 @@ websocket@1.0.32, websocket@^1.0.31:
   version "1.0.32"
   resolved "https://registry.yarnpkg.com/websocket/-/websocket-1.0.32.tgz#1f16ddab3a21a2d929dec1687ab21cfdc6d3dbb1"
   integrity sha512-i4yhcllSP4wrpoPMU2N0TQ/q0O94LRG/eUQjEAamRltjQ1oT1PFFKOG4i877OlJgCG8rw6LrrowJp+TYCEWF7Q==
-  dependencies:
-    bufferutil "^4.0.1"
-    debug "^2.2.0"
-    es5-ext "^0.10.50"
-    typedarray-to-buffer "^3.1.5"
-    utf-8-validate "^5.0.2"
-    yaeti "^0.0.6"
-
-websocket@1.0.33:
-  version "1.0.33"
-  resolved "https://registry.yarnpkg.com/websocket/-/websocket-1.0.33.tgz#407f763fc58e74a3fa41ca3ae5d78d3f5e3b82a5"
-  integrity sha512-XwNqM2rN5eh3G2CUQE3OHZj+0xfdH42+OFK6LdC2yqiC0YU8e5UK0nYre220T0IyyN031V/XOvtHvXozvJYFWA==
   dependencies:
     bufferutil "^4.0.1"
     debug "^2.2.0"

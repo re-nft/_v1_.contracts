@@ -31,7 +31,7 @@
     "ethers": "^5.0.26",
     "fs-extra": "^9.0.1",
     "hardhat": "^2.0.8",
-    "hardhat-deploy": "^0.7.0-beta.42",
+    "hardhat-deploy": "^0.7.0-beta.44",
     "hardhat-deploy-ethers": "^0.3.0-beta.7",
     "hardhat-gas-reporter": "^1.0.4",
     "mocha": "^8.1.1",
@@ -86,7 +86,6 @@
     "hardhat-typechain": "^0.3.4",
     "ramda": "^0.27.1",
     "ts-generator": "^0.1.1",
-    "typechain": "^4.0.0",
-    "websocket": "1.0.33"
+    "typechain": "^4.0.0"
   }
 }
