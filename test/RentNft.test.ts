@@ -1546,7 +1546,33 @@ describe('RentNft', function () {
   });
 
   context('Integration', async function () {
-    it('relends ok', async () => {});
+    it('relends ok', async () => {
+      const { lender, renter } = await setup();
+      const nft = [lender.erc721.address];
+      const paymentToken = [2];
+      const tokenId = [1];
+      const maxRentDuration = [1];
+      const lendingId = [1];
+      const dailyRentPrice = [packPrice(1)];
+      const collateralPrice = [packPrice(1)];
+      await lender.renft.lend(
+        nft,
+        tokenId,
+        maxRentDuration,
+        dailyRentPrice,
+        collateralPrice,
+        paymentToken
+      );
+      await renter.renft.rent(nft, tokenId, lendingId, [1]);
+      await renter.renft.lend(
+        nft,
+        tokenId,
+        maxRentDuration,
+        dailyRentPrice,
+        collateralPrice,
+        paymentToken
+      );
+    });
 
     it('A lends, B rents, B lends, C rents, C defaults', async () => {});
 
@@ -1554,7 +1580,45 @@ describe('RentNft', function () {
   });
 
   context('Admin', async () => {
-    it('sets the rentFee', async () => {});
-    it('sets the beneficiary', async () => {});
+    it('sets the rentFee', async () => {
+      const { deployer } = await setup();
+      const deployerRenft = (await ethers.getContract(
+        'RentNft',
+        deployer
+      )) as RentNftT;
+      await deployerRenft.setRentFee('559');
+      const rentFee = await deployerRenft.rentFee();
+      expect(rentFee).to.be.equal('559');
+    });
+    it('disallows non deployer to set the rentFee', async () => {
+      const { renter } = await setup();
+      await expect(renter.renft.setRentFee('559')).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      );
+    });
+    it('disallows to set the fee that exceeds 100', async () => {
+      const { deployer } = await setup();
+      const deployerRenft = (await ethers.getContract(
+        'RentNft',
+        deployer
+      )) as RentNftT;
+      await expect(deployerRenft.setRentFee('123456789')).to.be.revertedWith(
+        '1 cannot be taking 100 pct fee'
+      );
+    });
+    it('sets the beneficiary', async () => {
+      const { deployer, signers } = await setup();
+      const deployerRenft = (await ethers.getContract(
+        'RentNft',
+        deployer
+      )) as RentNftT;
+      await deployerRenft.setBeneficiary(signers[4].address);
+    });
+    it('disallows non deployer to set the beneficiary', async () => {
+      const { renter, signers } = await setup();
+      await expect(
+        renter.renft.setBeneficiary(signers[4].address)
+      ).to.be.revertedWith('Ownable: caller is not the owner');
+    });
   });
 });
