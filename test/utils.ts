@@ -1,8 +1,6 @@
 import { ethers } from 'hardhat';
-import { Contract } from '@ethersproject/contracts/lib';
 import { BigNumber, BigNumberish } from 'ethers';
 import { Event } from '@ethersproject/contracts/lib';
-import { SignerWithAddress } from 'hardhat-deploy-ethers/dist/src/signer-with-address';
 import { Block } from '@ethersproject/abstract-provider';
 import { ERC20 } from '../frontend/src/hardhat/typechain/ERC20';
 
@@ -94,13 +92,6 @@ export const getErc20Balance = async (
   balanceOf: string
 ): Promise<BigNumber> => {
   return await contract.balanceOf(balanceOf);
-};
-
-export const getContract = async (
-  contractName: string,
-  signer?: string | SignerWithAddress
-): Promise<Contract> => {
-  return await ethers.getContract(contractName, signer);
 };
 
 export const takeFee = (rent: BigNumber, rentFee: BigNumber): BigNumber =>
