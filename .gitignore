@@ -14,3 +14,5 @@ node_modules/
 contractsInfo.json
 deployments/hardhat
 deployments/localhost
+
+.vscode/

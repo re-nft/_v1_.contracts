@@ -4,14 +4,23 @@ import {DeployFunction} from 'hardhat-deploy/types';
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const {deployments, getNamedAccounts} = hre;
   const {deploy} = deployments;
-
   const {deployer} = await getNamedAccounts();
-
-  await deploy('ERC20TransferGateway', {
+  await deploy('MyERC20', {
     from: deployer,
     log: true,
-    deterministicDeployment: true,
+  });
+  await deploy('MyERC721', {
+    from: deployer,
+    log: true,
+  });
+  await deploy('Resolver', {
+    from: deployer,
+    log: true,
+  });
+  await deploy('Utils', {
+    from: deployer,
+    log: true,
   });
 };
 export default func;
-func.tags = ['ERC20TransferGateway'];
+func.tags = ['PaymentToken', 'GanFaceNft', 'Resolver', 'Utils'];

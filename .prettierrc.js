@@ -1,6 +1,6 @@
 module.exports = {
   singleQuote: true,
-  bracketSpacing: false,
+  bracketSpacing: true,
   overrides: [
     {
       files: '*.sol',
