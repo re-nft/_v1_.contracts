@@ -1465,17 +1465,84 @@ describe('RentNft', function () {
       expect(beneficiaryBalance.sub(beneficiaryBalancePre)).to.be.equal(fee);
     });
 
-    it('does not claim collateral if not time', async () => {});
-
-    it('does not claim collateral on returned NFTs', async () => {});
-
-    it('does not claim collateral on unrented NFTs', async () => {});
-
-    it('reverts the batch if one claim is invalid', async () => {});
+    it('does not claim collateral if not time', async () => {
+      const tokenIds = [1];
+      const paymentTokens = [2];
+      const maxRentDurations = [7];
+      const drp = 6.4299;
+      const col = 63.1912;
+      const dailyRentPrices = [packPrice(drp)];
+      const nftPrices = [packPrice(col)];
+      await lendBatch({
+        tokenIds,
+        paymentTokens,
+        maxRentDurations,
+        dailyRentPrices,
+        nftPrices,
+      });
+      const _nft = [renter.erc721.address];
+      const _tokenId = [1];
+      const _id = [1];
+      const _rentDuration = [1];
+      await renter.renft.rent(_nft, _tokenId, _id, _rentDuration);
+      await advanceTime(SECONDS_IN_A_DAY - 1);
+      await expect(
+        lender.renft.claimCollateral(_nft, _tokenId, _id)
+      ).to.be.revertedWith('duration not exceeded');
+    });
   });
 
+  //   event LendingStopped(
+  //     address indexed nftAddress,
+  //     uint256 indexed tokenId,
+  //     uint256 indexed lendingId,
+  //     uint32 stoppedAt
+  // );
+
   context('Stop Lending', async function () {
-    it('stops lending ok', async () => {});
+    it('stops lending ok', async () => {
+      const { lender } = await setup();
+      await lender.renft.lend(
+        [lender.erc721.address],
+        [1],
+        [1],
+        [packPrice(1)],
+        [packPrice(1)],
+        [2]
+      );
+      expect(await lender.erc721.ownerOf(1)).to.be.equal(lender.renft.address);
+      const tx = await lender.renft.stopLending(
+        [lender.erc721.address],
+        [1],
+        [1]
+      );
+      const receipt = await tx.wait();
+      const events = getEvents(receipt.events ?? [], 'LendingStopped');
+      const event = events[0];
+      if (!event.args) throw new Error('LendingStopped not emitted');
+      const { nftAddress, tokenId, lendingId, stoppedAt } = event.args;
+      expect(nftAddress).to.be.equal(lender.erc721.address);
+      expect(tokenId).to.be.equal(1);
+      expect(lendingId).to.be.equal(1);
+      expect(stoppedAt).to.be.equal((await getLatestBlock()).timestamp);
+      expect(await lender.erc721.ownerOf(1)).to.be.equal(lender.address);
+    });
+
+    it('does not stop lending when currently rented', async () => {
+      const { lender, renter } = await setup();
+      await lender.renft.lend(
+        [lender.erc721.address],
+        [1],
+        [1],
+        [packPrice(1)],
+        [packPrice(1)],
+        [2]
+      );
+      await renter.renft.rent([lender.erc721.address], [1], [1], [1]);
+      await expect(
+        lender.renft.stopLending([lender.erc721.address], [1], [1])
+      ).to.be.revertedWith('renter address is not zero address');
+    });
   });
 
   context('Integration', async function () {

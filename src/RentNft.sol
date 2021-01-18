@@ -352,7 +352,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
             _ensureIsNull(item.renting);
-            require(item.lending.paymentToken != Resolver.PaymentToken.SENTINEL, "payment token is sentinel");
             require(item.lending.lenderAddress == msg.sender, "only lender allowed");
             _nft[i].safeTransferFrom(address(this), msg.sender, _tokenId[i]);
             delete item.lending;
