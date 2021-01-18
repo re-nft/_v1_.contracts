@@ -5,7 +5,6 @@ import { Resolver as ResolverT } from '../frontend/src/hardhat/typechain/Resolve
 import { ERC20 as ERC20T } from '../frontend/src/hardhat/typechain/ERC20';
 import { MyERC721 as ERC721T } from '../frontend/src/hardhat/typechain/MyERC721';
 import { Utils as UtilsT } from '../frontend/src/hardhat/typechain/Utils';
-import { SignerWithAddress } from 'hardhat-deploy-ethers/dist/src/signer-with-address';
 import { BigNumber } from 'ethers';
 import { Event } from '@ethersproject/contracts/lib';
 
@@ -913,13 +912,13 @@ describe('RentNft', function () {
           tokenId: _tokenId,
           lendingId: _lendingId,
           renterAddress: _renterAddress,
-          returnedAt: returnedAt,
+          returnedAt: _returnedAt,
         } = event;
         expect(_nftAddress).to.be.equal(nftAddress[i]);
         expect(_tokenId).to.be.equal(tokenId[i]);
         expect(_lendingId).to.be.equal(lendingId[i]);
         expect(_renterAddress).to.be.equal(renterAddress[i]);
-        expect(returnedAt).to.be.equal(returnedAt[i]);
+        expect(_returnedAt).to.be.equal(returnedAt[i]);
       }
     };
 
@@ -1207,24 +1206,264 @@ describe('RentNft', function () {
           [1, 2],
           [1, 2]
         )
-      ).to.be.revertedWith('attempt to return after deadline');
+      ).to.be.revertedWith('duration exceeded');
     });
   });
 
   context('Collateral Claiming', async function () {
-    it('claims collateral ok - one eth', async () => {});
+    type NamedAccount = {
+      address: string;
+      erc20: ERC20T;
+      erc721: ERC721T;
+      renft: RentNftT;
+    };
+    let renter: NamedAccount;
+    let lender: NamedAccount;
+    let beneficiary: string;
+    let rentFee: BigNumber;
 
-    it('claims colalteral ok - one eth one erc20', async () => {});
+    beforeEach(async () => {
+      const o = await setup();
+      renter = o.renter;
+      lender = o.lender;
+      beneficiary = o.beneficiary;
+      rentFee = await renter.renft.rentFee();
+    });
 
-    it('claims collateral ok - two eth', async () => {});
+    const lendBatch = async ({
+      tokenIds,
+      paymentTokens,
+      maxRentDurations = [],
+      dailyRentPrices = [],
+      nftPrices = [],
+    }: lendBatchArgs & { paymentTokens: number[] }) => {
+      let _maxRentDurations = maxRentDurations;
+      let _dailyRentPrices = dailyRentPrices;
+      let _nftPrices = nftPrices;
+      if (maxRentDurations.length === 0) {
+        _maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION);
+      }
+      if (dailyRentPrices.length === 0) {
+        _dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE);
+      }
+      if (nftPrices.length === 0) {
+        _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
+      }
+      await lender.renft.lend(
+        Array(tokenIds.length).fill(lender.erc721.address),
+        tokenIds,
+        _maxRentDurations,
+        _dailyRentPrices,
+        _nftPrices,
+        paymentTokens
+      );
+    };
 
-    it('claims collateral ok - two eth one erc20', async () => {});
+    const validateClaimed = ({
+      nftAddress,
+      tokenId,
+      lendingId,
+      claimedAt,
+      events,
+    }: {
+      nftAddress: string[];
+      tokenId: number[];
+      lendingId: number[];
+      claimedAt: number[];
+      events: Event[];
+    }) => {
+      const es = getEvents(events, 'Rented');
+      for (let i = 0; i < es.length; i++) {
+        const event = es[i].args;
+        if (!event) throw new Error('no args');
+        const {
+          nftAddress: _nftAddress,
+          tokenId: _tokenId,
+          lendingId: _lendingId,
+          claimedAt: _claimedAt,
+        } = event;
+        expect(_nftAddress).to.be.equal(nftAddress[i]);
+        expect(_tokenId).to.be.equal(tokenId[i]);
+        expect(_lendingId).to.be.equal(lendingId[i]);
+        expect(_claimedAt).to.be.equal(claimedAt[i]);
+      }
+    };
 
-    it('claims collateral ok - two eth two erc20', async () => {});
+    it('claims collateral ok - one eth', async () => {
+      const tokenIds = [1];
+      const paymentTokens = [1];
+      const maxRentDurations = [10];
+      const drp = 3.4299;
+      const col = 23.112;
+      const dailyRentPrices = [packPrice(drp)];
+      const nftPrices = [packPrice(col)];
+      await lendBatch({
+        tokenIds,
+        paymentTokens,
+        maxRentDurations,
+        dailyRentPrices,
+        nftPrices,
+      });
+      const _nft = [renter.erc721.address];
+      const _tokenId = [1];
+      const _id = [1];
+      const _rentDuration = [1];
+      await renter.renft.rent(_nft, _tokenId, _id, _rentDuration, {
+        value: ethers.utils
+          .parseEther(drp.toString())
+          .add(ethers.utils.parseEther(col.toString())),
+      });
+      await advanceTime(SECONDS_IN_A_DAY);
+      const balancePre = await getBalance(lender.address);
+      const beneficiaryBalancePre = await getBalance(beneficiary);
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, _id);
+      const balancePost = await getBalance(lender.address);
+      const renftBalancePost = await getBalance(lender.renft.address);
+      const receipt = await tx.wait();
+      const txCost = tx.gasPrice.mul(receipt.gasUsed);
+      const events = getEvents(receipt.events ?? [], 'CollateralClaimed');
+      validateClaimed({
+        nftAddress: [lender.erc721.address],
+        tokenId: tokenIds,
+        lendingId: [1],
+        claimedAt: [(await getLatestBlock()).timestamp],
+        events,
+      });
+      let fullRentPayment = ethers.utils.parseEther(drp.toString());
+      const fee = takeFee(fullRentPayment, rentFee);
+      fullRentPayment = fullRentPayment.sub(fee);
+      const _balancePre = balancePre.sub(txCost);
+      const diff = balancePost.sub(_balancePre);
+      expect(diff).to.be.equal(
+        ethers.utils.parseEther(col.toString()).add(fullRentPayment)
+      );
+      expect(renftBalancePost).to.be.equal(0);
+      const beneficiaryBalance = await getBalance(beneficiary);
+      expect(beneficiaryBalance.sub(beneficiaryBalancePre)).to.be.equal(fee);
+    });
 
-    it('claims collateral ok - one erc20', async () => {});
+    it('claims collateral ok - one eth one erc20', async () => {
+      const tokenIds = [1, 2];
+      const paymentTokens = [1, 2];
+      const maxRentDurations = [10, 101];
+      const drpEth = 3.4299;
+      const colEth = 23.112;
+      const drpErc20 = 9.5982;
+      const colErc20 = 1.2135;
+      const dailyRentPrices = [packPrice(drpEth), packPrice(drpErc20)];
+      const nftPrices = [packPrice(colEth), packPrice(colErc20)];
+      await lendBatch({
+        tokenIds,
+        paymentTokens,
+        maxRentDurations,
+        dailyRentPrices,
+        nftPrices,
+      });
+      const _nft = Array(2).fill(renter.erc721.address);
+      const _tokenId = [1, 2];
+      const _id = [1, 2];
+      const _rentDuration = [1, 4];
+      await renter.renft.rent(_nft, _tokenId, _id, _rentDuration, {
+        value: ethers.utils
+          .parseEther(drpEth.toString())
+          .add(ethers.utils.parseEther(colEth.toString())),
+      });
+      await advanceTime(_rentDuration[1] * SECONDS_IN_A_DAY);
+      const balancePre = await getBalance(lender.address);
+      const beneficiaryBalancePre = await getBalance(beneficiary);
+      const balancePreErc20 = await lender.erc20.balanceOf(lender.address);
+      const beneficiaryBalancePreErc20 = await lender.erc20.balanceOf(
+        beneficiary
+      );
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, _id);
+      const balancePostErc20 = await lender.erc20.balanceOf(lender.address);
+      const balancePost = await getBalance(lender.address);
+      const renftBalancePost = await getBalance(lender.renft.address);
+      const receipt = await tx.wait();
+      const txCost = tx.gasPrice.mul(receipt.gasUsed);
+      const events = getEvents(receipt.events ?? [], 'CollateralClaimed');
+      validateClaimed({
+        nftAddress: Array(2).fill(lender.erc721.address),
+        tokenId: tokenIds,
+        lendingId: [1, 2],
+        claimedAt: Array(2).fill((await getLatestBlock()).timestamp),
+        events,
+      });
+      let fullRentPayment = ethers.utils.parseEther(drpEth.toString());
+      const fee = takeFee(fullRentPayment, rentFee);
+      fullRentPayment = fullRentPayment.sub(fee);
+      const _balancePre = balancePre.sub(txCost);
+      let diff = balancePost.sub(_balancePre);
+      expect(diff).to.be.equal(
+        ethers.utils.parseEther(colEth.toString()).add(fullRentPayment)
+      );
+      expect(renftBalancePost).to.be.equal(0);
+      const beneficiaryBalance = await getBalance(beneficiary);
+      expect(beneficiaryBalance.sub(beneficiaryBalancePre)).to.be.equal(fee);
+      // erc20
+      let fullRentPaymentErc20 = BigNumber.from(_rentDuration[1]).mul(
+        ethers.utils.parseEther(drpErc20.toString())
+      );
+      const feeErc20 = takeFee(fullRentPaymentErc20, rentFee);
+      fullRentPaymentErc20 = fullRentPaymentErc20.sub(feeErc20);
+      diff = balancePostErc20.sub(balancePreErc20);
+      expect(diff).to.be.equal(
+        ethers.utils.parseEther(colErc20.toString()).add(fullRentPaymentErc20)
+      );
+      const beneficiaryBalanceErc20 = await lender.erc20.balanceOf(beneficiary);
+      expect(
+        beneficiaryBalanceErc20.sub(beneficiaryBalancePreErc20)
+      ).to.be.equal(feeErc20);
+    });
 
-    it('claims collateral ok - two erc20', async () => {});
+    it('claims colalteral ok - one erc20', async () => {
+      const tokenIds = [1];
+      const paymentTokens = [2];
+      const maxRentDurations = [7];
+      const drp = 6.4299;
+      const col = 63.1912;
+      const dailyRentPrices = [packPrice(drp)];
+      const nftPrices = [packPrice(col)];
+      await lendBatch({
+        tokenIds,
+        paymentTokens,
+        maxRentDurations,
+        dailyRentPrices,
+        nftPrices,
+      });
+      const _nft = [renter.erc721.address];
+      const _tokenId = [1];
+      const _id = [1];
+      const _rentDuration = [1];
+      await renter.renft.rent(_nft, _tokenId, _id, _rentDuration);
+      await advanceTime(SECONDS_IN_A_DAY + 100);
+      const balancePre = await lender.erc20.balanceOf(lender.address);
+      const beneficiaryBalancePre = await lender.erc20.balanceOf(beneficiary);
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, _id);
+      const balancePost = await lender.erc20.balanceOf(lender.address);
+      const renftBalancePost = await lender.erc20.balanceOf(
+        lender.renft.address
+      );
+      const receipt = await tx.wait();
+      const events = getEvents(receipt.events ?? [], 'CollateralClaimed');
+      validateClaimed({
+        nftAddress: [lender.erc721.address],
+        tokenId: tokenIds,
+        lendingId: [1],
+        claimedAt: [(await getLatestBlock()).timestamp],
+        events,
+      });
+      let fullRentPayment = ethers.utils.parseEther(drp.toString());
+      const fee = takeFee(fullRentPayment, rentFee);
+      fullRentPayment = fullRentPayment.sub(fee);
+      const diff = balancePost.sub(balancePre);
+      expect(diff).to.be.equal(
+        ethers.utils.parseEther(col.toString()).add(fullRentPayment)
+      );
+      expect(renftBalancePost).to.be.equal(0);
+      const beneficiaryBalance = await lender.erc20.balanceOf(beneficiary);
+      expect(beneficiaryBalance.sub(beneficiaryBalancePre)).to.be.equal(fee);
+    });
 
     it('does not claim collateral if not time', async () => {});
 
@@ -1233,6 +1472,10 @@ describe('RentNft', function () {
     it('does not claim collateral on unrented NFTs', async () => {});
 
     it('reverts the batch if one claim is invalid', async () => {});
+  });
+
+  context('Stop Lending', async function () {
+    it('stops lending ok', async () => {});
   });
 
   context('Integration', async function () {

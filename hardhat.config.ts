@@ -5,6 +5,7 @@ import 'hardhat-deploy-ethers';
 import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-etherscan';
 import '@symfoni/hardhat-react';
+import 'solidity-coverage';
 // * due to auto-generation the tests run much slower
 // * unless this becomes opt-in, remove the comment out
 // * to generate the new types

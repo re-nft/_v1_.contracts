@@ -1,6 +1,6 @@
 {
   "name": "renft-contracts",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": "nazariyv",
   "license": "MIT",
   "keywords": [
@@ -39,6 +39,7 @@
     "prettier-plugin-solidity": "^1.0.0-beta.3",
     "solhint": "^3.3.2",
     "solhint-plugin-prettier": "^0.0.5",
+    "solidity-coverage": "^0.7.14",
     "ts-morph": "^9.0.0",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5"
@@ -52,6 +53,7 @@
     "compile": "hardhat compile",
     "void:deploy": "hardhat deploy",
     "test": "cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
+    "coverage": "cross-env HARDHAT_DEPLOY_FIXTURE=ture hardhat coverage",
     "gas": "cross-env HARDHAT_DEPLOY_FIXTURE=true REPORT_GAS=true hardhat test",
     "dev": "hardhat node --reset --watch --export contractsInfo.json",
     "local:dev": "hardhat --network localhost deploy --watch",
