@@ -1492,13 +1492,6 @@ describe('RentNft', function () {
     });
   });
 
-  //   event LendingStopped(
-  //     address indexed nftAddress,
-  //     uint256 indexed tokenId,
-  //     uint256 indexed lendingId,
-  //     uint32 stoppedAt
-  // );
-
   context('Stop Lending', async function () {
     it('stops lending ok', async () => {
       const { lender } = await setup();
@@ -1574,9 +1567,9 @@ describe('RentNft', function () {
       );
     });
 
-    it('A lends, B rents, B lends, C rents, C defaults', async () => {});
+    // it('A lends, B rents, B lends, C rents, C defaults', async () => {});
 
-    it('relends 10 times ok', async () => {});
+    // it('relends 10 times ok', async () => {});
   });
 
   context('Admin', async () => {
@@ -1619,6 +1612,50 @@ describe('RentNft', function () {
       await expect(
         renter.renft.setBeneficiary(signers[4].address)
       ).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+  });
+
+  context('For Glory', async () => {
+    it('makes whole 9999 when exceeds', async () => {
+      const { lender, deployer, renter } = await setup();
+      await lender.renft.lend(
+        [lender.erc721.address],
+        [1],
+        [1],
+        ['0xffff0000'],
+        ['0x0000ffff'],
+        [2]
+      );
+      const erc20 = (await ethers.getContract('MyERC20', deployer)) as ERC20T;
+      await erc20.transfer(renter.address, ethers.utils.parseEther('11000'));
+      const renterBalancePre = await erc20.balanceOf(renter.address);
+      await renter.renft.rent([renter.erc721.address], [1], [1], [1]);
+      const renterBalancePost = await erc20.balanceOf(renter.address);
+      const diff = renterBalancePre.sub(renterBalancePost);
+      expect(diff).to.be.equal(
+        ethers.utils.parseEther('9999').add(ethers.utils.parseEther('0.9999'))
+      );
+    });
+
+    it('100% test coverage', async () => {
+      const { lender, deployer, renter } = await setup();
+      await lender.renft.lend(
+        [lender.erc721.address],
+        [1],
+        [1],
+        ['0x00000000'],
+        ['0x00000000'],
+        [2]
+      );
+      const erc20 = (await ethers.getContract('MyERC20', deployer)) as ERC20T;
+      await erc20.transfer(renter.address, ethers.utils.parseEther('11000'));
+      const renterBalancePre = await erc20.balanceOf(renter.address);
+      await renter.renft.rent([renter.erc721.address], [1], [1], [1]);
+      const renterBalancePost = await erc20.balanceOf(renter.address);
+      const diff = renterBalancePre.sub(renterBalancePost);
+      expect(diff).to.be.equal(
+        ethers.utils.parseEther('0.0001').add(ethers.utils.parseEther('0.0001'))
+      );
     });
   });
 });

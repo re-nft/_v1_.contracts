@@ -208,6 +208,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             rc.rentPrice = rc.rentDuration * _unpackPrice(item.lending.dailyRentPrice, rc.scale); // max is 1825 * 65535. Nowhere near the overflow
             rc.nftPrice = _unpackPrice(item.lending.nftPrice, rc.scale);
             // collateral may be set to zero, if the lender wishes so
+            // but not the rent price
             require(rc.rentPrice > 0, "rent price is zero");
             rc.upfrontPayment = rc.rentPrice + rc.nftPrice;
             if (rc.isERC20) {
@@ -394,14 +395,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         require(_renting.renterAddress != address(0), "renter address is zero address");
         require(_renting.rentDuration != 0, "rent duration is zero");
         require(_renting.rentedAt != 0, "never rented");
-    }
-
-    function _ensureIsNull(Lending memory _lending) private pure {
-        require(_lending.lenderAddress == address(0), "lender is not zero address");
-        require(_lending.maxRentDuration == 0, "max rent duration is not zero");
-        require(_lending.dailyRentPrice == 0, "daily rent price is not zero");
-        require(_lending.nftPrice == 0, "nft price is not zero");
-        require(_lending.paymentToken == Resolver.PaymentToken.SENTINEL, "payment token is not sentinel");
     }
 
     function _ensureIsNull(Renting memory _renting) private pure {
