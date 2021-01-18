@@ -11,7 +11,7 @@ contract Utils {
         uint256 decimalScale = _scale / 10000;
         if (whole > 9999) {
             whole = 9999;
-        }        
+        }
         uint256 w = whole * _scale;
         if (decimal > 9999) {
             decimal = 9999;
