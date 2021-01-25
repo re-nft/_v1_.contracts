@@ -38,38 +38,49 @@ const setup = deployments.createFixture(async () => {
   const { deployer, beneficiary, renter, lender } = await getNamedAccounts();
 
   const signers = await ethers.getSigners();
-  //@ts-ignore
-  const resolver = (await ethers.getContract('Resolver')) as ResolverT;
-  //@ts-ignore
-  const myERC20 = (await ethers.getContract('MyERC20')) as ERC20T;
-  //@ts-ignore
-  const myERC721 = (await ethers.getContract('MyERC721')) as ERC721T;
-  //@ts-ignore
-  const utils = (await ethers.getContract('Utils')) as UtilsT;
-  //@ts-ignore
-  const renft = (await ethers.getContract('RentNft')) as RentNftT;
+
+  const resolver = ((await ethers.getContract(
+    'Resolver'
+  )) as unknown) as ResolverT;
+
+  const myERC20 = ((await ethers.getContract('MyERC20')) as unknown) as ERC20T;
+
+  const myERC721 = ((await ethers.getContract(
+    'MyERC721'
+  )) as unknown) as ERC721T;
+
+  const utils = ((await ethers.getContract('Utils')) as unknown) as UtilsT;
+
+  const renft = ((await ethers.getContract('RentNft')) as unknown) as RentNftT;
   await resolver.setPaymentToken(PAYMENT_TOKEN, myERC20.address);
 
   await myERC20.transfer(renter, ERC20_SEND_AMT);
   await myERC20.transfer(lender, ERC20_SEND_AMT);
-  //@ts-ignore
-  const renftRenter = (await ethers.getContract('RentNft', renter)) as RentNftT;
-  //@ts-ignore
-  const renftLender = (await ethers.getContract('RentNft', lender)) as RentNftT;
-  //@ts-ignore
-  const myERC20Renter = (await ethers.getContract('MyERC20', renter)) as ERC20T;
-  //@ts-ignore
-  const myERC20Lender = (await ethers.getContract('MyERC20', lender)) as ERC20T;
-  //@ts-ignore
-  const myERC721Renter = (await ethers.getContract(
+
+  const renftRenter = ((await ethers.getContract(
+    'RentNft',
+    renter
+  )) as unknown) as RentNftT;
+  const renftLender = ((await ethers.getContract(
+    'RentNft',
+    lender
+  )) as unknown) as RentNftT;
+  const myERC20Renter = ((await ethers.getContract(
+    'MyERC20',
+    renter
+  )) as unknown) as ERC20T;
+  const myERC20Lender = ((await ethers.getContract(
+    'MyERC20',
+    lender
+  )) as unknown) as ERC20T;
+  const myERC721Renter = ((await ethers.getContract(
     'MyERC721',
     renter
-  )) as ERC721T;
-  //@ts-ignore
-  const myERC721Lender = (await ethers.getContract(
+  )) as unknown) as ERC721T;
+  const myERC721Lender = ((await ethers.getContract(
     'MyERC721',
     lender
-  )) as ERC721T;
+  )) as unknown) as ERC721T;
   await myERC20Renter.approve(renft.address, ethers.constants.MaxUint256);
   await myERC20Lender.approve(renft.address, ethers.constants.MaxUint256);
   await myERC721Renter.setApprovalForAll(renft.address, true);
@@ -1585,11 +1596,10 @@ describe('RentNft', function () {
   context('Admin', async () => {
     it('sets the rentFee', async () => {
       const { deployer } = await setup();
-      //@ts-ignore
-      const deployerRenft = (await ethers.getContract(
+      const deployerRenft = ((await ethers.getContract(
         'RentNft',
         deployer
-      )) as RentNftT;
+      )) as unknown) as RentNftT;
       await deployerRenft.setRentFee('559');
       const rentFee = await deployerRenft.rentFee();
       expect(rentFee).to.be.equal('559');
@@ -1602,22 +1612,20 @@ describe('RentNft', function () {
     });
     it('disallows to set the fee that exceeds 100', async () => {
       const { deployer } = await setup();
-      //@ts-ignore
-      const deployerRenft = (await ethers.getContract(
+      const deployerRenft = ((await ethers.getContract(
         'RentNft',
         deployer
-      )) as RentNftT;
+      )) as unknown) as RentNftT;
       await expect(deployerRenft.setRentFee('123456789')).to.be.revertedWith(
         '1 cannot be taking 100 pct fee'
       );
     });
     it('sets the beneficiary', async () => {
       const { deployer, signers } = await setup();
-      //@ts-ignore
-      const deployerRenft = (await ethers.getContract(
+      const deployerRenft = ((await ethers.getContract(
         'RentNft',
         deployer
-      )) as RentNftT;
+      )) as unknown) as RentNftT;
       await deployerRenft.setBeneficiary(signers[4].address);
     });
     it('disallows non deployer to set the beneficiary', async () => {
@@ -1639,8 +1647,10 @@ describe('RentNft', function () {
         ['0x0000ffff'],
         [2]
       );
-      //@ts-ignore
-      const erc20 = (await ethers.getContract('MyERC20', deployer)) as ERC20T;
+      const erc20 = ((await ethers.getContract(
+        'MyERC20',
+        deployer
+      )) as unknown) as ERC20T;
       await erc20.transfer(renter.address, ethers.utils.parseEther('11000'));
       const renterBalancePre = await erc20.balanceOf(renter.address);
       await renter.renft.rent([renter.erc721.address], [1], [1], [1]);
@@ -1661,8 +1671,10 @@ describe('RentNft', function () {
         ['0x00000000'],
         [2]
       );
-      //@ts-ignore
-      const erc20 = (await ethers.getContract('MyERC20', deployer)) as ERC20T;
+      const erc20 = ((await ethers.getContract(
+        'MyERC20',
+        deployer
+      )) as unknown) as ERC20T;
       await erc20.transfer(renter.address, ethers.utils.parseEther('11000'));
       const renterBalancePre = await erc20.balanceOf(renter.address);
       await renter.renft.rent([renter.erc721.address], [1], [1], [1]);
