@@ -12,7 +12,7 @@ import "hardhat/console.sol";
 
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     using SafeERC20 for ERC20;
-    // 256 bits -> 32 bytes
+    // 256 bits -> 32 bytes - single slot storage
     // address - 20 byte value -> 160 bits
     uint256 private id = 1;
     // settable by owner and chargeable on the final rent price
@@ -35,6 +35,16 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     // conclusion: I proceed with option 1.
     Resolver private resolver;
     address payable private beneficiary;
+
+    // coming in from the client side, to avoid extra gas
+    // when checking inside of here.
+    // If txn failed, then it is because:
+    // (i) the client sent the wrong type
+    // (ii) the implementation of the contract is mumbo-jumbo
+    enum NftContractType {
+        ERC1155,
+        ERC721
+    }
 
     event Lent(
         address indexed nftAddress,
@@ -91,6 +101,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         Resolver.PaymentToken paymentToken;
     }
 
+    // gimme more brother
     struct Renting {
         // 160 bits
         address payable renterAddress;
@@ -105,6 +116,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         Renting renting;
     }
 
+    // the stack Houdini
     struct RentCutie {
         uint256 tokenId;
         uint256 id;
@@ -131,7 +143,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function lend(
-        IERC721[] memory _nft,
+        IERC721[] memory _nft, // todo: this goes
         uint256[] memory _tokenId,
         uint16[] memory _maxRentDuration,
         uint32[] memory _dailyRentPrice,
@@ -172,7 +184,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function rent(
-        IERC721[] memory _nft,
+        IERC721[] memory _nft, // todo: this goes
         uint256[] memory _tokenId,
         uint256[] memory _id,
         uint16[] memory _rentDuration
@@ -311,7 +323,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function returnIt(
-        IERC721[] memory _nft,
+        IERC721[] memory _nft, // todo: this goes
         uint256[] memory _tokenId,
         uint256[] memory _id
     ) public nonReentrant {
@@ -328,7 +340,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function claimCollateral(
-        IERC721[] memory _nft,
+        IERC721[] memory _nft, // todo:  this goes
         uint256[] memory _tokenId,
         uint256[] memory _id
     ) public nonReentrant {
@@ -346,7 +358,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function stopLending(
-        IERC721[] memory _nft,
+        IERC721[] memory _nft, // todo: this goes
         uint256[] memory _tokenId,
         uint256[] memory _id
     ) public {
@@ -357,6 +369,17 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             _nft[i].safeTransferFrom(address(this), msg.sender, _tokenId[i]);
             delete item.lending;
             emit LendingStopped(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
+        }
+    }
+
+    // erc1155 amounts ignored, just make a batch request with the same id repeated
+    // todo: I doubt (need to test on the mainnet snapshot) that we in fact even need this,
+    // because that would make a token semi-fungible?
+    function _transferNft(NftContractType _nftType, address _from, address _to, address _nft, uint256 _id) internal {
+        if (_nftType == NftContractType.ERC1155) {
+            ERC1155(_nft).safeTransferFrom(_from, _to, _id, 1, bytes4(0x0));
+        } else if (_nftType == NftContractType.ERC721) {
+            ERC721(_nft).transferFrom(_from, _to, _id);
         }
     }
 
