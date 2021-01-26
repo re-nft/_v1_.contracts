@@ -384,10 +384,11 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     // because that would make a token semi-fungible?
     function _transferNft(NftContractType _nftType, address _nft, uint256 _id, address _from, address _to) internal {
         if (_nftType == NftContractType.ERC1155) {
-            bytes memory data;
-            IERC1155(_nft).safeTransferFrom(_from, _to, _id, 1, data);
+            IERC1155(_nft).safeTransferFrom(_from, _to, _id, 1, "");
         } else if (_nftType == NftContractType.ERC721) {
-            IERC721(_nft).safeTransferFrom(_from, _to, _id);
+            // can only transfer to account, in which case don't need the safety check
+            // otherwise, sends to us, and we support ERC721. no need for safe
+            IERC721(_nft).transferFrom(_from, _to, _id);
         }
     }
 
