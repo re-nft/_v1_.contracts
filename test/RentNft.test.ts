@@ -4,6 +4,7 @@ import { RentNft as RentNftT } from '../frontend/src/hardhat/typechain/RentNft';
 import { Resolver as ResolverT } from '../frontend/src/hardhat/typechain/Resolver';
 import { ERC20 as ERC20T } from '../frontend/src/hardhat/typechain/ERC20';
 import { MyERC721 as ERC721T } from '../frontend/src/hardhat/typechain/MyERC721';
+import { MyERC1155 as ERC1155T } from '../frontend/src/hardhat/typechain/MyERC1155';
 import { Utils as UtilsT } from '../frontend/src/hardhat/typechain/Utils';
 import { BigNumber } from 'ethers';
 import { Event } from '@ethersproject/contracts/lib';
@@ -38,6 +39,7 @@ const setup = deployments.createFixture(async () => {
   await deployments.fixture('Resolver');
   await deployments.fixture('ERC20');
   await deployments.fixture('ERC721');
+  await deployments.fixture('ERC1155');
   await deployments.fixture('RentNft');
   await deployments.fixture('Utils');
   const { deployer, beneficiary, renter, lender } = await getNamedAccounts();
@@ -53,6 +55,10 @@ const setup = deployments.createFixture(async () => {
   const myERC721 = ((await ethers.getContract(
     'MyERC721'
   )) as unknown) as ERC721T;
+
+  const myERC1155 = ((await ethers.getContract(
+    'MyERC1155'
+  )) as unknown) as ERC1155T;
 
   const utils = ((await ethers.getContract('Utils')) as unknown) as UtilsT;
 
@@ -86,22 +92,35 @@ const setup = deployments.createFixture(async () => {
     'MyERC721',
     lender
   )) as unknown) as ERC721T;
+  const myERC1155Renter = ((await ethers.getContract(
+    'MyERC1155',
+    renter
+  )) as unknown) as ERC1155T;
+  const myERC1155Lender = ((await ethers.getContract(
+    'MyERC1155',
+    lender
+  )) as unknown) as ERC1155T;
   await myERC20Renter.approve(renft.address, ethers.constants.MaxUint256);
   await myERC20Lender.approve(renft.address, ethers.constants.MaxUint256);
   await myERC721Renter.setApprovalForAll(renft.address, true);
   await myERC721Lender.setApprovalForAll(renft.address, true);
+  await myERC1155Renter.setApprovalForAll(renft.address, true);
+  await myERC1155Lender.setApprovalForAll(renft.address, true);
 
   // * Ramda.repeat(await myERC721.award(), 10) does not work like I expected
   // * const award = Ramda.repeat(myERC721.award(), 10); await Promise.all(award) doesn't either
   for (let i = 0; i < 10; i++) {
     await myERC721Lender.award();
+    await myERC1155Lender.award();
   }
   await myERC721.setApprovalForAll(renft.address, true);
+  await myERC1155.setApprovalForAll(renft.address, true);
   return {
     Resolver: resolver,
     RentNft: renft,
     ERC20: myERC20,
     ERC721: myERC721,
+    ERC1155: myERC1155,
     Utils: utils,
     signers,
     deployer,
@@ -110,12 +129,14 @@ const setup = deployments.createFixture(async () => {
       address: renter,
       erc20: myERC20Renter,
       erc721: myERC721Renter,
+      erc1155: myERC1155Renter,
       renft: renftRenter,
     },
     lender: {
       address: lender,
       erc20: myERC20Lender,
       erc721: myERC721Lender,
+      erc1155: myERC1155Lender,
       renft: renftLender,
     },
   };
@@ -127,8 +148,6 @@ const setup = deployments.createFixture(async () => {
 // - when someone unsafely deposits: we revert their txn
 // - when someone lends: if ERC721 we call transferFrom, if ERC1155 we call safeTransferFrom
 // - when someone batch lends use appropriate ERC1155 function
-
-// - fork off the mainnet to test the ChiGasSaver
 
 type lendBatchArgs = {
   tokenIds: number[];
@@ -1740,6 +1759,14 @@ describe('RentNft', function () {
         paymentToken
       );
     });
+
+    it('reverts when a mad lend sends an NFT directly', async () => {});
+
+    it('reverts when a mad lad sends us ERC20', async () => {});
+
+    it('reverts when a mad lad sends us ether', async () => {});
+
+    it('reverts when a mad lad sends us ERC20 and ether', async () => {});
 
     // it('A lends, B rents, B lends, C rents, C defaults', async () => {});
 
