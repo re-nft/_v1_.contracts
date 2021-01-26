@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "./Resolver.sol";
 import "hardhat/console.sol";
 
@@ -120,7 +121,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     struct RentCutie {
         uint256 tokenId;
         uint256 id;
-        IERC721 nft;
+        address nft;
+        NftContractType nftType;
         uint256 ethPmtRequired;
         uint16 rentDuration;
         uint256 decimals;
@@ -143,7 +145,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function lend(
-        IERC721[] memory _nft, // todo: this goes
+        address[] memory _nft,
+        NftContractType[] memory _nftType,
         uint256[] memory _tokenId,
         uint16[] memory _maxRentDuration,
         uint32[] memory _dailyRentPrice,
@@ -157,7 +160,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         for (uint256 i = 0; i < _nft.length; i++) {
             require(_maxRentDuration[i] > 0, "must be at least one day lend");
             require(_maxRentDuration[i] <= 1825, "must be less than five years");
-            _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i]);
+            _transferNft(_nftType[i], _nft[i], _tokenId[i], msg.sender, address(this));
             bytes32 itemHash = keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], id));
             LendingRenting storage item = lendingRenting[itemHash];
             item.lending = Lending({
@@ -184,7 +187,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function rent(
-        IERC721[] memory _nft, // todo: this goes
+        address[] memory _nft,
+        NftContractType[] memory _nftType,
         uint256[] memory _tokenId,
         uint256[] memory _id,
         uint16[] memory _rentDuration
@@ -196,6 +200,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
         rc.ethPmtRequired = 0;
         rc.nftLen = _nft.length - 1;
         for (uint256 i = 0; i < _nft.length; i++) {
+            rc.nftType = _nftType[i];
             rc.tokenId = _tokenId[i];
             rc.id = _id[i];
             rc.nft = _nft[i];
@@ -213,7 +218,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             rc.paymentToken = resolver.getPaymentToken(rc.paymentTokenIndex);
             rc.isERC20 = rc.paymentTokenIndex > 1;
             if (rc.isERC20) {
-                // 1 marks ETH
+                // rc.paymentToken := 1 denotes ETH
                 rc.decimals = ERC20(rc.paymentToken).decimals();
             }
             rc.scale = 10**rc.decimals;
@@ -235,7 +240,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             item.renting.renterAddress = msg.sender;
             item.renting.rentDuration = rc.rentDuration;
             item.renting.rentedAt = uint32(block.timestamp);
-            rc.nft.transferFrom(address(this), msg.sender, rc.tokenId);
+            _transferNft(rc.nftType, rc.nft, rc.tokenId, address(this), msg.sender);
             emit Rented(address(rc.nft), rc.tokenId, rc.id, msg.sender, rc.rentDuration, uint32(block.timestamp));
         }
     }
@@ -323,7 +328,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function returnIt(
-        IERC721[] memory _nft, // todo: this goes
+        address[] memory _nft,
+        NftContractType[] memory _nftType,
         uint256[] memory _tokenId,
         uint256[] memory _id
     ) public nonReentrant {
@@ -332,7 +338,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
                 lendingRenting[keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i]))];
             require(item.renting.renterAddress == msg.sender, "not renter");
             uint256 secondsSinceRentStart = _ensureIsNotPastReturnDate(item.renting, block.timestamp);
-            _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i]);
+            _transferNft(_nftType[i], _nft[i], _tokenId[i], msg.sender, address(this));
             _distributePayments(item, secondsSinceRentStart);
             emit Returned(address(_nft[i]), _tokenId[i], _id[i], msg.sender, uint32(block.timestamp));
             delete item.renting;
@@ -340,7 +346,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function claimCollateral(
-        IERC721[] memory _nft, // todo:  this goes
+        address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id
     ) public nonReentrant {
@@ -358,7 +364,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     }
 
     function stopLending(
-        IERC721[] memory _nft, // todo: this goes
+        address[] memory _nft,
+        NftContractType[] memory _nftType,
         uint256[] memory _tokenId,
         uint256[] memory _id
     ) public {
@@ -366,7 +373,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
             _ensureIsNull(item.renting);
             require(item.lending.lenderAddress == msg.sender, "only lender allowed");
-            _nft[i].safeTransferFrom(address(this), msg.sender, _tokenId[i]);
+            _transferNft(_nftType[i], _nft[i], _tokenId[i], address(this), msg.sender);
             delete item.lending;
             emit LendingStopped(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
         }
@@ -375,11 +382,12 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
     // erc1155 amounts ignored, just make a batch request with the same id repeated
     // todo: I doubt (need to test on the mainnet snapshot) that we in fact even need this,
     // because that would make a token semi-fungible?
-    function _transferNft(NftContractType _nftType, address _from, address _to, address _nft, uint256 _id) internal {
+    function _transferNft(NftContractType _nftType, address _nft, uint256 _id, address _from, address _to) internal {
         if (_nftType == NftContractType.ERC1155) {
-            ERC1155(_nft).safeTransferFrom(_from, _to, _id, 1, bytes4(0x0));
+            bytes memory data;
+            IERC1155(_nft).safeTransferFrom(_from, _to, _id, 1, data);
         } else if (_nftType == NftContractType.ERC721) {
-            ERC721(_nft).transferFrom(_from, _to, _id);
+            IERC721(_nft).safeTransferFrom(_from, _to, _id);
         }
     }
 
