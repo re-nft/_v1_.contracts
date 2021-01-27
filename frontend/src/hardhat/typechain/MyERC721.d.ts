@@ -26,6 +26,7 @@ interface MyERC721Interface extends ethers.utils.Interface {
     "award()": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
     "baseURI()": FunctionFragment;
+    "c_0x49e3cf62(bytes32)": FunctionFragment;
     "getApproved(uint256)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
     "name()": FunctionFragment;
@@ -48,6 +49,10 @@ interface MyERC721Interface extends ethers.utils.Interface {
   encodeFunctionData(functionFragment: "award", values?: undefined): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
   encodeFunctionData(functionFragment: "baseURI", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "c_0x49e3cf62",
+    values: [BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "getApproved",
     values: [BigNumberish]
@@ -99,6 +104,10 @@ interface MyERC721Interface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "award", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "baseURI", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "c_0x49e3cf62",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getApproved",
     data: BytesLike
@@ -193,6 +202,16 @@ export class MyERC721 extends Contract {
     baseURI(overrides?: CallOverrides): Promise<[string]>;
 
     "baseURI()"(overrides?: CallOverrides): Promise<[string]>;
+
+    c_0x49e3cf62(
+      c__0x49e3cf62: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[void]>;
+
+    "c_0x49e3cf62(bytes32)"(
+      c__0x49e3cf62: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[void]>;
 
     getApproved(
       tokenId: BigNumberish,
@@ -349,6 +368,16 @@ export class MyERC721 extends Contract {
 
   "baseURI()"(overrides?: CallOverrides): Promise<string>;
 
+  c_0x49e3cf62(
+    c__0x49e3cf62: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<void>;
+
+  "c_0x49e3cf62(bytes32)"(
+    c__0x49e3cf62: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<void>;
+
   getApproved(
     tokenId: BigNumberish,
     overrides?: CallOverrides
@@ -497,6 +526,16 @@ export class MyERC721 extends Contract {
     baseURI(overrides?: CallOverrides): Promise<string>;
 
     "baseURI()"(overrides?: CallOverrides): Promise<string>;
+
+    c_0x49e3cf62(
+      c__0x49e3cf62: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "c_0x49e3cf62(bytes32)"(
+      c__0x49e3cf62: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     getApproved(
       tokenId: BigNumberish,
@@ -674,6 +713,16 @@ export class MyERC721 extends Contract {
 
     "baseURI()"(overrides?: CallOverrides): Promise<BigNumber>;
 
+    c_0x49e3cf62(
+      c__0x49e3cf62: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    "c_0x49e3cf62(bytes32)"(
+      c__0x49e3cf62: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getApproved(
       tokenId: BigNumberish,
       overrides?: CallOverrides
@@ -832,6 +881,16 @@ export class MyERC721 extends Contract {
     baseURI(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     "baseURI()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    c_0x49e3cf62(
+      c__0x49e3cf62: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "c_0x49e3cf62(bytes32)"(
+      c__0x49e3cf62: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     getApproved(
       tokenId: BigNumberish,

@@ -22,14 +22,23 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
 interface IFreeFromUpToInterface extends ethers.utils.Interface {
   functions: {
+    "c_0xb9603089(bytes32)": FunctionFragment;
     "freeFromUpTo(address,uint256)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "c_0xb9603089",
+    values: [BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "freeFromUpTo",
     values: [string, BigNumberish]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "c_0xb9603089",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "freeFromUpTo",
     data: BytesLike
@@ -52,6 +61,16 @@ export class IFreeFromUpTo extends Contract {
   interface: IFreeFromUpToInterface;
 
   functions: {
+    c_0xb9603089(
+      c__0xb9603089: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[void]>;
+
+    "c_0xb9603089(bytes32)"(
+      c__0xb9603089: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[void]>;
+
     freeFromUpTo(
       from: string,
       value: BigNumberish,
@@ -64,6 +83,16 @@ export class IFreeFromUpTo extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
   };
+
+  c_0xb9603089(
+    c__0xb9603089: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<void>;
+
+  "c_0xb9603089(bytes32)"(
+    c__0xb9603089: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<void>;
 
   freeFromUpTo(
     from: string,
@@ -78,6 +107,16 @@ export class IFreeFromUpTo extends Contract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    c_0xb9603089(
+      c__0xb9603089: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "c_0xb9603089(bytes32)"(
+      c__0xb9603089: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     freeFromUpTo(
       from: string,
       value: BigNumberish,
@@ -94,6 +133,16 @@ export class IFreeFromUpTo extends Contract {
   filters: {};
 
   estimateGas: {
+    c_0xb9603089(
+      c__0xb9603089: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    "c_0xb9603089(bytes32)"(
+      c__0xb9603089: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     freeFromUpTo(
       from: string,
       value: BigNumberish,
@@ -108,6 +157,16 @@ export class IFreeFromUpTo extends Contract {
   };
 
   populateTransaction: {
+    c_0xb9603089(
+      c__0xb9603089: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "c_0xb9603089(bytes32)"(
+      c__0xb9603089: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     freeFromUpTo(
       from: string,
       value: BigNumberish,

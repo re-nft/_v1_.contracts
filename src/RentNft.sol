@@ -8,10 +8,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155Receiver.sol";
 import "./Resolver.sol";
 import "hardhat/console.sol";
 
-contract RentNft is ReentrancyGuard, Ownable, ERC721Holder {
+contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     using SafeERC20 for ERC20;
     // 256 bits -> 32 bytes - single slot storage
     // address - 20 byte value -> 160 bits

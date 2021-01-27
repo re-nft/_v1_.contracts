@@ -22,6 +22,7 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
 interface ResolverInterface extends ethers.utils.Interface {
   functions: {
+    "c_0x015f8313(bytes32)": FunctionFragment;
     "getPaymentToken(uint8)": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
@@ -29,6 +30,10 @@ interface ResolverInterface extends ethers.utils.Interface {
     "transferOwnership(address)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "c_0x015f8313",
+    values: [BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "getPaymentToken",
     values: [BigNumberish]
@@ -47,6 +52,10 @@ interface ResolverInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "c_0x015f8313",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getPaymentToken",
     data: BytesLike
@@ -86,6 +95,16 @@ export class Resolver extends Contract {
   interface: ResolverInterface;
 
   functions: {
+    c_0x015f8313(
+      c__0x015f8313: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[void]>;
+
+    "c_0x015f8313(bytes32)"(
+      c__0x015f8313: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[void]>;
+
     getPaymentToken(
       _pt: BigNumberish,
       overrides?: CallOverrides
@@ -126,6 +145,16 @@ export class Resolver extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
   };
+
+  c_0x015f8313(
+    c__0x015f8313: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<void>;
+
+  "c_0x015f8313(bytes32)"(
+    c__0x015f8313: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<void>;
 
   getPaymentToken(
     _pt: BigNumberish,
@@ -168,6 +197,16 @@ export class Resolver extends Contract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    c_0x015f8313(
+      c__0x015f8313: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "c_0x015f8313(bytes32)"(
+      c__0x015f8313: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     getPaymentToken(
       _pt: BigNumberish,
       overrides?: CallOverrides
@@ -217,6 +256,16 @@ export class Resolver extends Contract {
   };
 
   estimateGas: {
+    c_0x015f8313(
+      c__0x015f8313: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    "c_0x015f8313(bytes32)"(
+      c__0x015f8313: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getPaymentToken(
       _pt: BigNumberish,
       overrides?: CallOverrides
@@ -259,6 +308,16 @@ export class Resolver extends Contract {
   };
 
   populateTransaction: {
+    c_0x015f8313(
+      c__0x015f8313: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "c_0x015f8313(bytes32)"(
+      c__0x015f8313: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getPaymentToken(
       _pt: BigNumberish,
       overrides?: CallOverrides

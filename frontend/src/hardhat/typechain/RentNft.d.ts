@@ -23,6 +23,7 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
 interface RentNftInterface extends ethers.utils.Interface {
   functions: {
+    "c_0x436b5f18(bytes32)": FunctionFragment;
     "claimCollateral(address[],uint256[],uint256[])": FunctionFragment;
     "lend(address[],uint8[],uint256[],uint16[],uint32[],uint32[],uint8[])": FunctionFragment;
     "onERC721Received(address,address,uint256,bytes)": FunctionFragment;
@@ -37,6 +38,10 @@ interface RentNftInterface extends ethers.utils.Interface {
     "transferOwnership(address)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "c_0x436b5f18",
+    values: [BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "claimCollateral",
     values: [string[], BigNumberish[], BigNumberish[]]
@@ -94,6 +99,10 @@ interface RentNftInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "c_0x436b5f18",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "claimCollateral",
     data: BytesLike
@@ -156,6 +165,16 @@ export class RentNft extends Contract {
   interface: RentNftInterface;
 
   functions: {
+    c_0x436b5f18(
+      c__0x436b5f18: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[void]>;
+
+    "c_0x436b5f18(bytes32)"(
+      c__0x436b5f18: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[void]>;
+
     claimCollateral(
       _nft: string[],
       _tokenId: BigNumberish[],
@@ -300,6 +319,16 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
   };
+
+  c_0x436b5f18(
+    c__0x436b5f18: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<void>;
+
+  "c_0x436b5f18(bytes32)"(
+    c__0x436b5f18: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<void>;
 
   claimCollateral(
     _nft: string[],
@@ -446,6 +475,16 @@ export class RentNft extends Contract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    c_0x436b5f18(
+      c__0x436b5f18: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "c_0x436b5f18(bytes32)"(
+      c__0x436b5f18: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     claimCollateral(
       _nft: string[],
       _tokenId: BigNumberish[],
@@ -641,6 +680,16 @@ export class RentNft extends Contract {
   };
 
   estimateGas: {
+    c_0x436b5f18(
+      c__0x436b5f18: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    "c_0x436b5f18(bytes32)"(
+      c__0x436b5f18: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     claimCollateral(
       _nft: string[],
       _tokenId: BigNumberish[],
@@ -787,6 +836,16 @@ export class RentNft extends Contract {
   };
 
   populateTransaction: {
+    c_0x436b5f18(
+      c__0x436b5f18: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "c_0x436b5f18(bytes32)"(
+      c__0x436b5f18: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     claimCollateral(
       _nft: string[],
       _tokenId: BigNumberish[],
