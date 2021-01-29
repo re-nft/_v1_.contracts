@@ -10,8 +10,8 @@ import 'solidity-coverage';
 // * unless this becomes opt-in, remove the comment out
 // * to generate the new types
 // * relating github issue: https://github.com/rhlsthrm/hardhat-typechain/issues/12
-import 'hardhat-typechain';
-import '@typechain/ethers-v5';
+// import 'hardhat-typechain';
+// import '@typechain/ethers-v5';
 import { node_url, accounts } from './utils/network';
 
 const config: HardhatUserConfig = {

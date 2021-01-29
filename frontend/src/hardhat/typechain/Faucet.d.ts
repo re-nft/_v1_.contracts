@@ -22,23 +22,14 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
 interface FaucetInterface extends ethers.utils.Interface {
   functions: {
-    "c_0x747d8434(bytes32)": FunctionFragment;
     "requestToken(address)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "c_0x747d8434",
-    values: [BytesLike]
-  ): string;
   encodeFunctionData(
     functionFragment: "requestToken",
     values: [string]
   ): string;
 
-  decodeFunctionResult(
-    functionFragment: "c_0x747d8434",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "requestToken",
     data: BytesLike
@@ -61,16 +52,6 @@ export class Faucet extends Contract {
   interface: FaucetInterface;
 
   functions: {
-    c_0x747d8434(
-      c__0x747d8434: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[void]>;
-
-    "c_0x747d8434(bytes32)"(
-      c__0x747d8434: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[void]>;
-
     requestToken(
       _token: string,
       overrides?: Overrides
@@ -81,16 +62,6 @@ export class Faucet extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
   };
-
-  c_0x747d8434(
-    c__0x747d8434: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<void>;
-
-  "c_0x747d8434(bytes32)"(
-    c__0x747d8434: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<void>;
 
   requestToken(
     _token: string,
@@ -103,16 +74,6 @@ export class Faucet extends Contract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    c_0x747d8434(
-      c__0x747d8434: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    "c_0x747d8434(bytes32)"(
-      c__0x747d8434: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
     requestToken(_token: string, overrides?: CallOverrides): Promise<void>;
 
     "requestToken(address)"(
@@ -124,16 +85,6 @@ export class Faucet extends Contract {
   filters: {};
 
   estimateGas: {
-    c_0x747d8434(
-      c__0x747d8434: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    "c_0x747d8434(bytes32)"(
-      c__0x747d8434: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     requestToken(_token: string, overrides?: Overrides): Promise<BigNumber>;
 
     "requestToken(address)"(
@@ -143,16 +94,6 @@ export class Faucet extends Contract {
   };
 
   populateTransaction: {
-    c_0x747d8434(
-      c__0x747d8434: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    "c_0x747d8434(bytes32)"(
-      c__0x747d8434: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     requestToken(
       _token: string,
       overrides?: Overrides

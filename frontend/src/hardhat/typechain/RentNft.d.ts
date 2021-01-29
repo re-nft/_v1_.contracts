@@ -23,9 +23,10 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
 interface RentNftInterface extends ethers.utils.Interface {
   functions: {
-    "c_0x436b5f18(bytes32)": FunctionFragment;
     "claimCollateral(address[],uint256[],uint256[])": FunctionFragment;
     "lend(address[],uint8[],uint256[],uint16[],uint32[],uint32[],uint8[])": FunctionFragment;
+    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)": FunctionFragment;
+    "onERC1155Received(address,address,uint256,uint256,bytes)": FunctionFragment;
     "onERC721Received(address,address,uint256,bytes)": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
@@ -35,13 +36,10 @@ interface RentNftInterface extends ethers.utils.Interface {
     "setBeneficiary(address)": FunctionFragment;
     "setRentFee(uint256)": FunctionFragment;
     "stopLending(address[],uint8[],uint256[],uint256[])": FunctionFragment;
+    "supportsInterface(bytes4)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "c_0x436b5f18",
-    values: [BytesLike]
-  ): string;
   encodeFunctionData(
     functionFragment: "claimCollateral",
     values: [string[], BigNumberish[], BigNumberish[]]
@@ -57,6 +55,14 @@ interface RentNftInterface extends ethers.utils.Interface {
       BigNumberish[],
       BigNumberish[]
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "onERC1155BatchReceived",
+    values: [string, string, BigNumberish[], BigNumberish[], BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "onERC1155Received",
+    values: [string, string, BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "onERC721Received",
@@ -95,19 +101,27 @@ interface RentNftInterface extends ethers.utils.Interface {
     values: [string[], BigNumberish[], BigNumberish[], BigNumberish[]]
   ): string;
   encodeFunctionData(
+    functionFragment: "supportsInterface",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "transferOwnership",
     values: [string]
   ): string;
 
   decodeFunctionResult(
-    functionFragment: "c_0x436b5f18",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "claimCollateral",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "lend", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "onERC1155BatchReceived",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "onERC1155Received",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "onERC721Received",
     data: BytesLike
@@ -127,6 +141,10 @@ interface RentNftInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "setRentFee", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "stopLending",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -165,16 +183,6 @@ export class RentNft extends Contract {
   interface: RentNftInterface;
 
   functions: {
-    c_0x436b5f18(
-      c__0x436b5f18: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[void]>;
-
-    "c_0x436b5f18(bytes32)"(
-      c__0x436b5f18: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[void]>;
-
     claimCollateral(
       _nft: string[],
       _tokenId: BigNumberish[],
@@ -210,6 +218,42 @@ export class RentNft extends Contract {
       _paymentToken: BigNumberish[],
       overrides?: Overrides
     ): Promise<ContractTransaction>;
+
+    onERC1155BatchReceived(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish[],
+      arg3: BigNumberish[],
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish[],
+      arg3: BigNumberish[],
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    onERC1155Received(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish,
+      arg3: BigNumberish,
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    "onERC1155Received(address,address,uint256,uint256,bytes)"(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish,
+      arg3: BigNumberish,
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
 
     onERC721Received(
       arg0: string,
@@ -309,6 +353,16 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    "supportsInterface(bytes4)"(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
     transferOwnership(
       newOwner: string,
       overrides?: Overrides
@@ -319,16 +373,6 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
   };
-
-  c_0x436b5f18(
-    c__0x436b5f18: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<void>;
-
-  "c_0x436b5f18(bytes32)"(
-    c__0x436b5f18: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<void>;
 
   claimCollateral(
     _nft: string[],
@@ -365,6 +409,42 @@ export class RentNft extends Contract {
     _paymentToken: BigNumberish[],
     overrides?: Overrides
   ): Promise<ContractTransaction>;
+
+  onERC1155BatchReceived(
+    arg0: string,
+    arg1: string,
+    arg2: BigNumberish[],
+    arg3: BigNumberish[],
+    arg4: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
+  "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"(
+    arg0: string,
+    arg1: string,
+    arg2: BigNumberish[],
+    arg3: BigNumberish[],
+    arg4: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
+  onERC1155Received(
+    arg0: string,
+    arg1: string,
+    arg2: BigNumberish,
+    arg3: BigNumberish,
+    arg4: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
+  "onERC1155Received(address,address,uint256,uint256,bytes)"(
+    arg0: string,
+    arg1: string,
+    arg2: BigNumberish,
+    arg3: BigNumberish,
+    arg4: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<string>;
 
   onERC721Received(
     arg0: string,
@@ -464,6 +544,16 @@ export class RentNft extends Contract {
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
+  supportsInterface(
+    interfaceId: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  "supportsInterface(bytes4)"(
+    interfaceId: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
   transferOwnership(
     newOwner: string,
     overrides?: Overrides
@@ -475,16 +565,6 @@ export class RentNft extends Contract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    c_0x436b5f18(
-      c__0x436b5f18: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    "c_0x436b5f18(bytes32)"(
-      c__0x436b5f18: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
     claimCollateral(
       _nft: string[],
       _tokenId: BigNumberish[],
@@ -520,6 +600,42 @@ export class RentNft extends Contract {
       _paymentToken: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<void>;
+
+    onERC1155BatchReceived(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish[],
+      arg3: BigNumberish[],
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish[],
+      arg3: BigNumberish[],
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    onERC1155Received(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish,
+      arg3: BigNumberish,
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    "onERC1155Received(address,address,uint256,uint256,bytes)"(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish,
+      arg3: BigNumberish,
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<string>;
 
     onERC721Received(
       arg0: string,
@@ -619,6 +735,16 @@ export class RentNft extends Contract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    "supportsInterface(bytes4)"(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
     transferOwnership(
       newOwner: string,
       overrides?: CallOverrides
@@ -680,16 +806,6 @@ export class RentNft extends Contract {
   };
 
   estimateGas: {
-    c_0x436b5f18(
-      c__0x436b5f18: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    "c_0x436b5f18(bytes32)"(
-      c__0x436b5f18: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     claimCollateral(
       _nft: string[],
       _tokenId: BigNumberish[],
@@ -724,6 +840,42 @@ export class RentNft extends Contract {
       _nftPrice: BigNumberish[],
       _paymentToken: BigNumberish[],
       overrides?: Overrides
+    ): Promise<BigNumber>;
+
+    onERC1155BatchReceived(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish[],
+      arg3: BigNumberish[],
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish[],
+      arg3: BigNumberish[],
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    onERC1155Received(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish,
+      arg3: BigNumberish,
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    "onERC1155Received(address,address,uint256,uint256,bytes)"(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish,
+      arg3: BigNumberish,
+      arg4: BytesLike,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     onERC721Received(
@@ -824,6 +976,16 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<BigNumber>;
 
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    "supportsInterface(bytes4)"(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     transferOwnership(
       newOwner: string,
       overrides?: Overrides
@@ -836,16 +998,6 @@ export class RentNft extends Contract {
   };
 
   populateTransaction: {
-    c_0x436b5f18(
-      c__0x436b5f18: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    "c_0x436b5f18(bytes32)"(
-      c__0x436b5f18: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     claimCollateral(
       _nft: string[],
       _tokenId: BigNumberish[],
@@ -880,6 +1032,42 @@ export class RentNft extends Contract {
       _nftPrice: BigNumberish[],
       _paymentToken: BigNumberish[],
       overrides?: Overrides
+    ): Promise<PopulatedTransaction>;
+
+    onERC1155BatchReceived(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish[],
+      arg3: BigNumberish[],
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish[],
+      arg3: BigNumberish[],
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    onERC1155Received(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish,
+      arg3: BigNumberish,
+      arg4: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "onERC1155Received(address,address,uint256,uint256,bytes)"(
+      arg0: string,
+      arg1: string,
+      arg2: BigNumberish,
+      arg3: BigNumberish,
+      arg4: BytesLike,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     onERC721Received(
@@ -978,6 +1166,16 @@ export class RentNft extends Contract {
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
+    ): Promise<PopulatedTransaction>;
+
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "supportsInterface(bytes4)"(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     transferOwnership(

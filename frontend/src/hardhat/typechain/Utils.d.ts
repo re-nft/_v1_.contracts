@@ -22,24 +22,15 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 interface UtilsInterface extends ethers.utils.Interface {
   functions: {
     "_unpackPrice(bytes4,uint256)": FunctionFragment;
-    "c_0x9693403d(bytes32)": FunctionFragment;
   };
 
   encodeFunctionData(
     functionFragment: "_unpackPrice",
     values: [BytesLike, BigNumberish]
   ): string;
-  encodeFunctionData(
-    functionFragment: "c_0x9693403d",
-    values: [BytesLike]
-  ): string;
 
   decodeFunctionResult(
     functionFragment: "_unpackPrice",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "c_0x9693403d",
     data: BytesLike
   ): Result;
 
@@ -71,16 +62,6 @@ export class Utils extends Contract {
       _scale: BigNumberish,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
-
-    c_0x9693403d(
-      c__0x9693403d: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[void]>;
-
-    "c_0x9693403d(bytes32)"(
-      c__0x9693403d: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[void]>;
   };
 
   _unpackPrice(
@@ -95,16 +76,6 @@ export class Utils extends Contract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  c_0x9693403d(
-    c__0x9693403d: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<void>;
-
-  "c_0x9693403d(bytes32)"(
-    c__0x9693403d: BytesLike,
-    overrides?: CallOverrides
-  ): Promise<void>;
-
   callStatic: {
     _unpackPrice(
       _price: BytesLike,
@@ -117,16 +88,6 @@ export class Utils extends Contract {
       _scale: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    c_0x9693403d(
-      c__0x9693403d: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    "c_0x9693403d(bytes32)"(
-      c__0x9693403d: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<void>;
   };
 
   filters: {};
@@ -143,16 +104,6 @@ export class Utils extends Contract {
       _scale: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    c_0x9693403d(
-      c__0x9693403d: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    "c_0x9693403d(bytes32)"(
-      c__0x9693403d: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -165,16 +116,6 @@ export class Utils extends Contract {
     "_unpackPrice(bytes4,uint256)"(
       _price: BytesLike,
       _scale: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    c_0x9693403d(
-      c__0x9693403d: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    "c_0x9693403d(bytes32)"(
-      c__0x9693403d: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };

@@ -25,7 +25,7 @@ contract MyERC1155 is ERC1155 {
     //     "https://api.bccg.digital/api/bccg/1"
     // ];
 
-    constructor() public ERC1155("https://game.example/api/item/") {
+    constructor() ERC1155("https://game.example/api/item/") {
         // _mint(msg.sender, GOLD, 10**18, "");
         // _mint(msg.sender, SILVER, 10**27, "");
         // _mint(msg.sender, THORS_HAMMER, 1, "");

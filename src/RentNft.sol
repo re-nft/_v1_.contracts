@@ -16,7 +16,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     using SafeERC20 for ERC20;
     // 256 bits -> 32 bytes - single slot storage
     // address - 20 byte value -> 160 bits
-    uint256 private id = 1;
+    uint256 private lendingId = 1;
     // settable by owner and chargeable on the final rent price
     uint256 public rentFee = 500;
     // option 1 - transfer fee amounts on every txn
@@ -121,7 +121,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     // the stack Houdini
     struct RentCutie {
         uint256 tokenId;
-        uint256 id;
+        uint256 lendingId;
         address nft;
         NftContractType nftType;
         uint256 ethPmtRequired;
@@ -162,7 +162,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             require(_maxRentDuration[i] > 0, "must be at least one day lend");
             require(_maxRentDuration[i] <= 1825, "must be less than five years");
             _transferNft(_nftType[i], _nft[i], _tokenId[i], msg.sender, address(this));
-            bytes32 itemHash = keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], id));
+            bytes32 itemHash = keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], lendingId));
             LendingRenting storage item = lendingRenting[itemHash];
             item.lending = Lending({
                 lenderAddress: msg.sender,
@@ -174,7 +174,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             emit Lent(
                 address(_nft[i]),
                 _tokenId[i],
-                id,
+                lendingId,
                 msg.sender,
                 _maxRentDuration[i],
                 _dailyRentPrice[i],
@@ -183,7 +183,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             );
             // changing from non-zero to something else costs 5000 gas
             // however, changing from zero to something else costs 20k gas
-            id++;
+            lendingId++;
         }
     }
 
@@ -203,10 +203,10 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         for (uint256 i = 0; i < _nft.length; i++) {
             rc.nftType = _nftType[i];
             rc.tokenId = _tokenId[i];
-            rc.id = _id[i];
+            rc.lendingId = _id[i];
             rc.nft = _nft[i];
             LendingRenting storage item =
-                lendingRenting[keccak256(abi.encodePacked(address(rc.nft), rc.tokenId, rc.id))];
+                lendingRenting[keccak256(abi.encodePacked(address(rc.nft), rc.tokenId, rc.lendingId))];
             require(item.renting.renterAddress == address(0), "1 already rented");
             require(item.renting.rentDuration == 0, "2 already rented");
             require(item.renting.rentedAt == 0, "3 already rented");
@@ -242,7 +242,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             item.renting.rentDuration = rc.rentDuration;
             item.renting.rentedAt = uint32(block.timestamp);
             _transferNft(rc.nftType, rc.nft, rc.tokenId, address(this), msg.sender);
-            emit Rented(address(rc.nft), rc.tokenId, rc.id, msg.sender, rc.rentDuration, uint32(block.timestamp));
+            emit Rented(address(rc.nft), rc.tokenId, rc.lendingId, msg.sender, rc.rentDuration, uint32(block.timestamp));
         }
     }
 
@@ -378,6 +378,28 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             delete item.lending;
             emit LendingStopped(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
         }
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external pure override returns(bytes4) {
+        // bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`
+        return 0xbc197c81;
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure override returns(bytes4) {
+        // bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")) = 0xf23a6e61
+        return 0xf23a6e61;
     }
 
     // erc1155 amounts ignored, just make a batch request with the same id repeated
