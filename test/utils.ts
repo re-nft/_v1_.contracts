@@ -57,12 +57,12 @@ export const getEvents = (events: Event[], name: string): Event[] => {
 };
 
 // given the target price, give back the hex equivalent
-export const packPrice = (price: number): number => {
+export const packPrice = (price: number): string => {
   if (price > 9999.9999) throw new Error('too high');
   if (price < 0.0001) throw new Error('too low');
   const stringVersion = price.toString();
   const parts = stringVersion.split('.');
-  let res: number;
+  let res: string;
   if (parts.length == 2) {
     const whole = parts[0];
     let decimal = parts[1];
@@ -71,14 +71,16 @@ export const packPrice = (price: number): number => {
     }
     const wholeHex = decimalToPaddedHexString(Number(whole), 16);
     const decimalHex = decimalToPaddedHexString(Number(decimal), 16);
-    const hexRepr = wholeHex.slice(2).concat(decimalHex.slice(2));
-    res = parseInt(hexRepr, 16);
+    const hexRepr = wholeHex.concat(decimalHex.slice(2));
+    // res = parseInt(hexRepr, 16);
+    res = hexRepr;
   } else {
     if (parts.length != 1) throw new Error('price packing issue');
     const whole = parts[0];
     const wholeHex = decimalToPaddedHexString(Number(whole), 16);
     const decimalHex = '0000';
-    res = parseInt(wholeHex.slice(2).concat(decimalHex), 16);
+    // res = parseInt(wholeHex.slice(2).concat(decimalHex), 16);
+    res = wholeHex.concat(decimalHex);
   }
   return res;
 };

@@ -18,6 +18,7 @@ import {
   advanceTime,
   getLatestBlock,
   getErc20Balance,
+  decimalToPaddedHexString,
 } from './utils';
 
 // default values
@@ -147,8 +148,8 @@ const setup = deployments.createFixture(async () => {
 type lendBatchArgs = {
   tokenIds: number[];
   maxRentDurations?: number[];
-  dailyRentPrices?: number[];
-  nftPrices?: number[];
+  dailyRentPrices?: string[];
+  nftPrices?: string[];
   expectedLendingIds?: number[];
 };
 
@@ -195,10 +196,14 @@ describe('RentNft', function () {
         _maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION);
       }
       if (dailyRentPrices.length === 0) {
-        _dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE);
+        _dailyRentPrices = Array(tokenIds.length)
+          .fill(DAILY_RENT_PRICE)
+          .map((x) => decimalToPaddedHexString(x, 32));
       }
       if (nftPrices.length === 0) {
-        _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
+        _nftPrices = Array(tokenIds.length)
+          .fill(NFT_PRICE)
+          .map((x) => decimalToPaddedHexString(x, 32));
       }
       if (expectedLendingIds.length === 0) {
         _expectedLendingIds = tokenIds.map((_, ix) => ix + 1);
@@ -246,8 +251,10 @@ describe('RentNft', function () {
         expect(lendingId).to.eq(_expectedLendingIds[i]);
         expect(lenderAddress).to.eq(lender.address);
         expect(maxRentDuration).to.eq(MAX_RENT_DURATION);
-        expect(dailyRentPrice).to.eq(DAILY_RENT_PRICE);
-        expect(nftPrice).to.eq(NFT_PRICE);
+        expect(dailyRentPrice).to.eq(
+          decimalToPaddedHexString(DAILY_RENT_PRICE, 32)
+        );
+        expect(nftPrice).to.eq(decimalToPaddedHexString(NFT_PRICE, 32));
         expect(paymentToken).to.eq(PAYMENT_TOKEN);
         if (!isErc721) {
           const balance = await ERC1155.balanceOf(RentNft.address, tokenIds[i]);
@@ -389,10 +396,14 @@ describe('RentNft', function () {
         _maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION);
       }
       if (dailyRentPrices.length === 0) {
-        _dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE);
+        _dailyRentPrices = Array(tokenIds.length)
+          .fill(DAILY_RENT_PRICE)
+          .map((x) => decimalToPaddedHexString(x, 32));
       }
       if (nftPrices.length === 0) {
-        _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
+        _nftPrices = Array(tokenIds.length)
+          .fill(NFT_PRICE)
+          .map((x) => decimalToPaddedHexString(x, 32));
       }
       await lender.renft.lend(
         Array(tokenIds.length).fill(ERC721.address),
@@ -896,8 +907,12 @@ describe('RentNft', function () {
       const tokenIds = [1];
       const eth = 1;
       const maxRentDurations = 3;
-      const _dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE);
-      const _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
+      const _dailyRentPrices = Array(tokenIds.length)
+        .fill(DAILY_RENT_PRICE)
+        .map((x) => decimalToPaddedHexString(x, 32));
+      const _nftPrices = Array(tokenIds.length)
+        .fill(NFT_PRICE)
+        .map((x) => decimalToPaddedHexString(x, 32));
       await lender.renft.lend(
         Array(tokenIds.length).fill(ERC721.address),
         tokenIds,

@@ -47,8 +47,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         uint256 lendingId,
         address indexed lenderAddress,
         uint16 maxRentDuration,
-        uint32 dailyRentPrice,
-        uint32 nftPrice,
+        bytes4 dailyRentPrice,
+        bytes4 nftPrice,
         Resolver.PaymentToken paymentToken
     );
 
@@ -141,8 +141,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         IERC721[] memory _nft,
         uint256[] memory _tokenId,
         uint16[] memory _maxRentDuration,
-        uint32[] memory _dailyRentPrice,
-        uint32[] memory _nftPrice,
+        bytes4[] memory _dailyRentPrice,
+        bytes4[] memory _nftPrice,
         Resolver.PaymentToken[] memory _paymentToken
     ) external nonReentrant {
         require(_nft.length == _tokenId.length, "arg arrs diff length");
@@ -158,8 +158,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             item.lending = Lending({
                 lenderAddress: msg.sender,
                 maxRentDuration: _maxRentDuration[i],
-                dailyRentPrice: bytes4(_dailyRentPrice[i]),
-                nftPrice: bytes4(_nftPrice[i]),
+                dailyRentPrice: _dailyRentPrice[i],
+                nftPrice: _nftPrice[i],
                 paymentToken: _paymentToken[i]
             });
             emit Lent(
@@ -178,13 +178,16 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         }
     }
 
+    // gitcoin bounty: wrapper on top of these, to calculate the most
+    // efficient way to lend & rent.
+    // whether it is to call lend1155 or lendBatch1155 or a combination
     function lend1155(
         IERC1155[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _amount,
         uint16[] memory _maxRentDuration,
-        uint32[] memory _dailyRentPrice,
-        uint32[] memory _nftPrice,
+        bytes4[] memory _dailyRentPrice,
+        bytes4[] memory _nftPrice,
         Resolver.PaymentToken[] memory _paymentToken
     ) external nonReentrant {
         require(_nft.length == _tokenId.length, "arg arrs diff length");
@@ -201,8 +204,8 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             item.lending = Lending({
                 lenderAddress: msg.sender,
                 maxRentDuration: _maxRentDuration[i],
-                dailyRentPrice: bytes4(_dailyRentPrice[i]),
-                nftPrice: bytes4(_nftPrice[i]),
+                dailyRentPrice: _dailyRentPrice[i],
+                nftPrice: _nftPrice[i],
                 paymentToken: _paymentToken[i]
             });
             emit Lent(
