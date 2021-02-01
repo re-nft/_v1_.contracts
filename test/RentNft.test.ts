@@ -317,7 +317,7 @@ describe('RentNft', function () {
       });
     });
 
-    it('lends in a batch', async function () {
+    it('lends in a batch - ERC721', async function () {
       const tokenIds = [1, 2];
       await lendBatch({ tokenIds });
     });
@@ -332,7 +332,25 @@ describe('RentNft', function () {
       });
     });
 
-    it('reverts if tries to lend again', async function () {
+    it('reverts if tries to lend again - ERC721', async function () {
+      const tokenIds = [1];
+      await lendBatch({
+        tokenIds,
+        nftAddresses: [ERC1155.address],
+        isErc721: false,
+        amounts: [5],
+      });
+      await expect(
+        lendBatch({
+          tokenIds,
+          nftAddresses: [ERC1155.address],
+          isErc721: false,
+          amounts: [1],
+        })
+      ).to.be.revertedWith('ERC1155: insufficient balance for transfer');
+    });
+
+    it('reverts if tries to lend again - ERC1155', async function () {
       const tokenIds = [1];
       await lendBatch({ tokenIds });
       await expect(lendBatch({ tokenIds })).to.be.revertedWith(
@@ -340,18 +358,45 @@ describe('RentNft', function () {
       );
     });
 
-    it('disallows zero day lend', async () => {
+    it('disallows zero day lend - ERC721', async () => {
       const tokenIds = [1];
       await expect(
         lendBatch({ tokenIds, maxRentDurations: [0] })
       ).to.be.revertedWith('must be at least one day lend');
     });
 
-    it('disallows args diff length', async () => {
+    it('disallows args diff length - ERC721', async () => {
       const tokenIds = [1];
       const longerThanTokenIds = [1, 2];
       await expect(
         lendBatch({ tokenIds, maxRentDurations: longerThanTokenIds })
+      ).to.be.revertedWith('arg arrs diff length');
+    });
+
+    it('disallows zero day lend - ERC1155', async () => {
+      const tokenIds = [1];
+      await expect(
+        lendBatch({
+          tokenIds,
+          maxRentDurations: [0],
+          nftAddresses: [ERC1155.address],
+          isErc721: false,
+          amounts: [1],
+        })
+      ).to.be.revertedWith('must be at least one day lend');
+    });
+
+    it('disallows args diff length - ERC1155', async () => {
+      const tokenIds = [1];
+      const longerThanTokenIds = [1, 2];
+      await expect(
+        lendBatch({
+          tokenIds,
+          maxRentDurations: longerThanTokenIds,
+          nftAddresses: [ERC1155.address],
+          isErc721: false,
+          amounts: [1],
+        })
       ).to.be.revertedWith('arg arrs diff length');
     });
   });
