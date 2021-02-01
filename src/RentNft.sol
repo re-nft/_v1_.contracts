@@ -10,7 +10,35 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Receiver.sol";
 import "./Resolver.sol";
-import "hardhat/console.sol";
+
+/*
+ *     bytes4(keccak256('balanceOf(address)')) == 0x70a08231
+ *     bytes4(keccak256('ownerOf(uint256)')) == 0x6352211e
+ *     bytes4(keccak256('approve(address,uint256)')) == 0x095ea7b3
+ *     bytes4(keccak256('getApproved(uint256)')) == 0x081812fc
+ *     bytes4(keccak256('setApprovalForAll(address,bool)')) == 0xa22cb465
+ *     bytes4(keccak256('isApprovedForAll(address,address)')) == 0xe985e9c5
+ *     bytes4(keccak256('transferFrom(address,address,uint256)')) == 0x23b872dd
+ *     bytes4(keccak256('safeTransferFrom(address,address,uint256)')) == 0x42842e0e
+ *     bytes4(keccak256('safeTransferFrom(address,address,uint256,bytes)')) == 0xb88d4fde
+ *
+ *     => 0x70a08231 ^ 0x6352211e ^ 0x095ea7b3 ^ 0x081812fc ^
+ *        0xa22cb465 ^ 0xe985e9c5 ^ 0x23b872dd ^ 0x42842e0e ^ 0xb88d4fde == 0x80ac58cd
+ */
+// bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+
+/*
+ *     bytes4(keccak256('balanceOf(address,uint256)')) == 0x00fdd58e
+ *     bytes4(keccak256('balanceOfBatch(address[],uint256[])')) == 0x4e1273f4
+ *     bytes4(keccak256('setApprovalForAll(address,bool)')) == 0xa22cb465
+ *     bytes4(keccak256('isApprovedForAll(address,address)')) == 0xe985e9c5
+ *     bytes4(keccak256('safeTransferFrom(address,address,uint256,uint256,bytes)')) == 0xf242432a
+ *     bytes4(keccak256('safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)')) == 0x2eb2c2d6
+ *
+ *     => 0x00fdd58e ^ 0x4e1273f4 ^ 0xa22cb465 ^
+ *        0xe985e9c5 ^ 0xf242432a ^ 0x2eb2c2d6 == 0xd9b67a26
+ */
+// bytes4 private constant _INTERFACE_ID_ERC1155 = 0xd9b67a26;
 
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     using SafeERC20 for ERC20;
@@ -137,13 +165,17 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         beneficiary = _beneficiary;
     }
 
+    // gitcoin bounty: wrapper on top of these, to calculate the most
+    // efficient way to lend & rent.
+    // whether it is to call lend1155 or lendBatch1155 or a combination
     function lend(
-        IERC721[] memory _nft,
+        address[] memory _nft,
         uint256[] memory _tokenId,
         uint16[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
-        Resolver.PaymentToken[] memory _paymentToken
+        Resolver.PaymentToken[] memory _paymentToken,
+        uint256[] memory _amount
     ) external nonReentrant {
         require(_nft.length == _tokenId.length, "arg arrs diff length");
         require(_tokenId.length == _maxRentDuration.length, "arg arrs diff length");
@@ -152,53 +184,15 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         for (uint256 i = 0; i < _nft.length; i++) {
             require(_maxRentDuration[i] > 0, "must be at least one day lend");
             require(_maxRentDuration[i] <= 1825, "must be less than five years");
-            _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i]);
-            bytes32 itemHash = keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], lendingId));
-            LendingRenting storage item = lendingRenting[itemHash];
-            item.lending = Lending({
-                lenderAddress: msg.sender,
-                maxRentDuration: _maxRentDuration[i],
-                dailyRentPrice: _dailyRentPrice[i],
-                nftPrice: _nftPrice[i],
-                paymentToken: _paymentToken[i]
-            });
-            emit Lent(
-                address(_nft[i]),
-                _tokenId[i],
-                lendingId,
-                msg.sender,
-                _maxRentDuration[i],
-                _dailyRentPrice[i],
-                _nftPrice[i],
-                _paymentToken[i]
-            );
-            // changing from non-zero to something else costs 5000 gas
-            // however, changing from zero to something else costs 20k gas
-            lendingId++;
-        }
-    }
-
-    // gitcoin bounty: wrapper on top of these, to calculate the most
-    // efficient way to lend & rent.
-    // whether it is to call lend1155 or lendBatch1155 or a combination
-    function lend1155(
-        IERC1155[] memory _nft,
-        uint256[] memory _tokenId,
-        uint256[] memory _amount,
-        uint16[] memory _maxRentDuration,
-        bytes4[] memory _dailyRentPrice,
-        bytes4[] memory _nftPrice,
-        Resolver.PaymentToken[] memory _paymentToken
-    ) external nonReentrant {
-        require(_nft.length == _tokenId.length, "arg arrs diff length");
-        require(_tokenId.length == _amount.length, "arg arrs diff length");
-        require(_amount.length == _maxRentDuration.length, "arg arrs diff length");
-        require(_maxRentDuration.length == _dailyRentPrice.length, "arg arrs diff length");
-        require(_nftPrice.length == _paymentToken.length, "arg arrs diff length");
-        for (uint256 i = 0; i < _nft.length; i++) {
-            require(_maxRentDuration[i] > 0, "must be at least one day lend");
-            require(_maxRentDuration[i] <= 1825, "must be less than five years");
-            _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i], _amount[i], "");
+            if (IERC165(_nft[i]).supportsInterface(0x80ac58cd)) {
+                IERC721(_nft[i]).safeTransferFrom(msg.sender, address(this), _tokenId[i]);
+            } else if (IERC165(_nft[i]).supportsInterface(0xd9b67a26)) {
+                // ! if num of erc1155 != num of amount, will revert
+                // this isn't forced
+                IERC1155(_nft[i]).safeTransferFrom(msg.sender, address(this), _tokenId[i], _amount[i], "");
+            } else {
+                revert("unsupported");
+            }
             bytes32 itemHash = keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], lendingId));
             LendingRenting storage item = lendingRenting[itemHash];
             item.lending = Lending({
@@ -225,7 +219,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     }
 
     function rent(
-        IERC721[] memory _nft,
+        address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id,
         uint16[] memory _rentDuration
@@ -277,8 +271,14 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             item.renting.rentDuration = rc.rentDuration;
             item.renting.rentedAt = uint32(block.timestamp);
             IERC721(rc.nft).safeTransferFrom(address(this), msg.sender, rc.tokenId);
-            // _transferNft(rc.nftType, rc.nft, rc.tokenId, address(this), msg.sender);
-            emit Rented(address(rc.nft), rc.tokenId, rc.lendingId, msg.sender, rc.rentDuration, uint32(block.timestamp));
+            emit Rented(
+                address(rc.nft),
+                rc.tokenId,
+                rc.lendingId,
+                msg.sender,
+                rc.rentDuration,
+                uint32(block.timestamp)
+            );
         }
     }
 
@@ -374,7 +374,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
                 lendingRenting[keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i]))];
             require(item.renting.renterAddress == msg.sender, "not renter");
             uint256 secondsSinceRentStart = _ensureIsNotPastReturnDate(item.renting, block.timestamp);
-             _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i]);
+            _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i]);
             _distributePayments(item, secondsSinceRentStart);
             emit Returned(address(_nft[i]), _tokenId[i], _id[i], msg.sender, uint32(block.timestamp));
             delete item.renting;
@@ -408,7 +408,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
             _ensureIsNull(item.renting);
             require(item.lending.lenderAddress == msg.sender, "only lender allowed");
-             _nft[i].safeTransferFrom(address(this), msg.sender, _tokenId[i]);
+            _nft[i].safeTransferFrom(address(this), msg.sender, _tokenId[i]);
             delete item.lending;
             emit LendingStopped(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
         }
@@ -420,7 +420,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata
-    ) external pure override returns(bytes4) {
+    ) external pure override returns (bytes4) {
         // bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`
         return 0xbc197c81;
     }
@@ -431,7 +431,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         uint256,
         uint256,
         bytes calldata
-    ) external pure override returns(bytes4) {
+    ) external pure override returns (bytes4) {
         // bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")) = 0xf23a6e61
         return 0xf23a6e61;
     }
