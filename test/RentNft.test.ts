@@ -283,15 +283,53 @@ describe('RentNft', function () {
       });
     });
 
-    it('lends two - one after another', async function () {
+    it('lends one - ERC1155 - multiple amounts', async function () {
+      const tokenIds = [1];
+      await lendBatch({
+        tokenIds,
+        nftAddresses: [ERC1155.address],
+        isErc721: false,
+        amounts: [3],
+      });
+    });
+
+    it('lends two - one after another - ERC721', async function () {
       const tokenIds = [1, 2];
       await lendBatch({ tokenIds: [tokenIds[0]], expectedLendingIds: [1] });
       await lendBatch({ tokenIds: [tokenIds[1]], expectedLendingIds: [2] });
     });
 
+    it('lends two - one after another - ERC1155', async function () {
+      const tokenIds = [1, 2];
+      await lendBatch({
+        tokenIds: [tokenIds[0]],
+        expectedLendingIds: [1],
+        nftAddresses: [ERC1155.address],
+        isErc721: false,
+        amounts: [2],
+      });
+      await lendBatch({
+        tokenIds: [tokenIds[1]],
+        expectedLendingIds: [2],
+        nftAddresses: [ERC1155.address],
+        isErc721: false,
+        amounts: [5],
+      });
+    });
+
     it('lends in a batch', async function () {
       const tokenIds = [1, 2];
       await lendBatch({ tokenIds });
+    });
+
+    it('lends in a batch - ERC1155', async function () {
+      const tokenIds = [1, 2];
+      await lendBatch({
+        tokenIds,
+        nftAddresses: [ERC1155.address, ERC1155.address],
+        isErc721: false,
+        amounts: [5, 4],
+      });
     });
 
     it('reverts if tries to lend again', async function () {

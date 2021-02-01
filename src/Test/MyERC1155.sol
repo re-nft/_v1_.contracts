@@ -35,7 +35,7 @@ contract MyERC1155 is ERC1155 {
 
     function award() public returns (uint256) {
         tokenId++;
-        _mint(msg.sender, tokenId, 1, "");
+        _mint(msg.sender, tokenId, 5, "");
         return tokenId;
     }
 }
