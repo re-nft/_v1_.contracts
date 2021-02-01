@@ -24,18 +24,19 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 interface RentNftInterface extends ethers.utils.Interface {
   functions: {
     "claimCollateral(address[],uint256[],uint256[])": FunctionFragment;
-    "lend(address[],uint8[],uint256[],uint16[],uint32[],uint32[],uint8[])": FunctionFragment;
+    "lend(address[],uint256[],uint16[],uint32[],uint32[],uint8[])": FunctionFragment;
+    "lend1155(address[],uint256[],uint256[],uint16[],uint32[],uint32[],uint8[])": FunctionFragment;
     "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)": FunctionFragment;
     "onERC1155Received(address,address,uint256,uint256,bytes)": FunctionFragment;
     "onERC721Received(address,address,uint256,bytes)": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
-    "rent(address[],uint8[],uint256[],uint256[],uint16[])": FunctionFragment;
+    "rent(address[],uint256[],uint256[],uint16[])": FunctionFragment;
     "rentFee()": FunctionFragment;
-    "returnIt(address[],uint8[],uint256[],uint256[])": FunctionFragment;
+    "returnIt(address[],uint256[],uint256[])": FunctionFragment;
     "setBeneficiary(address)": FunctionFragment;
     "setRentFee(uint256)": FunctionFragment;
-    "stopLending(address[],uint8[],uint256[],uint256[])": FunctionFragment;
+    "stopLending(address[],uint256[],uint256[])": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
   };
@@ -46,6 +47,17 @@ interface RentNftInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "lend",
+    values: [
+      string[],
+      BigNumberish[],
+      BigNumberish[],
+      BigNumberish[],
+      BigNumberish[],
+      BigNumberish[]
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "lend1155",
     values: [
       string[],
       BigNumberish[],
@@ -75,18 +87,12 @@ interface RentNftInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "rent",
-    values: [
-      string[],
-      BigNumberish[],
-      BigNumberish[],
-      BigNumberish[],
-      BigNumberish[]
-    ]
+    values: [string[], BigNumberish[], BigNumberish[], BigNumberish[]]
   ): string;
   encodeFunctionData(functionFragment: "rentFee", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "returnIt",
-    values: [string[], BigNumberish[], BigNumberish[], BigNumberish[]]
+    values: [string[], BigNumberish[], BigNumberish[]]
   ): string;
   encodeFunctionData(
     functionFragment: "setBeneficiary",
@@ -98,7 +104,7 @@ interface RentNftInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "stopLending",
-    values: [string[], BigNumberish[], BigNumberish[], BigNumberish[]]
+    values: [string[], BigNumberish[], BigNumberish[]]
   ): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
@@ -114,6 +120,7 @@ interface RentNftInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "lend", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "lend1155", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "onERC1155BatchReceived",
     data: BytesLike
@@ -199,7 +206,6 @@ export class RentNft extends Contract {
 
     lend(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _maxRentDuration: BigNumberish[],
       _dailyRentPrice: BigNumberish[],
@@ -208,10 +214,31 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
-    "lend(address[],uint8[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+    "lend(address[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
+      _maxRentDuration: BigNumberish[],
+      _dailyRentPrice: BigNumberish[],
+      _nftPrice: BigNumberish[],
+      _paymentToken: BigNumberish[],
+      overrides?: Overrides
+    ): Promise<ContractTransaction>;
+
+    lend1155(
+      _nft: string[],
+      _tokenId: BigNumberish[],
+      _amount: BigNumberish[],
+      _maxRentDuration: BigNumberish[],
+      _dailyRentPrice: BigNumberish[],
+      _nftPrice: BigNumberish[],
+      _paymentToken: BigNumberish[],
+      overrides?: Overrides
+    ): Promise<ContractTransaction>;
+
+    "lend1155(address[],uint256[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+      _nft: string[],
+      _tokenId: BigNumberish[],
+      _amount: BigNumberish[],
       _maxRentDuration: BigNumberish[],
       _dailyRentPrice: BigNumberish[],
       _nftPrice: BigNumberish[],
@@ -281,16 +308,14 @@ export class RentNft extends Contract {
 
     rent(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       overrides?: PayableOverrides
     ): Promise<ContractTransaction>;
 
-    "rent(address[],uint8[],uint256[],uint256[],uint16[])"(
+    "rent(address[],uint256[],uint256[],uint16[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
@@ -303,15 +328,13 @@ export class RentNft extends Contract {
 
     returnIt(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
-    "returnIt(address[],uint8[],uint256[],uint256[])"(
+    "returnIt(address[],uint256[],uint256[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
@@ -339,15 +362,13 @@ export class RentNft extends Contract {
 
     stopLending(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
-    "stopLending(address[],uint8[],uint256[],uint256[])"(
+    "stopLending(address[],uint256[],uint256[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
@@ -390,7 +411,6 @@ export class RentNft extends Contract {
 
   lend(
     _nft: string[],
-    _nftType: BigNumberish[],
     _tokenId: BigNumberish[],
     _maxRentDuration: BigNumberish[],
     _dailyRentPrice: BigNumberish[],
@@ -399,10 +419,31 @@ export class RentNft extends Contract {
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
-  "lend(address[],uint8[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+  "lend(address[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
     _nft: string[],
-    _nftType: BigNumberish[],
     _tokenId: BigNumberish[],
+    _maxRentDuration: BigNumberish[],
+    _dailyRentPrice: BigNumberish[],
+    _nftPrice: BigNumberish[],
+    _paymentToken: BigNumberish[],
+    overrides?: Overrides
+  ): Promise<ContractTransaction>;
+
+  lend1155(
+    _nft: string[],
+    _tokenId: BigNumberish[],
+    _amount: BigNumberish[],
+    _maxRentDuration: BigNumberish[],
+    _dailyRentPrice: BigNumberish[],
+    _nftPrice: BigNumberish[],
+    _paymentToken: BigNumberish[],
+    overrides?: Overrides
+  ): Promise<ContractTransaction>;
+
+  "lend1155(address[],uint256[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+    _nft: string[],
+    _tokenId: BigNumberish[],
+    _amount: BigNumberish[],
     _maxRentDuration: BigNumberish[],
     _dailyRentPrice: BigNumberish[],
     _nftPrice: BigNumberish[],
@@ -472,16 +513,14 @@ export class RentNft extends Contract {
 
   rent(
     _nft: string[],
-    _nftType: BigNumberish[],
     _tokenId: BigNumberish[],
     _id: BigNumberish[],
     _rentDuration: BigNumberish[],
     overrides?: PayableOverrides
   ): Promise<ContractTransaction>;
 
-  "rent(address[],uint8[],uint256[],uint256[],uint16[])"(
+  "rent(address[],uint256[],uint256[],uint16[])"(
     _nft: string[],
-    _nftType: BigNumberish[],
     _tokenId: BigNumberish[],
     _id: BigNumberish[],
     _rentDuration: BigNumberish[],
@@ -494,15 +533,13 @@ export class RentNft extends Contract {
 
   returnIt(
     _nft: string[],
-    _nftType: BigNumberish[],
     _tokenId: BigNumberish[],
     _id: BigNumberish[],
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
-  "returnIt(address[],uint8[],uint256[],uint256[])"(
+  "returnIt(address[],uint256[],uint256[])"(
     _nft: string[],
-    _nftType: BigNumberish[],
     _tokenId: BigNumberish[],
     _id: BigNumberish[],
     overrides?: Overrides
@@ -530,15 +567,13 @@ export class RentNft extends Contract {
 
   stopLending(
     _nft: string[],
-    _nftType: BigNumberish[],
     _tokenId: BigNumberish[],
     _id: BigNumberish[],
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
-  "stopLending(address[],uint8[],uint256[],uint256[])"(
+  "stopLending(address[],uint256[],uint256[])"(
     _nft: string[],
-    _nftType: BigNumberish[],
     _tokenId: BigNumberish[],
     _id: BigNumberish[],
     overrides?: Overrides
@@ -581,7 +616,6 @@ export class RentNft extends Contract {
 
     lend(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _maxRentDuration: BigNumberish[],
       _dailyRentPrice: BigNumberish[],
@@ -590,10 +624,31 @@ export class RentNft extends Contract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    "lend(address[],uint8[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+    "lend(address[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
+      _maxRentDuration: BigNumberish[],
+      _dailyRentPrice: BigNumberish[],
+      _nftPrice: BigNumberish[],
+      _paymentToken: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    lend1155(
+      _nft: string[],
+      _tokenId: BigNumberish[],
+      _amount: BigNumberish[],
+      _maxRentDuration: BigNumberish[],
+      _dailyRentPrice: BigNumberish[],
+      _nftPrice: BigNumberish[],
+      _paymentToken: BigNumberish[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "lend1155(address[],uint256[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+      _nft: string[],
+      _tokenId: BigNumberish[],
+      _amount: BigNumberish[],
       _maxRentDuration: BigNumberish[],
       _dailyRentPrice: BigNumberish[],
       _nftPrice: BigNumberish[],
@@ -663,16 +718,14 @@ export class RentNft extends Contract {
 
     rent(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<void>;
 
-    "rent(address[],uint8[],uint256[],uint256[],uint16[])"(
+    "rent(address[],uint256[],uint256[],uint16[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
@@ -685,15 +738,13 @@ export class RentNft extends Contract {
 
     returnIt(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<void>;
 
-    "returnIt(address[],uint8[],uint256[],uint256[])"(
+    "returnIt(address[],uint256[],uint256[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: CallOverrides
@@ -721,15 +772,13 @@ export class RentNft extends Contract {
 
     stopLending(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<void>;
 
-    "stopLending(address[],uint8[],uint256[],uint256[])"(
+    "stopLending(address[],uint256[],uint256[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: CallOverrides
@@ -822,7 +871,6 @@ export class RentNft extends Contract {
 
     lend(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _maxRentDuration: BigNumberish[],
       _dailyRentPrice: BigNumberish[],
@@ -831,10 +879,31 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<BigNumber>;
 
-    "lend(address[],uint8[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+    "lend(address[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
+      _maxRentDuration: BigNumberish[],
+      _dailyRentPrice: BigNumberish[],
+      _nftPrice: BigNumberish[],
+      _paymentToken: BigNumberish[],
+      overrides?: Overrides
+    ): Promise<BigNumber>;
+
+    lend1155(
+      _nft: string[],
+      _tokenId: BigNumberish[],
+      _amount: BigNumberish[],
+      _maxRentDuration: BigNumberish[],
+      _dailyRentPrice: BigNumberish[],
+      _nftPrice: BigNumberish[],
+      _paymentToken: BigNumberish[],
+      overrides?: Overrides
+    ): Promise<BigNumber>;
+
+    "lend1155(address[],uint256[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+      _nft: string[],
+      _tokenId: BigNumberish[],
+      _amount: BigNumberish[],
       _maxRentDuration: BigNumberish[],
       _dailyRentPrice: BigNumberish[],
       _nftPrice: BigNumberish[],
@@ -904,16 +973,14 @@ export class RentNft extends Contract {
 
     rent(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       overrides?: PayableOverrides
     ): Promise<BigNumber>;
 
-    "rent(address[],uint8[],uint256[],uint256[],uint16[])"(
+    "rent(address[],uint256[],uint256[],uint16[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
@@ -926,15 +993,13 @@ export class RentNft extends Contract {
 
     returnIt(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
     ): Promise<BigNumber>;
 
-    "returnIt(address[],uint8[],uint256[],uint256[])"(
+    "returnIt(address[],uint256[],uint256[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
@@ -962,15 +1027,13 @@ export class RentNft extends Contract {
 
     stopLending(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
     ): Promise<BigNumber>;
 
-    "stopLending(address[],uint8[],uint256[],uint256[])"(
+    "stopLending(address[],uint256[],uint256[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
@@ -1014,7 +1077,6 @@ export class RentNft extends Contract {
 
     lend(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _maxRentDuration: BigNumberish[],
       _dailyRentPrice: BigNumberish[],
@@ -1023,10 +1085,31 @@ export class RentNft extends Contract {
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
 
-    "lend(address[],uint8[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+    "lend(address[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
+      _maxRentDuration: BigNumberish[],
+      _dailyRentPrice: BigNumberish[],
+      _nftPrice: BigNumberish[],
+      _paymentToken: BigNumberish[],
+      overrides?: Overrides
+    ): Promise<PopulatedTransaction>;
+
+    lend1155(
+      _nft: string[],
+      _tokenId: BigNumberish[],
+      _amount: BigNumberish[],
+      _maxRentDuration: BigNumberish[],
+      _dailyRentPrice: BigNumberish[],
+      _nftPrice: BigNumberish[],
+      _paymentToken: BigNumberish[],
+      overrides?: Overrides
+    ): Promise<PopulatedTransaction>;
+
+    "lend1155(address[],uint256[],uint256[],uint16[],uint32[],uint32[],uint8[])"(
+      _nft: string[],
+      _tokenId: BigNumberish[],
+      _amount: BigNumberish[],
       _maxRentDuration: BigNumberish[],
       _dailyRentPrice: BigNumberish[],
       _nftPrice: BigNumberish[],
@@ -1096,16 +1179,14 @@ export class RentNft extends Contract {
 
     rent(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
       overrides?: PayableOverrides
     ): Promise<PopulatedTransaction>;
 
-    "rent(address[],uint8[],uint256[],uint256[],uint16[])"(
+    "rent(address[],uint256[],uint256[],uint16[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       _rentDuration: BigNumberish[],
@@ -1118,15 +1199,13 @@ export class RentNft extends Contract {
 
     returnIt(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
 
-    "returnIt(address[],uint8[],uint256[],uint256[])"(
+    "returnIt(address[],uint256[],uint256[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
@@ -1154,15 +1233,13 @@ export class RentNft extends Contract {
 
     stopLending(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
 
-    "stopLending(address[],uint8[],uint256[],uint256[])"(
+    "stopLending(address[],uint256[],uint256[])"(
       _nft: string[],
-      _nftType: BigNumberish[],
       _tokenId: BigNumberish[],
       _id: BigNumberish[],
       overrides?: Overrides

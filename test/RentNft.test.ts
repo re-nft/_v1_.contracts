@@ -26,11 +26,6 @@ const DAILY_RENT_PRICE = 2; // 2 full tokens or 2 ETH
 const NFT_PRICE = 3; // 3 full tokens or 3 ETH
 const PAYMENT_TOKEN = 2; // default token is DAI (our ERC20)
 
-enum NftContractType {
-  ERC1155,
-  ERC721,
-}
-
 const SECONDS_IN_A_DAY = 86400;
 const DP18 = ethers.utils.parseEther('1');
 const ERC20_SEND_AMT = ethers.utils.parseEther('100');
@@ -184,11 +179,13 @@ describe('RentNft', function () {
       dailyRentPrices = [],
       nftPrices = [],
       expectedLendingIds = [],
+      amounts = [],
       nftAddresses = Array(tokenIds.length).fill(ERC721.address),
-      nftContractTypes = Array(tokenIds.length).fill(NftContractType.ERC721),
+      isErc721 = true,
     }: lendBatchArgs & {
       nftAddresses?: string[];
-      nftContractTypes?: NftContractType[];
+      amounts?: number[];
+      isErc721?: boolean;
     }) => {
       let _maxRentDurations = maxRentDurations;
       let _dailyRentPrices = dailyRentPrices;
@@ -206,15 +203,28 @@ describe('RentNft', function () {
       if (expectedLendingIds.length === 0) {
         _expectedLendingIds = tokenIds.map((_, ix) => ix + 1);
       }
-      const txn = await RentNft.lend(
-        nftAddresses,
-        nftContractTypes,
-        tokenIds,
-        _maxRentDurations,
-        _dailyRentPrices,
-        _nftPrices,
-        Array(tokenIds.length).fill(PAYMENT_TOKEN)
-      );
+
+      let txn;
+      if (isErc721) {
+        txn = await RentNft.lend(
+          nftAddresses,
+          tokenIds,
+          _maxRentDurations,
+          _dailyRentPrices,
+          _nftPrices,
+          Array(tokenIds.length).fill(PAYMENT_TOKEN)
+        );
+      } else {
+        txn = await RentNft.lend1155(
+          nftAddresses,
+          tokenIds,
+          amounts,
+          _maxRentDurations,
+          _dailyRentPrices,
+          _nftPrices,
+          Array(tokenIds.length).fill(PAYMENT_TOKEN)
+        );
+      }
       const receipt = await txn.wait();
       const e = getEvents(receipt.events ?? [], 'Lent');
       expect(e.length).to.eq(tokenIds.length);
@@ -239,16 +249,15 @@ describe('RentNft', function () {
         expect(dailyRentPrice).to.eq(DAILY_RENT_PRICE);
         expect(nftPrice).to.eq(NFT_PRICE);
         expect(paymentToken).to.eq(PAYMENT_TOKEN);
-        let newNftOwner: string;
-        // = await ERC721.ownerOf(tokenIds[i]);
-        if (nftContractTypes[i] == NftContractType.ERC1155) {
-          newNftOwner = await ERC1155.ownerOf(tokenIds[i]);
-        } else if (nftContractTypes[i] === NftContractType.ERC721) {
-          newNftOwner = await ERC721.ownerOf(tokenIds[i]);
+        if (!isErc721) {
+          const balance = await ERC1155.balanceOf(RentNft.address, tokenIds[i]);
+          expect(balance).to.eq(amounts[i]);
+        } else if (isErc721) {
+          const newNftOwner = await ERC721.ownerOf(tokenIds[i]);
+          expect(newNftOwner).to.eq(RentNft.address);
         } else {
           throw new Error('invalid nft contract type');
         }
-        expect(newNftOwner).to.eq(RentNft.address);
       }
     };
 
@@ -262,7 +271,8 @@ describe('RentNft', function () {
       await lendBatch({
         tokenIds,
         nftAddresses: [ERC1155.address],
-        nftContractTypes: [NftContractType.ERC1155],
+        isErc721: false,
+        amounts: [1],
       });
     });
 
@@ -386,7 +396,6 @@ describe('RentNft', function () {
       }
       await lender.renft.lend(
         Array(tokenIds.length).fill(ERC721.address),
-        Array(tokenIds.length).fill(NftContractType.ERC721),
         tokenIds,
         _maxRentDurations,
         _dailyRentPrices,
@@ -442,7 +451,6 @@ describe('RentNft', function () {
         maxRentDurations: [3],
       });
       const nftAddress = [ERC721.address];
-      const nftContractType = [NftContractType.ERC721];
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [2];
@@ -454,7 +462,6 @@ describe('RentNft', function () {
       );
       const tx = await RentNft.rent(
         nftAddress,
-        nftContractType,
         tokenId,
         lendingId,
         rentDuration,
@@ -489,21 +496,13 @@ describe('RentNft', function () {
         maxRentDurations: [3],
       });
       const nftAddress = [ERC721.address];
-      const nftContractType = [NftContractType.ERC721];
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [2];
       await expect(
-        RentNft.rent(
-          nftAddress,
-          nftContractType,
-          tokenId,
-          lendingId,
-          rentDuration,
-          {
-            value: 0,
-          }
-        )
+        RentNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+          value: 0,
+        })
       ).to.be.revertedWith('insufficient amount');
     });
 
@@ -516,7 +515,6 @@ describe('RentNft', function () {
         maxRentDurations: [10],
       });
       const nftAddress = [ERC721.address];
-      const nftContractType = [NftContractType.ERC721];
       const lendingId = [1];
       const rentDuration = [2];
       const dudeBalancePre = await getErc20Balance(
@@ -531,7 +529,6 @@ describe('RentNft', function () {
       );
       const tx = await RentNft.rent(
         nftAddress,
-        nftContractType,
         tokenIds,
         lendingId,
         rentDuration
@@ -563,19 +560,12 @@ describe('RentNft', function () {
         maxRentDurations: [3],
       });
       const nftAddress = [ERC721.address];
-      const nftContractType = [NftContractType.ERC721];
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [2];
       await renter.erc20.transfer(lender.address, ERC20_SEND_AMT);
       await expect(
-        RentNft.rent(
-          nftAddress,
-          nftContractType,
-          tokenId,
-          lendingId,
-          rentDuration
-        )
+        RentNft.rent(nftAddress, tokenId, lendingId, rentDuration)
       ).to.be.revertedWith('transfer amount exceeds balance');
     });
 
@@ -588,7 +578,6 @@ describe('RentNft', function () {
         maxRentDurations: [10, 5],
       });
       const nftAddress = Array(2).fill(ERC721.address);
-      const nftContractTypes = Array(2).fill(NftContractType.ERC721);
       const lendingId = [1, 2];
       const rentDuration = [2, 5];
       const renterBalancePreERC20 = await getErc20Balance(
@@ -614,7 +603,6 @@ describe('RentNft', function () {
       ];
       const tx = await RentNft.rent(
         nftAddress,
-        nftContractTypes,
         tokenIds,
         lendingId,
         rentDuration,
@@ -665,23 +653,15 @@ describe('RentNft', function () {
         maxRentDurations: [10, 5],
       });
       const nftAddress = Array(2).fill(ERC721.address);
-      const nftContractTypes = Array(2).fill(NftContractType.ERC721);
       const lendingId = [1, 2];
       const rentDuration = [2, 5];
       const renterBalancePreERC20 = await ERC20.balanceOf(renter.address);
       expect(renterBalancePreERC20).to.be.equal(ERC20_SEND_AMT);
       const renftBalancePreERC20 = await ERC20.balanceOf(RentNft.address);
       expect(renftBalancePreERC20).to.be.equal(0);
-      const tx = RentNft.rent(
-        nftAddress,
-        nftContractTypes,
-        tokenIds,
-        lendingId,
-        rentDuration,
-        {
-          value: 0,
-        }
-      );
+      const tx = RentNft.rent(nftAddress, tokenIds, lendingId, rentDuration, {
+        value: 0,
+      });
       await expect(tx).to.be.revertedWith('insufficient amount');
     });
 
@@ -694,7 +674,6 @@ describe('RentNft', function () {
         maxRentDurations: [3, 1],
       });
       const nftAddress = [ERC721.address, ERC721.address];
-      const nftContractTypes = Array(2).fill(NftContractType.ERC721);
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
       const renterBalancePre = await getBalance(renter.address);
@@ -718,16 +697,9 @@ describe('RentNft', function () {
       // deposited because the second part of the transaction i.e. erc20
       // will be reverted
       await expect(
-        RentNft.rent(
-          nftAddress,
-          nftContractTypes,
-          tokenIds,
-          lendingId,
-          rentDuration,
-          {
-            value: pmtAmounts[0],
-          }
-        )
+        RentNft.rent(nftAddress, tokenIds, lendingId, rentDuration, {
+          value: pmtAmounts[0],
+        })
       ).to.be.revertedWith('transfer amount exceeds balance');
       const dudeBalancePost = await getBalance(renter.address);
       const renftBalancePost = await getBalance(RentNft.address);
@@ -754,7 +726,6 @@ describe('RentNft', function () {
         maxRentDurations: [3, 2],
       });
       const nftAddress = [ERC721.address, ERC721.address];
-      const nftContractTypes = Array(2).fill(NftContractType.ERC721);
       const tokenId = [1, 2];
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
@@ -775,7 +746,6 @@ describe('RentNft', function () {
       ];
       const tx = await RentNft.rent(
         nftAddress,
-        nftContractTypes,
         tokenId,
         lendingId,
         rentDuration,
@@ -812,7 +782,6 @@ describe('RentNft', function () {
         maxRentDurations: [3, 2],
       });
       const nftAddress = [ERC721.address, ERC721.address];
-      const nftContractTypes = Array(2).fill(NftContractType.ERC721);
       const tokenId = [1, 2];
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
@@ -836,7 +805,6 @@ describe('RentNft', function () {
       ];
       const tx = await RentNft.rent(
         nftAddress,
-        nftContractTypes,
         tokenId,
         lendingId,
         rentDuration
@@ -870,21 +838,13 @@ describe('RentNft', function () {
         maxRentDurations: [3],
       });
       const nftAddress = [ERC721.address];
-      const nftContractTypes = Array(1).fill(NftContractType.ERC721);
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [0];
       await expect(
-        RentNft.rent(
-          nftAddress,
-          nftContractTypes,
-          tokenId,
-          lendingId,
-          rentDuration,
-          {
-            value: 0,
-          }
-        )
+        RentNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+          value: 0,
+        })
       ).to.be.revertedWith('should rent for at least a day');
     });
 
@@ -897,21 +857,13 @@ describe('RentNft', function () {
         maxRentDurations: [3],
       });
       const nftAddress = [ERC721.address];
-      const nftContractTypes = Array(1).fill(NftContractType.ERC721);
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [4];
       await expect(
-        RentNft.rent(
-          nftAddress,
-          nftContractTypes,
-          tokenId,
-          lendingId,
-          rentDuration,
-          {
-            value: 0,
-          }
-        )
+        RentNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+          value: 0,
+        })
       ).to.be.revertedWith('max rent duration exceeded');
     });
 
@@ -924,34 +876,19 @@ describe('RentNft', function () {
         maxRentDurations: [3],
       });
       const nftAddress = [ERC721.address];
-      const nftContractTypes = Array(1).fill(NftContractType.ERC721);
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [1];
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
         BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
       );
-      RentNft.rent(
-        nftAddress,
-        nftContractTypes,
-        tokenId,
-        lendingId,
-        rentDuration,
-        {
-          value: pmtAmount,
-        }
-      );
+      RentNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+        value: pmtAmount,
+      });
       await expect(
-        RentNft.rent(
-          nftAddress,
-          nftContractTypes,
-          tokenId,
-          lendingId,
-          rentDuration,
-          {
-            value: pmtAmount,
-          }
-        )
+        RentNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+          value: pmtAmount,
+        })
       ).to.be.revertedWith('1 already rented');
     });
 
@@ -963,7 +900,6 @@ describe('RentNft', function () {
       const _nftPrices = Array(tokenIds.length).fill(NFT_PRICE);
       await lender.renft.lend(
         Array(tokenIds.length).fill(ERC721.address),
-        Array(2).fill(NftContractType.ERC721),
         tokenIds,
         [maxRentDurations],
         _dailyRentPrices,
@@ -978,16 +914,9 @@ describe('RentNft', function () {
         BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
       );
       await expect(
-        lender.renft.rent(
-          nftAddress,
-          Array(1).fill(NftContractType.ERC721),
-          tokenId,
-          lendingId,
-          rentDuration,
-          {
-            value: pmtAmount,
-          }
-        )
+        lender.renft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+          value: pmtAmount,
+        })
       ).to.be.revertedWith('cant rent own nft');
     });
   });
@@ -1031,7 +960,6 @@ describe('RentNft', function () {
       }
       await lender.renft.lend(
         Array(tokenIds.length).fill(lender.erc721.address),
-        Array(tokenIds.length).fill(NftContractType.ERC721),
         tokenIds,
         _maxRentDurations,
         _dailyRentPrices,
@@ -1095,7 +1023,6 @@ describe('RentNft', function () {
       );
       await renter.renft.rent(
         [renter.erc721.address],
-        Array(1).fill(NftContractType.ERC721),
         [1],
         [1],
         [rentDuration],
@@ -1109,12 +1036,7 @@ describe('RentNft', function () {
       const warpTime = 10_000;
       await advanceTime(warpTime);
       const renterBalancePre = await getBalance(renter.address);
-      const tx = await renter.renft.returnIt(
-        [renter.erc721.address],
-        [NftContractType.ERC721],
-        [1],
-        [1]
-      );
+      const tx = await renter.renft.returnIt([renter.erc721.address], [1], [1]);
       latestBlock = await getLatestBlock();
       const returnedAt = latestBlock.timestamp;
       const _rentDuration = returnedAt - rentedAt;
@@ -1166,7 +1088,6 @@ describe('RentNft', function () {
       );
       await renter.renft.rent(
         [renter.erc721.address],
-        [NftContractType.ERC721],
         [1],
         [1],
         [rentDuration]
@@ -1177,12 +1098,7 @@ describe('RentNft', function () {
       const warpTime = 10_000;
       await advanceTime(warpTime);
       const renterBalancePre = await renter.erc20.balanceOf(renter.address);
-      const tx = await renter.renft.returnIt(
-        [renter.erc721.address],
-        [NftContractType.ERC721],
-        [1],
-        [1]
-      );
+      const tx = await renter.renft.returnIt([renter.erc721.address], [1], [1]);
       latestBlock = await getLatestBlock();
       const returnedAt = latestBlock.timestamp;
       const _rentDuration = returnedAt - rentedAt;
@@ -1247,7 +1163,6 @@ describe('RentNft', function () {
 
       await renter.renft.rent(
         [renter.erc721.address, renter.erc721.address],
-        Array(2).fill(NftContractType.ERC721),
         [1, 2],
         [1, 2],
         rentDurations,
@@ -1270,7 +1185,6 @@ describe('RentNft', function () {
 
       const tx = await renter.renft.returnIt(
         [renter.erc721.address, renter.erc721.address],
-        Array(2).fill(NftContractType.ERC721),
         [1, 2],
         [1, 2]
       );
@@ -1356,7 +1270,6 @@ describe('RentNft', function () {
 
       await renter.renft.rent(
         [renter.erc721.address, renter.erc721.address],
-        Array(2).fill(NftContractType.ERC721),
         [1, 2],
         [1, 2],
         rentDurations,
@@ -1370,7 +1283,6 @@ describe('RentNft', function () {
       await expect(
         renter.renft.returnIt(
           [renter.erc721.address, renter.erc721.address],
-          Array(2).fill(NftContractType.ERC721),
           [1, 2],
           [1, 2]
         )
@@ -1419,7 +1331,6 @@ describe('RentNft', function () {
       }
       await lender.renft.lend(
         Array(tokenIds.length).fill(lender.erc721.address),
-        Array(2).fill(NftContractType.ERC721),
         tokenIds,
         _maxRentDurations,
         _dailyRentPrices,
@@ -1477,18 +1388,11 @@ describe('RentNft', function () {
       const _tokenId = [1];
       const _id = [1];
       const _rentDuration = [1];
-      await renter.renft.rent(
-        _nft,
-        [NftContractType.ERC721],
-        _tokenId,
-        _id,
-        _rentDuration,
-        {
-          value: ethers.utils
-            .parseEther(drp.toString())
-            .add(ethers.utils.parseEther(col.toString())),
-        }
-      );
+      await renter.renft.rent(_nft, _tokenId, _id, _rentDuration, {
+        value: ethers.utils
+          .parseEther(drp.toString())
+          .add(ethers.utils.parseEther(col.toString())),
+      });
       await advanceTime(SECONDS_IN_A_DAY);
       const balancePre = await getBalance(lender.address);
       const beneficiaryBalancePre = await getBalance(beneficiary);
@@ -1539,18 +1443,11 @@ describe('RentNft', function () {
       const _tokenId = [1, 2];
       const _id = [1, 2];
       const _rentDuration = [1, 4];
-      await renter.renft.rent(
-        _nft,
-        [NftContractType.ERC721, NftContractType.ERC721],
-        _tokenId,
-        _id,
-        _rentDuration,
-        {
-          value: ethers.utils
-            .parseEther(drpEth.toString())
-            .add(ethers.utils.parseEther(colEth.toString())),
-        }
-      );
+      await renter.renft.rent(_nft, _tokenId, _id, _rentDuration, {
+        value: ethers.utils
+          .parseEther(drpEth.toString())
+          .add(ethers.utils.parseEther(colEth.toString())),
+      });
       await advanceTime(_rentDuration[1] * SECONDS_IN_A_DAY);
       const balancePre = await getBalance(lender.address);
       const beneficiaryBalancePre = await getBalance(beneficiary);
@@ -1618,13 +1515,7 @@ describe('RentNft', function () {
       const _tokenId = [1];
       const _id = [1];
       const _rentDuration = [1];
-      await renter.renft.rent(
-        _nft,
-        [NftContractType.ERC721],
-        _tokenId,
-        _id,
-        _rentDuration
-      );
+      await renter.renft.rent(_nft, _tokenId, _id, _rentDuration);
       await advanceTime(SECONDS_IN_A_DAY + 100);
       const balancePre = await lender.erc20.balanceOf(lender.address);
       const beneficiaryBalancePre = await lender.erc20.balanceOf(beneficiary);
@@ -1673,13 +1564,7 @@ describe('RentNft', function () {
       const _tokenId = [1];
       const _id = [1];
       const _rentDuration = [1];
-      await renter.renft.rent(
-        _nft,
-        [NftContractType.ERC721],
-        _tokenId,
-        _id,
-        _rentDuration
-      );
+      await renter.renft.rent(_nft, _tokenId, _id, _rentDuration);
       await advanceTime(SECONDS_IN_A_DAY - 1);
       await expect(
         lender.renft.claimCollateral(_nft, _tokenId, _id)
@@ -1692,7 +1577,6 @@ describe('RentNft', function () {
       const { lender } = await setup();
       await lender.renft.lend(
         [lender.erc721.address],
-        [NftContractType.ERC721],
         [1],
         [1],
         [packPrice(1)],
@@ -1702,7 +1586,6 @@ describe('RentNft', function () {
       expect(await lender.erc721.ownerOf(1)).to.be.equal(lender.renft.address);
       const tx = await lender.renft.stopLending(
         [lender.erc721.address],
-        [NftContractType.ERC721],
         [1],
         [1]
       );
@@ -1722,27 +1605,15 @@ describe('RentNft', function () {
       const { lender, renter } = await setup();
       await lender.renft.lend(
         [lender.erc721.address],
-        [NftContractType.ERC721],
         [1],
         [1],
         [packPrice(1)],
         [packPrice(1)],
         [2]
       );
-      await renter.renft.rent(
-        [lender.erc721.address],
-        [NftContractType.ERC721],
-        [1],
-        [1],
-        [1]
-      );
+      await renter.renft.rent([lender.erc721.address], [1], [1], [1]);
       await expect(
-        lender.renft.stopLending(
-          [lender.erc721.address],
-          [NftContractType.ERC721],
-          [1],
-          [1]
-        )
+        lender.renft.stopLending([lender.erc721.address], [1], [1])
       ).to.be.revertedWith('renter address is not zero address');
     });
   });
@@ -1759,23 +1630,15 @@ describe('RentNft', function () {
       const collateralPrice = [packPrice(1)];
       await lender.renft.lend(
         nft,
-        [NftContractType.ERC721],
         tokenId,
         maxRentDuration,
         dailyRentPrice,
         collateralPrice,
         paymentToken
       );
-      await renter.renft.rent(
-        nft,
-        [NftContractType.ERC721],
-        tokenId,
-        lendingId,
-        [1]
-      );
+      await renter.renft.rent(nft, tokenId, lendingId, [1]);
       await renter.renft.lend(
         nft,
-        [NftContractType.ERC721],
         tokenId,
         maxRentDuration,
         dailyRentPrice,
@@ -1845,7 +1708,6 @@ describe('RentNft', function () {
       const { lender, deployer, renter } = await setup();
       await lender.renft.lend(
         [lender.erc721.address],
-        [NftContractType.ERC721],
         [1],
         [1],
         ['0xffff0000'],
@@ -1858,13 +1720,7 @@ describe('RentNft', function () {
       )) as unknown) as ERC20T;
       await erc20.transfer(renter.address, ethers.utils.parseEther('11000'));
       const renterBalancePre = await erc20.balanceOf(renter.address);
-      await renter.renft.rent(
-        [renter.erc721.address],
-        [NftContractType.ERC721],
-        [1],
-        [1],
-        [1]
-      );
+      await renter.renft.rent([renter.erc721.address], [1], [1], [1]);
       const renterBalancePost = await erc20.balanceOf(renter.address);
       const diff = renterBalancePre.sub(renterBalancePost);
       expect(diff).to.be.equal(
@@ -1876,7 +1732,6 @@ describe('RentNft', function () {
       const { lender, deployer, renter } = await setup();
       await lender.renft.lend(
         [lender.erc721.address],
-        [NftContractType.ERC721],
         [1],
         [1],
         ['0x00000000'],
@@ -1889,13 +1744,7 @@ describe('RentNft', function () {
       )) as unknown) as ERC20T;
       await erc20.transfer(renter.address, ethers.utils.parseEther('11000'));
       const renterBalancePre = await erc20.balanceOf(renter.address);
-      await renter.renft.rent(
-        [renter.erc721.address],
-        [NftContractType.ERC721],
-        [1],
-        [1],
-        [1]
-      );
+      await renter.renft.rent([renter.erc721.address], [1], [1], [1]);
       const renterBalancePost = await erc20.balanceOf(renter.address);
       const diff = renterBalancePre.sub(renterBalancePost);
       expect(diff).to.be.equal(
