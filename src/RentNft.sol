@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7.0 <0.8.0;
-// import "./ChiGasSaver.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -40,33 +39,19 @@ import "./Resolver.sol";
  */
 // bytes4 private constant _INTERFACE_ID_ERC1155 = 0xd9b67a26;
 
+// - TODO: erc1155 amounts not supported in this version
+// adding the amounts, would imply that lending struct would
+// become two single storage slots, since it only has 4 bits
+// of free space.
+// - TODO: erc1155 batch transfers not supported in this version
 contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     using SafeERC20 for ERC20;
-    // 256 bits -> 32 bytes - single slot storage
-    // address - 20 byte value -> 160 bits
     uint256 private lendingId = 1;
-    // settable by owner and chargeable on the final rent price
     uint256 public rentFee = 500;
-    // option 1 - transfer fee amounts on every txn
-    //          - +: easy implementation
-    //          - -: extra 20k gas cost for the sender
-    // option 2 - transfer fee amounts on the front-end
-    //          - +: easy but not as the above
-    //          - -: same cost, if not higher
-    // option 3 - intricate tracking of the amounts
-    //          - and allowing the onlyOwner to withdraw
-    //          - not more than those amounts
-    //          - ?: no extra overhead for the returner / claimer, however
-    //          - I have a feeling that tracking will more than "make up"
-    //          - the "saved" 20k gas. At the very least 32 byte
-    //          - chunks will be required to track all the mentioned info
-    //          - that means that at least 40k gas will need to be spent
-    //          ? shittiest option
-    // conclusion: I proceed with option 1.
     Resolver private resolver;
     address payable private beneficiary;
 
-    // quick test showed that LentBatch with arrays
+    // * quick test showed that LentBatch with arrays
     // would cost more than the non-array version
     // like the below
     event Lent(
@@ -169,10 +154,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     // gitcoin bounty: wrapper on top of these, to calculate the most
     // efficient way to lend & rent.
     // whether it is to call lend1155 or lendBatch1155 or a combination
-    // - erc1155 amounts not supported in this version
-    // adding the amounts, would imply that lending struct would
-    // become two single storage slots, since it only has 4 bits
-    // of free space.
     function lend(
         address[] memory _nft,
         uint256[] memory _tokenId,
@@ -276,10 +257,6 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         }
     }
 
-    /**
-     * We have half fee here because the fee is paid in half
-     * by the renter and the lender
-     */
     function _takeFee(uint256 _rent, Resolver.PaymentToken _paymentToken) private returns (uint256 fee) {
         fee = _rent * rentFee;
         fee /= 10000; // percentages
@@ -359,7 +336,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     }
 
     function returnIt(
-        IERC721[] memory _nft,
+        address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id
     ) public nonReentrant {
@@ -368,7 +345,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
                 lendingRenting[keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], _id[i]))];
             require(item.renting.renterAddress == msg.sender, "not renter");
             uint256 secondsSinceRentStart = _ensureIsNotPastReturnDate(item.renting, block.timestamp);
-            _nft[i].safeTransferFrom(msg.sender, address(this), _tokenId[i]);
+            _safeTransfer(msg.sender, address(this), _nft[i], _tokenId[i]);
             _distributePayments(item, secondsSinceRentStart);
             emit Returned(address(_nft[i]), _tokenId[i], _id[i], msg.sender, uint32(block.timestamp));
             delete item.renting;
@@ -394,7 +371,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     }
 
     function stopLending(
-        IERC721[] memory _nft,
+        address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id
     ) public {
@@ -402,7 +379,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
             _ensureIsNull(item.renting);
             require(item.lending.lenderAddress == msg.sender, "only lender allowed");
-            _nft[i].safeTransferFrom(address(this), msg.sender, _tokenId[i]);
+            _safeTransfer(address(this), msg.sender, _nft[i], _tokenId[i]);
             delete item.lending;
             emit LendingStopped(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
         }
