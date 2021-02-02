@@ -155,6 +155,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         uint256 nftPrice;
         uint256 upfrontPayment;
         uint256 nftLen;
+        uint256 amount;
     }
 
     // 32 bytes key to 64 bytes struct
@@ -168,14 +169,17 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
     // gitcoin bounty: wrapper on top of these, to calculate the most
     // efficient way to lend & rent.
     // whether it is to call lend1155 or lendBatch1155 or a combination
+    // - erc1155 amounts not supported in this version
+    // adding the amounts, would imply that lending struct would
+    // become two single storage slots, since it only has 4 bits
+    // of free space.
     function lend(
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint16[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
-        Resolver.PaymentToken[] memory _paymentToken,
-        uint256[] memory _amount
+        Resolver.PaymentToken[] memory _paymentToken
     ) external nonReentrant {
         require(_nft.length == _tokenId.length, "arg arrs diff length");
         require(_tokenId.length == _maxRentDuration.length, "arg arrs diff length");
@@ -184,17 +188,10 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         for (uint256 i = 0; i < _nft.length; i++) {
             require(_maxRentDuration[i] > 0, "must be at least one day lend");
             require(_maxRentDuration[i] <= 1825, "must be less than five years");
-            if (IERC165(_nft[i]).supportsInterface(0x80ac58cd)) {
-                IERC721(_nft[i]).safeTransferFrom(msg.sender, address(this), _tokenId[i]);
-            } else if (IERC165(_nft[i]).supportsInterface(0xd9b67a26)) {
-                // ! if num of erc1155 != num of amount, will revert
-                // this isn't forced
-                IERC1155(_nft[i]).safeTransferFrom(msg.sender, address(this), _tokenId[i], _amount[i], "");
-            } else {
-                revert("unsupported");
-            }
+            _safeTransfer(msg.sender, address(this), _nft[i], _tokenId[i]);
             bytes32 itemHash = keccak256(abi.encodePacked(address(_nft[i]), _tokenId[i], lendingId));
             LendingRenting storage item = lendingRenting[itemHash];
+            // todo: amount needs to be here
             item.lending = Lending({
                 lenderAddress: msg.sender,
                 maxRentDuration: _maxRentDuration[i],
@@ -231,9 +228,9 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
         rc.ethPmtRequired = 0;
         rc.nftLen = _nft.length - 1;
         for (uint256 i = 0; i < _nft.length; i++) {
+            rc.nft = address(_nft[i]);
             rc.tokenId = _tokenId[i];
             rc.lendingId = _id[i];
-            rc.nft = address(_nft[i]);
             LendingRenting storage item =
                 lendingRenting[keccak256(abi.encodePacked(address(rc.nft), rc.tokenId, rc.lendingId))];
             require(item.renting.renterAddress == address(0), "1 already rented");
@@ -254,15 +251,12 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             rc.scale = 10**rc.decimals;
             rc.rentPrice = rc.rentDuration * _unpackPrice(item.lending.dailyRentPrice, rc.scale); // max is 1825 * 65535. Nowhere near the overflow
             rc.nftPrice = _unpackPrice(item.lending.nftPrice, rc.scale);
-            // collateral may be set to zero, if the lender wishes so
-            // but not the rent price
             require(rc.rentPrice > 0, "rent price is zero");
             rc.upfrontPayment = rc.rentPrice + rc.nftPrice;
             if (rc.isERC20) {
                 ERC20(rc.paymentToken).safeTransferFrom(msg.sender, address(this), rc.upfrontPayment);
             } else {
                 rc.ethPmtRequired += rc.upfrontPayment;
-                // require(msg.value == upfrontPayment, "insufficient amount");
             }
             if (i == rc.nftLen) {
                 require(msg.value == rc.ethPmtRequired, "insufficient amount");
@@ -270,7 +264,7 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             item.renting.renterAddress = msg.sender;
             item.renting.rentDuration = rc.rentDuration;
             item.renting.rentedAt = uint32(block.timestamp);
-            IERC721(rc.nft).safeTransferFrom(address(this), msg.sender, rc.tokenId);
+            _safeTransfer(address(this), msg.sender, rc.nft, rc.tokenId);
             emit Rented(
                 address(rc.nft),
                 rc.tokenId,
@@ -411,6 +405,16 @@ contract RentNft is ReentrancyGuard, Ownable, ERC721Holder, ERC1155Receiver {
             _nft[i].safeTransferFrom(address(this), msg.sender, _tokenId[i]);
             delete item.lending;
             emit LendingStopped(address(_nft[i]), _tokenId[i], _id[i], uint32(block.timestamp));
+        }
+    }
+
+    function _safeTransfer(address _from, address _to, address _nft, uint256 _tokenId) private {
+        if (IERC165(_nft).supportsInterface(0x80ac58cd)) {
+            IERC721(_nft).safeTransferFrom(_from, _to, _tokenId);
+        } else if (IERC165(_nft).supportsInterface(0xd9b67a26)) {
+            IERC1155(_nft).safeTransferFrom(_from, _to, _tokenId, 1, "");
+        } else {
+            revert("unsupported");
         }
     }
 
