@@ -10,9 +10,19 @@ import 'solidity-coverage';
 // * unless this becomes opt-in, remove the comment out
 // * to generate the new types
 // * relating github issue: https://github.com/rhlsthrm/hardhat-typechain/issues/12
-// import 'hardhat-typechain';
-// import '@typechain/ethers-v5';
+import 'hardhat-typechain';
+import '@typechain/ethers-v5';
 import { node_url, accounts } from './utils/network';
+
+// //@ts-ignore
+// task(
+//   'accounts',
+//   'Prints the list of accounts',
+//   async (_: any, { ethers }: { ethers: any }) => {
+//     const accounts = await ethers.provider.listAccounts();
+//     accounts.forEach((account: any) => console.log(account));
+//   }
+// );
 
 const config: HardhatUserConfig = {
   solidity: {

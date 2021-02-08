@@ -1,6 +1,19 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 
+const for_development = async (hre: HardhatRuntimeEnvironment) => {
+  // mint all the nfts to lender
+  const { getNamedAccounts, ethers } = hre;
+  const { lender } = await getNamedAccounts();
+
+  const erc721 = await ethers.getContract('MyERC721', lender);
+  // const erc1155 = await ethers.getContract('MyERC1155', lender);
+
+  for (let i = 0; i < 10; i++) {
+    await erc721.award();
+  }
+};
+
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
   const { deploy } = deployments;
@@ -25,6 +38,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
   });
+
+  // todo: would interfere with tests
+  await for_development(hre);
 };
 export default func;
 func.tags = ['PaymentToken', 'MyERC721', 'MyERC1155', 'Resolver', 'Utils'];
