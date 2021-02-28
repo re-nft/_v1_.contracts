@@ -1,8 +1,8 @@
 {
-  "name": "renft-contracts",
+  "name": "@renft/hardhat",
   "version": "1.0.0",
-  "author": "nazariyv",
-  "license": "MIT",
+  "author": "Nazariy Vavryk <nazariy@inbox.ru>",
+  "license": "GPL-3.0-or-later",
   "keywords": [
     "ethereum",
     "smart-contracts",
