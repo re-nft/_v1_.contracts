@@ -16,3 +16,4 @@ deployments/hardhat
 deployments/localhost
 
 .vscode/
+frontend/
