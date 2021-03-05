@@ -3,34 +3,19 @@ pragma solidity >=0.7.0 <0.8.0;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
 contract MyERC1155 is ERC1155 {
-    //uint256 public constant GOLD = 0;
-    //uint256 public constant SILVER = 1;
-    // uint256 public constant THORS_HAMMER = 2;
-    // uint256 public constant SWORD = 3;
-    // uint256 public constant SHIELD = 4;
     uint256 private tokenId;
+    uint256 public constant GOLD = 1000;
+    uint256 public constant SILVER = 1001;
+    uint256 public constant THORS_HAMMER = 1002;
+    uint256 public constant SWORD = 1003;
+    uint256 public constant SHIELD = 1004;
 
-    // these strings are no longer stores on-chain
-    // the only that matters in erc1155 is the base url
-    // string[] public constant URIS = [
-    //     "https://nft.service.cometh.io/3000013",
-    //     "https://nft.service.cometh.io/3000015",
-    //     "https://nft.service.cometh.io/6000327",
-    //     "https://nft.service.cometh.io/6000328",
-    //     "https://nft.service.cometh.io/6000329",
-    //     "https://rope.lol/api/RMU/51",
-    //     "https://rope.lol/api/RMU/52",
-    //     "https://api.bccg.digital/api/bccg/9",
-    //     "https://api.bccg.digital/api/bccg/11",
-    //     "https://api.bccg.digital/api/bccg/1"
-    // ];
-
-    constructor() ERC1155("https://game.example/api/item/") {
-        // _mint(msg.sender, GOLD, 10**18, "");
-        // _mint(msg.sender, SILVER, 10**27, "");
-        // _mint(msg.sender, THORS_HAMMER, 1, "");
-        // _mint(msg.sender, SWORD, 10**9, "");
-        // _mint(msg.sender, SHIELD, 10**9, "");
+    constructor() ERC1155("https://api.bccg.digital/api/bccg/1") {
+        _mint(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, GOLD, 1, "");
+        _mint(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, SILVER, 1, "");
+        _mint(0x70997970C51812dc3A010C7d01b50e0d17dc79C8, THORS_HAMMER, 1, "");
+        _mint(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, SWORD, 1, "");
+        _mint(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC, SHIELD, 2, "");
     }
 
     function award() public returns (uint256) {

@@ -519,9 +519,12 @@ describe('RentNft', function () {
         BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
       );
       const tx = await RentNft.rent(
-        nftAddress,  const numHex = decimalToPaddedHexString(Number(price), PRICE_BITSIZE).slice(
-          2
-        );
+        nftAddress,
+        tokenId,
+        lendingId,
+        rentDuration,
+        {value: pmtAmount}
+      );
       const dudeBalancePost = await getBalance(renter.address);
       const renftBalancePost = await getBalance(RentNft.address);
       expect(renftBalancePost).to.be.equal(pmtAmount);

@@ -22,6 +22,11 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 
 interface MyERC1155Interface extends ethers.utils.Interface {
   functions: {
+    "GOLD()": FunctionFragment;
+    "SHIELD()": FunctionFragment;
+    "SILVER()": FunctionFragment;
+    "SWORD()": FunctionFragment;
+    "THORS_HAMMER()": FunctionFragment;
     "award()": FunctionFragment;
     "balanceOf(address,uint256)": FunctionFragment;
     "balanceOfBatch(address[],uint256[])": FunctionFragment;
@@ -33,6 +38,14 @@ interface MyERC1155Interface extends ethers.utils.Interface {
     "uri(uint256)": FunctionFragment;
   };
 
+  encodeFunctionData(functionFragment: "GOLD", values?: undefined): string;
+  encodeFunctionData(functionFragment: "SHIELD", values?: undefined): string;
+  encodeFunctionData(functionFragment: "SILVER", values?: undefined): string;
+  encodeFunctionData(functionFragment: "SWORD", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "THORS_HAMMER",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "award", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "balanceOf",
@@ -64,6 +77,14 @@ interface MyERC1155Interface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "uri", values: [BigNumberish]): string;
 
+  decodeFunctionResult(functionFragment: "GOLD", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "SHIELD", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "SILVER", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "SWORD", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "THORS_HAMMER",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "award", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
@@ -119,6 +140,26 @@ export class MyERC1155 extends Contract {
   interface: MyERC1155Interface;
 
   functions: {
+    GOLD(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    "GOLD()"(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    SHIELD(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    "SHIELD()"(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    SILVER(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    "SILVER()"(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    SWORD(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    "SWORD()"(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    THORS_HAMMER(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    "THORS_HAMMER()"(overrides?: CallOverrides): Promise<[BigNumber]>;
+
     award(overrides?: Overrides): Promise<ContractTransaction>;
 
     "award()"(overrides?: Overrides): Promise<ContractTransaction>;
@@ -224,6 +265,26 @@ export class MyERC1155 extends Contract {
       overrides?: CallOverrides
     ): Promise<[string]>;
   };
+
+  GOLD(overrides?: CallOverrides): Promise<BigNumber>;
+
+  "GOLD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+  SHIELD(overrides?: CallOverrides): Promise<BigNumber>;
+
+  "SHIELD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+  SILVER(overrides?: CallOverrides): Promise<BigNumber>;
+
+  "SILVER()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+  SWORD(overrides?: CallOverrides): Promise<BigNumber>;
+
+  "SWORD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+  THORS_HAMMER(overrides?: CallOverrides): Promise<BigNumber>;
+
+  "THORS_HAMMER()"(overrides?: CallOverrides): Promise<BigNumber>;
 
   award(overrides?: Overrides): Promise<ContractTransaction>;
 
@@ -331,6 +392,26 @@ export class MyERC1155 extends Contract {
   ): Promise<string>;
 
   callStatic: {
+    GOLD(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "GOLD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    SHIELD(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "SHIELD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    SILVER(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "SILVER()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    SWORD(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "SWORD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    THORS_HAMMER(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "THORS_HAMMER()"(overrides?: CallOverrides): Promise<BigNumber>;
+
     award(overrides?: CallOverrides): Promise<BigNumber>;
 
     "award()"(overrides?: CallOverrides): Promise<BigNumber>;
@@ -464,6 +545,26 @@ export class MyERC1155 extends Contract {
   };
 
   estimateGas: {
+    GOLD(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "GOLD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    SHIELD(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "SHIELD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    SILVER(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "SILVER()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    SWORD(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "SWORD()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    THORS_HAMMER(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "THORS_HAMMER()"(overrides?: CallOverrides): Promise<BigNumber>;
+
     award(overrides?: Overrides): Promise<BigNumber>;
 
     "award()"(overrides?: Overrides): Promise<BigNumber>;
@@ -571,6 +672,26 @@ export class MyERC1155 extends Contract {
   };
 
   populateTransaction: {
+    GOLD(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "GOLD()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    SHIELD(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "SHIELD()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    SILVER(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "SILVER()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    SWORD(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "SWORD()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    THORS_HAMMER(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "THORS_HAMMER()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     award(overrides?: Overrides): Promise<PopulatedTransaction>;
 
     "award()"(overrides?: Overrides): Promise<PopulatedTransaction>;

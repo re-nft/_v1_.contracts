@@ -9,7 +9,6 @@ const for_development = async (hre: HardhatRuntimeEnvironment) => {
   const { lender, deployer, beneficiary, renter } = await getNamedAccounts();
 
   const erc721 = await ethers.getContract('MyERC721', lender);
-  // const erc1155 = await ethers.getContract('MyERC1155', lender);
 
   for (let i = 0; i < 10; i++) {
     await erc721.award();
