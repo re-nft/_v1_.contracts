@@ -1,24 +1,37 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0 <0.8.0;
-import "@openzeppelin/contracts/access/Ownable.sol";
+pragma solidity ^0.8.0;
 
-contract Resolver is Ownable {
+contract Resolver {
+    address private admin;
     mapping(uint8 => address) private addresses;
+
     enum PaymentToken {
-        SENTINEL, // 0
-        ETH, // 1
+        ETH, // 0
+        WETH, // 1
         DAI, // 2
         USDC, // 3
         USDT, // 4
-        TUSD // ...
+        TUSD // 5
     }
+
+    constructor(address _admin) {
+        admin = _admin;
+    }
+
+    /**
+     * @dev util function to avoid guessing getter name if addresses was public
+     */
     function getPaymentToken(uint8 _pt) public view returns (address) {
         return addresses[_pt];
     }
-    function setPaymentToken(uint8 _pt, address _v) public onlyOwner {
-        if (_pt == 1) {
-            require(_v == address(0), "eth sentinel");
-        }
+
+    /**
+     * @dev Gives us the ability to set new payment tokens down the line
+     */
+    function setPaymentToken(uint8 _pt, address _v) public {
+        require(_pt != 0, "");
+        require(addresses[_pt] == address(0), "cannot reset the address");
+
         addresses[_pt] = _v;
     }
 }

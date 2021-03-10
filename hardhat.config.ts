@@ -6,6 +6,7 @@ import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-etherscan';
 import '@symfoni/hardhat-react';
 import 'solidity-coverage';
+
 // * due to auto-generation the tests run much slower
 // * unless this becomes opt-in, remove the comment out
 // * to generate the new types
@@ -14,19 +15,9 @@ import 'hardhat-typechain';
 import '@typechain/ethers-v5';
 import { node_url, accounts } from './utils/network';
 
-// //@ts-ignore
-// task(
-//   'accounts',
-//   'Prints the list of accounts',
-//   async (_: any, { ethers }: { ethers: any }) => {
-//     const accounts = await ethers.provider.listAccounts();
-//     accounts.forEach((account: any) => console.log(account));
-//   }
-// );
-
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.7.6',
+    version: '0.8.2',
     settings: {
       optimizer: {
         enabled: true,
