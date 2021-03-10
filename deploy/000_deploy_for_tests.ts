@@ -1,6 +1,8 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
+//@ts-ignore
 import { ERC20 } from '../frontend/src/hardhat/typechain/ERC20';
+//@ts-ignore
 import { Resolver } from '../frontend/src/hardhat/typechain/Resolver';
 
 const for_development = async (hre: HardhatRuntimeEnvironment) => {
