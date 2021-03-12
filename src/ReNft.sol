@@ -1,94 +1,109 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./Resolver.sol";
+import "./interfaces/IResolver.sol";
+import "./interfaces/IReNft.sol";
+
+//-|----------------------------------------------------------------------------------------------------|-
+// |````````````...-/://::-:---::-:.-........`````````````````````````````````````````````````````````.`|
+// |..............-ooosyss+++//o+////::-...--...........................................................|
+// |..............:s+syoos+/+/oo+o/:/:---..-............................................................|
+// |............--/sohysss+/+oso+o+///:--.---.......................................-...................|
+// |...........---+syhsyso+++soo/o/:+/:--.---..........................................-................|
+// |...........---oyhhysoo++osso+++:/:--..--............................................---.............|
+// |`.`........--:syhhyss+o++ssoo+o/::---.--..............................:-.......................```..|
+// |````.......--/yhhhyys+oooyyos++::----...............................-:::.......................`````|
+// |```........--+hdhhyso+ssssyoy+/:::----............................-::::::..................`````````|
+// |``.`.......-:ohddysssssyyyyss+o/:::----..........................::::::-:-..................````````|
+// |`..........-:ohdhyssyyyyhysyo++//:::---........................-/:::::::::....................``````|
+// |...........-/sdddhysyyhydhsss++//:::----.....................-://:::/::::::..................```````|
+// |...........-/yhddhhhhyhdmhssso+++/:::---...................--:/:::///:::://-.............```````````|
+// |.`.........-/hdddhhddyhmmdsyyso++//:::---.................:+///:/++//:::/:::..........``````````````|
+// |.`.........-+hdmhydmmhdmNdhysoo++///:::----.............-+++/////+++//////::-........```````````````|
+// |``.........:ohdmyydNmhhdNdddyso+++///:::----..........-://++++++++++///////::---....````````````````|
+// |..........-:ohdmyhmNmhshNmmhyyo+++////::---..........:+///++++++++++++////////---..``..``````..`````|
+// |..........-:sddmhhmNmhydNmmhys+///+/::-:--.........-/+//++o+++++++o+++++//////:---.......`...```````|
+// |..........-:sdddhhNmmhyymmdhysso+///::----........:+o//++++++++o+++++++++//////:--...........`````..|
+// |..........-:smddhdmmmdysddhhsss++///::---.......-/oo/+++++o++ooo+o+++++++++////:-............````...|
+// |.........--:sdddhdmmmhsshdhysso++//:::--......-/++o+/+++++++oooooo++++++++++//+/:.......`...````....|
+// |..........-:sdddhdmmmhssyhyyso+++//::---.....://ooo+++++++++ossoo++++++++++++/++/:.-........``......|
+// |..........-:sdddhmmmmhsssyyyso++o+/::------:/ooso+o++oo++oosssooo+++++++::+++/++//-----.-...........|
+// |..........-:yhhdhmmddhsyssssoo+oo+/:::::::/+osss+++++oo+ossoooooo+++++++//++++++/+/------...........|
+// |..........-:ydhhhmmdmhsysyssso+++/++/::/+++osyssossossssssssssss+++++++++++++++++++:------......--..|
+// |..........-:sdhhdmmmmyyyyysssooo+++++/oysoshhyyssyyhyyyyyysssss++++++++++oso+oo++oo+:::---..-..--.-.|
+// |.........--:sdhddmmmdyssyysoso+/+////syoosyyys+osssossosoo+oooo+/+++++++osssoosoosooo/:---------....|
+// |......-----:smhddmmmhsssyssoso+///:::////++++++++++++++++/++o++//++++o++ooooosyysssoo/---.-----.....|
+// |.....----::/smhdmmmdyssoyssssoo+///::--:////+++++++++++++/++o++/++//++++oossyhyhysssoo:-.----.......|
+// |--------:::/smhdmdmddooossyssoo++//:::--://++++++++/+/+++++++o+++/++++++++sssyyyyysso+/-.--------.--|
+// |:::::::::::/smddddmddyooosysooo+///:::----/++++++++/++++//+++o++++++++++ossysyyyyyysoso:---::::::---|
+// |:///////:://smddddmmdhsyyssso++++///:+/---::/+//+++++++++/++oo++oo++++oosssyyyhddhssoso+:-:---------|
+// |--:---:---::oddddhdddysyysyso//oo+++//o+/-..-:///+++++++o+++o++++++oooossyhhhhhdhhyyso/:::-:::::::::|
+// |-----------:+ddddhhhdyssssso+ooossso++/oo+:----:/+/++++++++oo++++++oosssydmddddhysoooo//:///://:::::|
+// |.......-----/hdddhhyhssyssoooosyhdddyso+ssoo+:---//+o+++o++oo+ooo+++osssyhdmdho+/::/++/:/++/:::-----|
+// |-``.``.-::::/yhdddhyyoo+oossssyhmNNmdyo+/ssyyo/-.-:osso++o+o++oo+/+osyyssso+/::--::://::/+o/::---...|
+// |-``````.---..-+hdhhys:::::oooosyhddhso+/::ooo+o/:..-/++++ooo////++oosso/:--::::/++//::::/++//:----..|
+// |..`..``--.....-odhhyo::::-/++++++oo++//:---++++++/-..://++o+////+///:-.-/////+oo+:---:/+osy+:---::-.|
+// |.......-.``.-..odhyys+:----////://:/::--...-/++++++/-..::/++///:-...--://+++++/:-..-:///+os+--...--.|
+// |-............-+hhhs+:----.-:::--/:---...---../+++o+++:-..:/:-....::://////+/:-...--::://:/o:....--..|
+// |............-/hhy+::-..-..:::.-:::......-:-:--++ooo++//:....--:://////////:-.....--..---:+:....-.---|
+// |..........:++ohh+--..---..-::.-:-..`..``.--:++-+ooo+//////::////////////:-:-..........-/+-......---.|
+// |.........-/++sho::...-:-..-::-:-.``````.-..:::--/+o++/+oso///////////::-.......`.....-/:......---.``|
+// |........--::/+s/:::::--...--::--..`````.:-.-:--../+ooooooso+///+++/-.....``````....-::-......::-````|
+// |..........--:+yo/----.....--:::-.........-..-:----/+oossosoo++++:-...``````.......::-......-:-.`````|
+// |............:os++:-/---..`..-::--..---......-://::/:/ossoo+/:---.....`````.--.`.``......-::-..``````|
+// |...........-:oo++:/s+o/.....--:::-----.-..-.-:--..::://+/:-...............---..`````..----.``.``````|
+// |......------/ooooo:///-....----:::/::::/:------.-/+++/://:-..`........`...:....-`.``..--.```.-...```|
+// |.----------:+ossss+---..:-.--::/+oo+oo++//----::::::::-:/:://---/---..---.:--.--.```.--.````...-....|
+// |..--------::/oosssoo:--:/-.--/++sssysso+////:/::::::---:::://:-::.-...----/--::-.`..::----...----...|
+// |..-------::/+oooooo+:--/+-.--oooossoooo++++/:::::::---::--------...-------:-::/-....-.....---------.|
+// |..-----::::/++ooooo+:--++-.--oooooooooooo++//:::::::--------...-....----:-::::----...-....----......|
+// |...------:::/+oo+++/-.-//-..:+++++++ooooo+//////:::::::------.---.----:-:-------:::-:-............``|
+// |......-----::/+++//:--:/:--.://///////++++///////////:::::::--:::-------.------//::--.............``|
+// |.......----::/++///-.-:/:-..:////////:////////////+///////:::::-::----.....------....``.``.....`````|
+// |.........----:+o+//-..:::.../////////::::/::::/:://///////:::------..-...--------.-.````````````````|
+// |..........-/+++/:::-..::-...:///:::::::::::::::://///////::-------.........-...----.````````````````|
+// |..........-/++/::-:------..-----::::::::::::::::::::://///::::-----..........----:---```````````````|
+// |..........-:++:--.....``........`.......--::------:::::::::--------..........--.----.```.```````````|
+// |..........-//-```````.```.`````..`````````----------:::::::--------......................```````....|
+// |`.........-..``````````````````````````````.------------------------................................|
+// |........`...````````````````````````````````......------:---------.................-------..--......|
+// |````...`````````````````````````````````````...........------:-::::---..-..........-------..--......|
+// |`````.```````````````````````````````````````.--.........--::::--::::--......----..-----..-........-|
+// |```````````````````````````````````````````````-..``````......................---...--.......--.....|
+//-|----------------------------------------------------------------------------------------------------|-
 
 // - TODO: erc1155 amounts not supported in this version
 // adding the amounts, would imply that lending struct would
 // become two single storage slots, since it only has 4 bits
 // of free space.
-// - TODO: erc1155 batch transfers not supported in this version
-contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
-    using SafeERC20 for ERC20;
-    uint256 private lendingId = 1;
-    uint256 public rentFee = 500;
-    Resolver private resolver;
-    address payable private beneficiary;
+abstract contract ReNft is IReNft, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
+    IResolver private resolver;
     address private admin;
+    address payable private beneficiary;
+    uint256 private lendingId = 1;
 
-    // * quick test showed that LentBatch with arrays
-    // would cost more than the non-array version
-    // like the below
-    event Lent(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 lendingId,
-        address indexed lenderAddress,
-        uint16 maxRentDuration,
-        bytes4 dailyRentPrice,
-        bytes4 nftPrice,
-        Resolver.PaymentToken paymentToken
-    );
+    uint256 public rentFee = 500;
 
-    event Rented(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 lendingId,
-        address indexed renterAddress,
-        uint16 rentDuration,
-        uint32 rentedAt
-    );
-
-    event Returned(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        address renterAddress,
-        uint32 returnedAt
-    );
-
-    event CollateralClaimed(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        uint32 claimedAt
-    );
-
-    event LendingStopped(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        uint32 stoppedAt
-    );
-
+    // single storage slot: address - 160 bits, 176, 208, 240, 248
     struct Lending {
-        // 160 bits
         address payable lenderAddress;
-        // 176 bits
         uint16 maxRentDuration;
-        // 208 bits
         bytes4 dailyRentPrice;
-        // 240 bits
         bytes4 nftPrice;
-        // 248 bits
-        Resolver.PaymentToken paymentToken;
+        IResolver.PaymentToken paymentToken;
     }
 
-    // gimme more brother
+    // single storage slot: 160 bits, 176, 198
     struct Renting {
-        // 160 bits
         address payable renterAddress;
-        // 176 bits
         uint16 rentDuration;
-        // 198 bits
         uint32 rentedAt;
     }
 
@@ -124,22 +139,30 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         address payable _beneficiary,
         address _admin
     ) {
-        resolver = Resolver(_resolver);
+        resolver = IResolver(_resolver);
         beneficiary = _beneficiary;
         admin = _admin;
     }
 
-    // gitcoin bounty: wrapper on top of these, to calculate the most
-    // efficient way to lend & rent.
-    // whether it is to call lend1155 or lendBatch1155 or a combination
+    // Lightly brainy section ahead
+    // ----
+    // So here is a random joke from the Internet before you venture out
+    // into split or double-split or gazillion-times-split screen to read
+    // all the contracts and piece it all together (because I am bad
+    // at remembering, or coming up with jokes)
+    // Here comes the joke:
+    // You don't need a parachute to go skydiving.
+    // You need a parachute to go skydiving twice.
+    // ----
+
     function lend(
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint16[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
-        Resolver.PaymentToken[] memory _paymentToken
-    ) external nonReentrant {
+        IResolver.PaymentToken[] memory _paymentToken
+    ) external override nonReentrant {
         require(_nft.length == _tokenId.length, "_nft.length != _tokenId.length");
         require(_tokenId.length == _maxRentDuration.length, "_tokenId.length != _maxRentDuration.length");
         require(_maxRentDuration.length == _dailyRentPrice.length, "_maxRentDuration.length != _dailyRentPrice.length");
@@ -184,7 +207,7 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         uint256[] memory _tokenId,
         uint256[] memory _id,
         uint16[] memory _rentDuration
-    ) external payable nonReentrant {
+    ) external payable override nonReentrant {
         require(_nft.length == _tokenId.length, "_nft.length != _tokenId.length");
         require(_tokenId.length == _id.length, "_tokenId.length != _id.length");
         require(_id.length == _rentDuration.length, "_id.length != _rentDuration.length");
@@ -214,11 +237,12 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
             rc.isERC20 = rc.paymentTokenIndex > 1;
 
             if (rc.isERC20) {
-                rc.decimals = ERC20(rc.paymentToken).decimals();
+                rc.decimals = IERC20(rc.paymentToken).decimals();
             }
 
             rc.scale = 10**rc.decimals;
-            rc.rentPrice = rc.rentDuration * _unpackPrice(item.lending.dailyRentPrice, rc.scale); // max is 1825 * 65535. Nowhere near the overflow
+            // max is 1825 * 65535. Nowhere near the overflow
+            rc.rentPrice = rc.rentDuration * _unpackPrice(item.lending.dailyRentPrice, rc.scale);
             rc.nftPrice = _unpackPrice(item.lending.nftPrice, rc.scale);
 
             require(rc.rentPrice > 0, "rent price is zero");
@@ -226,7 +250,7 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
             rc.upfrontPayment = rc.rentPrice + rc.nftPrice;
 
             if (rc.isERC20) {
-                ERC20(rc.paymentToken).safeTransferFrom(msg.sender, address(this), rc.upfrontPayment);
+                IERC20(rc.paymentToken).safeTransferFrom(msg.sender, address(this), rc.upfrontPayment);
             } else {
                 rc.ethPmtRequired += rc.upfrontPayment;
             }
@@ -245,13 +269,13 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         }
     }
 
-    function _takeFee(uint256 _rent, Resolver.PaymentToken _paymentToken) private returns (uint256 fee) {
+    function _takeFee(uint256 _rent, IResolver.PaymentToken _paymentToken) private returns (uint256 fee) {
         fee = _rent * rentFee;
         fee /= 10000; // percentages
         uint8 paymentTokenIx = uint8(_paymentToken);
 
         if (paymentTokenIx > 1) {
-            ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
+            IERC20 paymentToken = IERC20(resolver.getPaymentToken(paymentTokenIx));
             paymentToken.safeTransfer(beneficiary, fee);
         } else {
             beneficiary.transfer(fee);
@@ -259,8 +283,19 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
     }
 
     /**
+     * @dev send rent amounts to lender, send unused
+     * rent amonuts to renter. Send the collateral
+     * back to renter. Fee is only ever charged on
+     * used rent payments. Initially, it will be set at zero.
      * Gets called only when the NFT is returned.
-     * _takeFee is here and in distributeClaimPayments
+     * _takeFee is here and in distributeClaimPayments.
+     *
+     * @param _lendingRenting when you return the NFT,
+     * you will have provided the lendingId, with it,
+     * as well as, nft address and token id, you can
+     * uniquely identify an NFT on reNFT.
+     * @param _secondsSinceRentStart seconds since rent
+     * start
      */
     function _distributePayments(LendingRenting storage _lendingRenting, uint256 _secondsSinceRentStart) private {
         uint256 decimals = 18;
@@ -269,7 +304,7 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         bool isERC20 = paymentTokenIx > 1;
 
         if (isERC20) {
-            decimals = ERC20(paymentToken).decimals();
+            decimals = IERC20(paymentToken).decimals();
         }
 
         uint256 scale = 10**decimals;
@@ -288,8 +323,8 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         sendRenterAmt += nftPrice;
 
         if (isERC20) {
-            ERC20(paymentToken).safeTransfer(_lendingRenting.lending.lenderAddress, sendLenderAmt - takenFee);
-            ERC20(paymentToken).safeTransfer(_lendingRenting.renting.renterAddress, sendRenterAmt);
+            IERC20(paymentToken).safeTransfer(_lendingRenting.lending.lenderAddress, sendLenderAmt - takenFee);
+            IERC20(paymentToken).safeTransfer(_lendingRenting.renting.renterAddress, sendRenterAmt);
         } else {
             require(paymentTokenIx == 1, "sentinels dont pay");
 
@@ -301,7 +336,7 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
     function _distributeClaimPayment(LendingRenting memory _lendingRenting) private {
         uint256 decimals = 18;
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
-        ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
+        IERC20 paymentToken = IERC20(resolver.getPaymentToken(paymentTokenIx));
 
         bool isERC20 = paymentTokenIx > 1;
 
@@ -313,7 +348,7 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         uint256 nftPrice = _unpackPrice(_lendingRenting.lending.nftPrice, scale);
         uint256 rentPrice = _unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
         uint256 maxRentPayment = rentPrice * _lendingRenting.renting.rentDuration;
-        uint256 takenFee = _takeFee(maxRentPayment, Resolver.PaymentToken(paymentTokenIx));
+        uint256 takenFee = _takeFee(maxRentPayment, IResolver.PaymentToken(paymentTokenIx));
         uint256 finalAmt = maxRentPayment + nftPrice;
 
         if (isERC20) {
@@ -327,7 +362,7 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id
-    ) public nonReentrant {
+    ) public override nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
 
@@ -353,7 +388,7 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id
-    ) public nonReentrant {
+    ) public override nonReentrant {
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
 
@@ -373,7 +408,7 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id
-    ) public {
+    ) public override {
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
 
@@ -405,7 +440,15 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         }
     }
 
-    // ERC1155 Received and BatchReceived is supported
+    // We can handle erc1155s
+    // ----
+    // ┈╱╱▏┈┈╱╱╱╱▏╱╱▏┈┈┈
+    // ┈▇╱▏┈┈▇▇▇╱▏▇╱▏┈┈┈
+    // ┈▇╱▏▁┈▇╱▇╱▏▇╱▏▁┈┈
+    // ┈▇╱╱╱▏▇╱▇╱▏▇╱╱╱▏┈
+    // ┈▇▇▇╱┈▇▇▇╱┈▇▇▇╱┈┈
+    // and jokes, too
+    // ----
 
     function onERC1155BatchReceived(
         address,
@@ -429,7 +472,20 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
         return 0xf23a6e61;
     }
 
+
     // Utils
+    // ----
+    //
+    // ___$$$___$$$____
+    // __$$$$$_$$$$$___
+    // __$$$$$$$$$$$___
+    // ____$$$$$$$_____
+    // ______$$$_______
+    // _______$
+    // _____¸.•´¸.•*¸.•*´¨`*•.♥
+    // _____*.¸¸.•*¨`
+    //
+    // ----
 
     /**
      * @param _scale - if 18 decimal places, then should 1000000000000000000
@@ -455,6 +511,13 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
     }
 
     // Sanity checks section
+    // ----
+    //   __
+    //  /  |           /
+    // (___| ___  ___ (___  ___  ___  ___
+    // |    |   )|   )|    |___)|    |
+    // |    |    |__/ |__  |__  |__  |__
+    // ----
 
     function _ensureIsNotNull(Lending memory _lending) private pure {
         require(_lending.lenderAddress != address(0), "lender is zero address");
@@ -480,6 +543,13 @@ contract RentNft is ReentrancyGuard, ERC721Holder, ERC1155Receiver {
     }
 
     // Admin only section
+    // ----
+    //   __
+    //  /  |    |      /                     /
+    // (___| ___| _ _    ___       ___  ___ (
+    // |   )|   )| | )| |   )     |   )|   )| \   )
+    // |  / |__/ |  / | |  /      |__/ |  / |  \_/
+    // ----                                          /
 
     function setRentFee(uint256 _rentFee) external {
         require(msg.sender == admin, "");

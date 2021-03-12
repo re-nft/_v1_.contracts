@@ -43,15 +43,7 @@ const config: HardhatUserConfig = {
       url: node_url('mainnet'),
       accounts: accounts('mainnet'),
     },
-    rinkeby: {
-      url: node_url('rinkeby'),
-      accounts: accounts('rinkeby'),
-    },
     kovan: {
-      url: node_url('kovan'),
-      accounts: accounts('kovan'),
-    },
-    staging: {
       url: node_url('kovan'),
       accounts: accounts('kovan'),
     },
