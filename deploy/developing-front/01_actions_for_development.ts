@@ -31,7 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     deployer
   )) as any) as Resolver;
 
-  await deploy('RentNft', {
+  await deploy('ReNft', {
     from: deployer,
     log: true,
     args: [resolver.address, beneficiary, deployer],

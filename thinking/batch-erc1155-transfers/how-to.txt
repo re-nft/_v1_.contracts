@@ -1,0 +1,10 @@
+to make this efficient, I need to know:
+
+(i)  unique addresses,
+(ii) tokenIds of those addresses
+
+non-compatible solution:
+change a signature of the function to accept a list of unique addresses
+and then a list of lists of tokenIds
+
+all of the solutions are in fact non-compatible, since I need to add amounts

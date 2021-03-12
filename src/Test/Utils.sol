@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 contract Utils {
     /// @dev for tests only. this must be exact replica of the one in
-    /// RentNft.sol
+    /// ReNft.sol
 
     function _unpackPrice(bytes4 _price, uint256 _scale) external pure returns (uint256) {
         uint16 whole = uint16(bytes2(_price));
