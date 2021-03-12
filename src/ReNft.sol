@@ -591,7 +591,7 @@ contract ReNft is IReNft, ReentrancyGuard {
     // (___| ___| _ _    ___       ___  ___ (
     // |   )|   )| | )| |   )     |   )|   )| \   )
     // |  / |__/ |  / | |  /      |__/ |  / |  \_/
-    // ----                                          /
+    // ----                                    /
 
     function setRentFee(uint256 _rentFee) external {
         require(msg.sender == admin, "");
