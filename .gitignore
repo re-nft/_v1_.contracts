@@ -17,3 +17,5 @@ deployments/localhost
 
 .vscode/
 frontend/
+
+yarn-error.log

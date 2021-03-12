@@ -1,24 +1,39 @@
-# Boilerplate for ethereum solidity smart contract development
+# ReNFT Contracts
 
-## INSTALL
+## Table of content
 
-```bash
-yarn
-```
+- [ReNFT Contracts](#renft-contracts)
+  - [Table of content](#table-of-content)
+    - [|||| ReNft contract spec](#-renft-contract-spec)
+      - [||| Events](#-events)
+      - [||| Functions](#-functions)
 
-## TEST
+---
 
-```bash
-yarn test
-```
+### |||| ReNft contract spec
 
-## Github Setup
+---
 
-This include codechecks setup for gas report.
-See guide here : https://github.com/cgewecke/hardhat-gas-reporter#continuous-integration
+#### ||| Events
 
-The repo code is setup for it. The only thing needed is setting up codecheks account and adding the repo to codechecks so you get a secret token
+`Lent` - when an NFT(s) is/are lent.
 
-you ll need to set the github secret of the respective project added to codechecks.io. the secret name is: CC_SECRET (see .github/workflows/main.yml)
+`Rented` - when an NFT(s) is/are rented out.
 
-If you do not want gas report via codecheck you can remove `codechecks.yml` and `.github` and execute : `yarn remove @codechecks/client`
+`Returned` - when an NFT(s) is/are returned by the renter back into ReNft contract.
+
+`CollateralClaimed` - when the renter fails to return the NFT(s) in time, lender can claim collateral. Emmitted when lender claimed this collateral(s).
+
+`LendingStopped` - lender can stop lending their NFT(s), these will be sent from the ReNft contract back to the lender.
+
+#### ||| Functions
+
+`lend` - lend some/all of your NFTs. These get sent to ReNft contract for escrow, until the renter is found.
+
+`rent` - rent one/many ERC721/ERC1155 NFTs from the users that have lent them, and which reside in ReNft for escrow.
+
+`returnIt` - return one/all of the rented ERC721/ERC1155 NFTs before the deadline.
+
+`claimCollateral` - called by lender if the renter missed their return date.
+
+`stopLending` - called by lender to release their lent NFT back to them. This marks end of the interaction with ReNft smart contract.
