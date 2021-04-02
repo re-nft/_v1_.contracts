@@ -5,7 +5,6 @@ import 'hardhat-deploy-ethers';
 import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-etherscan';
 import '@symfoni/hardhat-react';
-import 'solidity-coverage';
 
 // * due to auto-generation the tests run much slower
 // * unless this becomes opt-in, remove the comment out
@@ -43,18 +42,13 @@ const config: HardhatUserConfig = {
       url: node_url('mainnet'),
       accounts: accounts('mainnet'),
     },
-    kovan: {
-      url: node_url('kovan'),
-      accounts: accounts('kovan'),
-    },
   },
   paths: {
     sources: 'src',
   },
   gasReporter: {
     currency: 'USD',
-    gasPrice: 100,
-    enabled: process.env.REPORT_GAS ? true : false,
+    gasPrice: 200,
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     maxMethodDiff: 10,
   },

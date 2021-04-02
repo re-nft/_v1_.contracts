@@ -63,3 +63,4 @@ TODO:
 - avoid generating the typechain artifacts twice
 - solidity coverage does not work correctly, so I removed it for now
 - husky pre-commit & pre-push
+- gas reporting does not work
