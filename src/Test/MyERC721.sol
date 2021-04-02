@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
@@ -19,7 +19,9 @@ contract MyERC721 is ERC721 {
         "https://api.bccg.digital/api/bccg/1"
     ];
 
-    constructor() ERC721("GANFACE", "GF") {}
+    constructor() ERC721("GANFACE", "GF") {
+        this;
+    }
 
     function award() public returns (uint256) {
         tokenId++;
@@ -27,8 +29,8 @@ contract MyERC721 is ERC721 {
         return tokenId;
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+        require(_exists(_tokenId), "ERC721Metadata: URI query for nonexistent token");
 
         string memory uri = tokenUris[tokenId];
         return uri;

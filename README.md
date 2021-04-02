@@ -1,20 +1,19 @@
-# ReNFT Contracts
+# 🥂 **ReNFT Contracts**
 
-## Table of content
+## **Table of content**
 
-- [ReNFT Contracts](#renft-contracts)
-  - [Table of content](#table-of-content)
-    - [|||| ReNft contract spec](#-renft-contract-spec)
-      - [||| Events](#-events)
-      - [||| Functions](#-functions)
-
----
-
-### |||| ReNft contract spec
+- [🤏🏻 ReNft contract spec](#🤏🏻-renft-contract-spec)
+  - [🤏🏻👨🏻‍💻 Events](#🤏🏻👨🏻‍💻-events)
+  - [🤏🏻👩🏽‍✈️ Functions](#🤏🏻👩🏽‍✈️-functions)
+- [❤ Dev like a reNFTer](#❤-dev-like-a-renfter)
 
 ---
 
-#### ||| Events
+### 🤏🏻 **ReNft contract spec**
+
+---
+
+#### 🤏🏻👨🏻‍💻 ***Events***
 
 `Lent` - when an NFT(s) is/are lent.
 
@@ -26,7 +25,7 @@
 
 `LendingStopped` - lender can stop lending their NFT(s), these will be sent from the ReNft contract back to the lender.
 
-#### ||| Functions
+#### 🤏🏻👩🏽‍✈️ ***Functions***
 
 `lend` - lend some/all of your NFTs. These get sent to ReNft contract for escrow, until the renter is found.
 
@@ -37,3 +36,30 @@
 `claimCollateral` - called by lender if the renter missed their return date.
 
 `stopLending` - called by lender to release their lent NFT back to them. This marks end of the interaction with ReNft smart contract.
+
+---
+
+### **❤ Dev like a reNFTer**
+
+---
+
+![hackerman](https://external-preview.redd.it/4lnFFyQJ8ZuV11zAkHW9q3VUfPHS-KL29kb76c0RM2s.jpg?auto=webp&s=20de54cd38fe99d817d283f802053c16f08e4ad9)
+
+*kʌmfi vscode plugins*
+--
+
+[better comments](https://marketplace.visualstudio.com/items?itemName=aaron-bond.better-comments)
+
+[markdownlint](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
+
+
+TODO:
+- yarn upgrade all that can be upgraded
+- yarn remove the deps that are not used
+- minimal configs everywhere
+- what is rimraf
+- do we need cross-env
+- pakcage.json env vars
+- avoid generating the typechain artifacts twice
+- solidity coverage does not work correctly, so I removed it for now
+- husky pre-commit & pre-push

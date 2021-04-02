@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.3;
 
 contract Utils {
     /// @dev for tests only. this must be exact replica of the one in

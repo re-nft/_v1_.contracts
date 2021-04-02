@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.3;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -9,73 +9,21 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNft.sol";
 
-//-|----------------------------------------------------------------------------------------------------|-
-// |````````````...-/://::-:---::-:.-........`````````````````````````````````````````````````````````.`|
-// |..............-ooosyss+++//o+////::-...--...........................................................|
-// |..............:s+syoos+/+/oo+o/:/:---..-............................................................|
-// |............--/sohysss+/+oso+o+///:--.---.......................................-...................|
-// |...........---+syhsyso+++soo/o/:+/:--.---..........................................-................|
-// |...........---oyhhysoo++osso+++:/:--..--............................................---.............|
-// |`.`........--:syhhyss+o++ssoo+o/::---.--..............................:-.......................```..|
-// |````.......--/yhhhyys+oooyyos++::----...............................-:::.......................`````|
-// |```........--+hdhhyso+ssssyoy+/:::----............................-::::::..................`````````|
-// |``.`.......-:ohddysssssyyyyss+o/:::----..........................::::::-:-..................````````|
-// |`..........-:ohdhyssyyyyhysyo++//:::---........................-/:::::::::....................``````|
-// |...........-/sdddhysyyhydhsss++//:::----.....................-://:::/::::::..................```````|
-// |...........-/yhddhhhhyhdmhssso+++/:::---...................--:/:::///:::://-.............```````````|
-// |.`.........-/hdddhhddyhmmdsyyso++//:::---.................:+///:/++//:::/:::..........``````````````|
-// |.`.........-+hdmhydmmhdmNdhysoo++///:::----.............-+++/////+++//////::-........```````````````|
-// |``.........:ohdmyydNmhhdNdddyso+++///:::----..........-://++++++++++///////::---....````````````````|
-// |..........-:ohdmyhmNmhshNmmhyyo+++////::---..........:+///++++++++++++////////---..``..``````..`````|
-// |..........-:sddmhhmNmhydNmmhys+///+/::-:--.........-/+//++o+++++++o+++++//////:---.......`...```````|
-// |..........-:sdddhhNmmhyymmdhysso+///::----........:+o//++++++++o+++++++++//////:--...........`````..|
-// |..........-:smddhdmmmdysddhhsss++///::---.......-/oo/+++++o++ooo+o+++++++++////:-............````...|
-// |.........--:sdddhdmmmhsshdhysso++//:::--......-/++o+/+++++++oooooo++++++++++//+/:.......`...````....|
-// |..........-:sdddhdmmmhssyhyyso+++//::---.....://ooo+++++++++ossoo++++++++++++/++/:.-........``......|
-// |..........-:sdddhmmmmhsssyyyso++o+/::------:/ooso+o++oo++oosssooo+++++++::+++/++//-----.-...........|
-// |..........-:yhhdhmmddhsyssssoo+oo+/:::::::/+osss+++++oo+ossoooooo+++++++//++++++/+/------...........|
-// |..........-:ydhhhmmdmhsysyssso+++/++/::/+++osyssossossssssssssss+++++++++++++++++++:------......--..|
-// |..........-:sdhhdmmmmyyyyysssooo+++++/oysoshhyyssyyhyyyyyysssss++++++++++oso+oo++oo+:::---..-..--.-.|
-// |.........--:sdhddmmmdyssyysoso+/+////syoosyyys+osssossosoo+oooo+/+++++++osssoosoosooo/:---------....|
-// |......-----:smhddmmmhsssyssoso+///:::////++++++++++++++++/++o++//++++o++ooooosyysssoo/---.-----.....|
-// |.....----::/smhdmmmdyssoyssssoo+///::--:////+++++++++++++/++o++/++//++++oossyhyhysssoo:-.----.......|
-// |--------:::/smhdmdmddooossyssoo++//:::--://++++++++/+/+++++++o+++/++++++++sssyyyyysso+/-.--------.--|
-// |:::::::::::/smddddmddyooosysooo+///:::----/++++++++/++++//+++o++++++++++ossysyyyyyysoso:---::::::---|
-// |:///////:://smddddmmdhsyyssso++++///:+/---::/+//+++++++++/++oo++oo++++oosssyyyhddhssoso+:-:---------|
-// |--:---:---::oddddhdddysyysyso//oo+++//o+/-..-:///+++++++o+++o++++++oooossyhhhhhdhhyyso/:::-:::::::::|
-// |-----------:+ddddhhhdyssssso+ooossso++/oo+:----:/+/++++++++oo++++++oosssydmddddhysoooo//:///://:::::|
-// |.......-----/hdddhhyhssyssoooosyhdddyso+ssoo+:---//+o+++o++oo+ooo+++osssyhdmdho+/::/++/:/++/:::-----|
-// |-``.``.-::::/yhdddhyyoo+oossssyhmNNmdyo+/ssyyo/-.-:osso++o+o++oo+/+osyyssso+/::--::://::/+o/::---...|
-// |-``````.---..-+hdhhys:::::oooosyhddhso+/::ooo+o/:..-/++++ooo////++oosso/:--::::/++//::::/++//:----..|
-// |..`..``--.....-odhhyo::::-/++++++oo++//:---++++++/-..://++o+////+///:-.-/////+oo+:---:/+osy+:---::-.|
-// |.......-.``.-..odhyys+:----////://:/::--...-/++++++/-..::/++///:-...--://+++++/:-..-:///+os+--...--.|
-// |-............-+hhhs+:----.-:::--/:---...---../+++o+++:-..:/:-....::://////+/:-...--::://:/o:....--..|
-// |............-/hhy+::-..-..:::.-:::......-:-:--++ooo++//:....--:://////////:-.....--..---:+:....-.---|
-// |..........:++ohh+--..---..-::.-:-..`..``.--:++-+ooo+//////::////////////:-:-..........-/+-......---.|
-// |.........-/++sho::...-:-..-::-:-.``````.-..:::--/+o++/+oso///////////::-.......`.....-/:......---.``|
-// |........--::/+s/:::::--...--::--..`````.:-.-:--../+ooooooso+///+++/-.....``````....-::-......::-````|
-// |..........--:+yo/----.....--:::-.........-..-:----/+oossosoo++++:-...``````.......::-......-:-.`````|
-// |............:os++:-/---..`..-::--..---......-://::/:/ossoo+/:---.....`````.--.`.``......-::-..``````|
-// |...........-:oo++:/s+o/.....--:::-----.-..-.-:--..::://+/:-...............---..`````..----.``.``````|
-// |......------/ooooo:///-....----:::/::::/:------.-/+++/://:-..`........`...:....-`.``..--.```.-...```|
-// |.----------:+ossss+---..:-.--::/+oo+oo++//----::::::::-:/:://---/---..---.:--.--.```.--.````...-....|
-// |..--------::/oosssoo:--:/-.--/++sssysso+////:/::::::---:::://:-::.-...----/--::-.`..::----...----...|
-// |..-------::/+oooooo+:--/+-.--oooossoooo++++/:::::::---::--------...-------:-::/-....-.....---------.|
-// |..-----::::/++ooooo+:--++-.--oooooooooooo++//:::::::--------...-....----:-::::----...-....----......|
-// |...------:::/+oo+++/-.-//-..:+++++++ooooo+//////:::::::------.---.----:-:-------:::-:-............``|
-// |......-----::/+++//:--:/:--.://///////++++///////////:::::::--:::-------.------//::--.............``|
-// |.......----::/++///-.-:/:-..:////////:////////////+///////:::::-::----.....------....``.``.....`````|
-// |.........----:+o+//-..:::.../////////::::/::::/:://///////:::------..-...--------.-.````````````````|
-// |..........-/+++/:::-..::-...:///:::::::::::::::://///////::-------.........-...----.````````````````|
-// |..........-/++/::-:------..-----::::::::::::::::::::://///::::-----..........----:---```````````````|
-// |..........-:++:--.....``........`.......--::------:::::::::--------..........--.----.```.```````````|
-// |..........-//-```````.```.`````..`````````----------:::::::--------......................```````....|
-// |`.........-..``````````````````````````````.------------------------................................|
-// |........`...````````````````````````````````......------:---------.................-------..--......|
-// |````...`````````````````````````````````````...........------:-::::---..-..........-------..--......|
-// |`````.```````````````````````````````````````.--.........--::::--::::--......----..-----..-........-|
-// |```````````````````````````````````````````````-..``````......................---...--.......--.....|
-//-|----------------------------------------------------------------------------------------------------|-
+// - TODO: local storage instead of the rentcutie
+
+// - TODO: define boundary cases, define normal domain, add the docs like in 0xsequence
+
+// - TODO: draw.io visuals for the contract
+
+// - TODO: assesss smock.it for future versions
+
+// - TODO: on the front, give people the estimate for the txn cost
+// - TODO: atomic.blue look at mempool to estimate gas, see if they
+// - TODO: are willing to share that code. Tell people the round-trip
+
+// - TODO: of lending. For better UX, manage people's private keys (huge trust step)
+// - TODO: but this will allow collateral-free renting lending. Also, nuCypher helps
+// - TODO: you do this safely. Also, `SUDO` opcode (Andre's tweet) can help us solve this issue
 
 // - TODO: erc1155 amounts not supported in this version
 // adding the amounts, would imply that lending struct would
@@ -455,7 +403,12 @@ contract ReNft is IReNft, ReentrancyGuard {
     // and jokes, too
     // ----
 
-    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
         // 0xf0b9e5ba === `bytes4(keccak256("onERC721Received(address,uint256,bytes)"))`
         // 0xf0b9e5ba === `ERC721Receiver(0).onERC721Received.selector`
         return 0xf0b9e5ba;
@@ -487,8 +440,8 @@ contract ReNft is IReNft, ReentrancyGuard {
      * @dev supports the following interfaces: IERC721Receiver, IERC1155Receiver
      */
     function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
-        return (interfaceId == type(IERC721Receiver).interfaceId) ||
-                (interfaceId == type(IERC1155Receiver).interfaceId);
+        return
+            (interfaceId == type(IERC721Receiver).interfaceId) || (interfaceId == type(IERC1155Receiver).interfaceId);
     }
 
     // Utils
@@ -595,7 +548,7 @@ contract ReNft is IReNft, ReentrancyGuard {
 
     function setRentFee(uint256 _rentFee) external {
         require(msg.sender == admin, "");
-        require(_rentFee < 10000, "cannot be taking 100 pct fee");
+        require(_rentFee < 10000, "cannot be taking 100 pct fee madlad");
         rentFee = _rentFee;
     }
 
