@@ -52,15 +52,19 @@
 
 [markdownlint](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
 
+---
 
-TODO:
-- yarn upgrade all that can be upgraded
-- yarn remove the deps that are not used
-- minimal configs everywhere
-- what is rimraf
-- do we need cross-env
-- pakcage.json env vars
+### TODO
+
+---
+
 - avoid generating the typechain artifacts twice
 - solidity coverage does not work correctly, so I removed it for now
 - husky pre-commit & pre-push
-- gas reporting does not work
+- gas reporting does nsot work
+- define boundary cases, define normal domain, add the docs like in 0xsequence
+- draw.io visuals for the contract
+- assesss smock.it for future versions
+- on the front, give people the estimate for the txn cost
+- atomic.blue look at mempool to estimate gas, see if they are willing to share that code. Tell people the cost of the round-trip
+- of lending. For better UX, manage people's private keys (huge trust step) but this will allow collateral-free renting lending. Also, nuCypher helps you do this safely. Also, `SUDO` opcode (Andre's tweet) can help us solve this issue

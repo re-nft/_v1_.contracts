@@ -72,14 +72,12 @@ export const packPrice = (price: number): string => {
     const wholeHex = decimalToPaddedHexString(Number(whole), 16);
     const decimalHex = decimalToPaddedHexString(Number(decimal), 16);
     const hexRepr = wholeHex.concat(decimalHex.slice(2));
-    // res = parseInt(hexRepr, 16);
     res = hexRepr;
   } else {
     if (parts.length != 1) throw new Error('price packing issue');
     const whole = parts[0];
     const wholeHex = decimalToPaddedHexString(Number(whole), 16);
     const decimalHex = '0000';
-    // res = parseInt(wholeHex.slice(2).concat(decimalHex), 16);
     res = wholeHex.concat(decimalHex);
   }
   return res;

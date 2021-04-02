@@ -9,22 +9,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNft.sol";
 
-// - TODO: local storage instead of the rentcutie
-
-// - TODO: define boundary cases, define normal domain, add the docs like in 0xsequence
-
-// - TODO: draw.io visuals for the contract
-
-// - TODO: assesss smock.it for future versions
-
-// - TODO: on the front, give people the estimate for the txn cost
-// - TODO: atomic.blue look at mempool to estimate gas, see if they
-// - TODO: are willing to share that code. Tell people the round-trip
-
-// - TODO: of lending. For better UX, manage people's private keys (huge trust step)
-// - TODO: but this will allow collateral-free renting lending. Also, nuCypher helps
-// - TODO: you do this safely. Also, `SUDO` opcode (Andre's tweet) can help us solve this issue
-
 // - TODO: erc1155 amounts not supported in this version
 // adding the amounts, would imply that lending struct would
 // become two single storage slots, since it only has 4 bits
@@ -59,25 +43,6 @@ contract ReNft is IReNft, ReentrancyGuard {
     struct LendingRenting {
         Lending lending;
         Renting renting;
-    }
-
-    // @dev to avoid Solidity compiler's 'stack too deep' error
-    struct RentCutie {
-        uint256 tokenId;
-        uint256 lendingId;
-        address nft;
-        uint256 ethPmtRequired;
-        uint16 rentDuration;
-        uint256 decimals;
-        uint8 paymentTokenIndex;
-        uint256 scale;
-        address paymentToken;
-        bool isERC20;
-        uint256 rentPrice;
-        uint256 nftPrice;
-        uint256 upfrontPayment;
-        uint256 nftLen;
-        uint256 amount;
     }
 
     // 32 bytes key to 64 bytes struct
@@ -159,60 +124,56 @@ contract ReNft is IReNft, ReentrancyGuard {
         require(_tokenId.length == _id.length, "_tokenId.length != _id.length");
         require(_id.length == _rentDuration.length, "_id.length != _rentDuration.length");
 
-        RentCutie memory rc;
-        rc.ethPmtRequired = 0;
-        rc.nftLen = _nft.length - 1;
+        uint256 ethPmtRequired = 0;
+        uint256 nftLen = _nft.length - 1;
 
         for (uint256 i = 0; i < _nft.length; i++) {
-            rc.nft = _nft[i];
-            rc.tokenId = _tokenId[i];
-            rc.lendingId = _id[i];
-
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(rc.nft, rc.tokenId, rc.lendingId))];
+            address nft = _nft[i];
+            uint256 tokenId = _tokenId[i];
+            lendingId = _id[i];
+            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(nft, tokenId, lendingId))];
 
             _ensureIsNull(item.renting);
             require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
 
-            rc.rentDuration = _rentDuration[i];
+            uint16 rentDuration = _rentDuration[i];
+            require(rentDuration > 0, "should rent for at least a day");
+            require(rentDuration <= item.lending.maxRentDuration, "max rent duration exceeded");
 
-            require(rc.rentDuration > 0, "should rent for at least a day");
-            require(rc.rentDuration <= item.lending.maxRentDuration, "max rent duration exceeded");
+            uint8 paymentTokenIndex = uint8(item.lending.paymentToken);
+            address paymentToken = resolver.getPaymentToken(paymentTokenIndex);
+            bool isERC20 = paymentTokenIndex > 1;
 
-            rc.decimals = 18;
-            rc.paymentTokenIndex = uint8(item.lending.paymentToken);
-            rc.paymentToken = resolver.getPaymentToken(rc.paymentTokenIndex);
-            rc.isERC20 = rc.paymentTokenIndex > 1;
-
-            if (rc.isERC20) {
-                rc.decimals = _decimals(rc.paymentToken);
+            uint256 decimals = 18;
+            if (isERC20) {
+                decimals = _decimals(paymentToken);
             }
 
-            rc.scale = 10**rc.decimals;
+            {
+            uint256 scale = 10**decimals;
             // max is 1825 * 65535. Nowhere near the overflow
-            rc.rentPrice = rc.rentDuration * _unpackPrice(item.lending.dailyRentPrice, rc.scale);
-            rc.nftPrice = _unpackPrice(item.lending.nftPrice, rc.scale);
-
-            require(rc.rentPrice > 0, "rent price is zero");
-
-            rc.upfrontPayment = rc.rentPrice + rc.nftPrice;
-
-            if (rc.isERC20) {
-                IERC20(rc.paymentToken).safeTransferFrom(msg.sender, address(this), rc.upfrontPayment);
+            uint256 rentPrice = rentDuration * _unpackPrice(item.lending.dailyRentPrice, scale);
+            uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
+            require(rentPrice > 0, "rent price is zero");
+            uint256 upfrontPayment = rentPrice + nftPrice;
+            if (isERC20) {
+                IERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
             } else {
-                rc.ethPmtRequired += rc.upfrontPayment;
+                ethPmtRequired += upfrontPayment;
+            }
             }
 
-            if (i == rc.nftLen) {
-                require(msg.value == rc.ethPmtRequired, "insufficient amount");
+            if (i == nftLen) {
+                require(msg.value == ethPmtRequired, "insufficient amount");
             }
 
             item.renting.renterAddress = payable(msg.sender);
-            item.renting.rentDuration = rc.rentDuration;
+            item.renting.rentDuration = rentDuration;
             item.renting.rentedAt = uint32(block.timestamp);
 
-            _safeTransfer(address(this), msg.sender, rc.nft, rc.tokenId);
+            _safeTransfer(address(this), msg.sender, nft, tokenId);
 
-            emit Rented(rc.nft, rc.tokenId, rc.lendingId, msg.sender, rc.rentDuration, uint32(block.timestamp));
+            emit Rented(nft, tokenId, lendingId, msg.sender, rentDuration, uint32(block.timestamp));
         }
     }
 
