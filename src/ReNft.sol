@@ -114,6 +114,11 @@ contract ReNft is IReNft, ReentrancyGuard {
         }
     }
 
+    /**
+     * domain:
+     *  any set of non-repeating NFTs (if repeating, you will incur unnecessary cost)
+     *  any set of sorted in ascending order, respective tokenIds
+     */
     function rent(
         address[] memory _nft,
         uint256[] memory _tokenId,
