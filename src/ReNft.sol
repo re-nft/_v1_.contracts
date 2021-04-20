@@ -99,6 +99,11 @@ contract ReNft is IReNft, ReentrancyGuard {
                 paymentToken: _paymentToken[i]
             });
 
+            bool isERC721 = false;
+            {
+                isERC721 = _isERC721(_nft[i]);
+            }
+
             emit Lent(
                 _nft[i],
                 _tokenId[i],
@@ -107,6 +112,7 @@ contract ReNft is IReNft, ReentrancyGuard {
                 _maxRentDuration[i],
                 _dailyRentPrice[i],
                 _nftPrice[i],
+                isERC721,
                 _paymentToken[i]
             );
 
@@ -178,7 +184,7 @@ contract ReNft is IReNft, ReentrancyGuard {
 
             _safeTransfer(address(this), msg.sender, nft, tokenId);
 
-            emit Rented(nft, tokenId, lendingId, msg.sender, rentDuration, uint32(block.timestamp));
+            emit Rented(nft, tokenId, lendingId, msg.sender, rentDuration, _isERC721(nft), uint32(block.timestamp));
         }
     }
 
@@ -346,8 +352,8 @@ contract ReNft is IReNft, ReentrancyGuard {
         address _nft,
         uint256 _tokenId
     ) private {
-        bool isERC721 = IERC165(_nft).supportsInterface(type(IERC721).interfaceId);
-        bool isERC1155 = IERC165(_nft).supportsInterface(type(IERC1155).interfaceId);
+        bool isERC721 = _isERC721(_nft);
+        bool isERC1155 = _isERC1155(_nft);
 
         if (isERC721) {
             IERC721(_nft).transferFrom(_from, _to, _tokenId);
@@ -423,6 +429,14 @@ contract ReNft is IReNft, ReentrancyGuard {
     // _____*.¸¸.•*¨`
     //
     // ----
+
+    function _isERC721(address _nft) internal view returns (bool) {
+        return IERC165(_nft).supportsInterface(type(IERC721).interfaceId);
+    }
+
+    function _isERC1155(address _nft) internal view returns (bool) {
+        return IERC165(_nft).supportsInterface(type(IERC1155).interfaceId);
+    }
 
     /**
      * @dev this was added to maintain single storage slot for lending

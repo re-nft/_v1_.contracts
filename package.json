@@ -57,5 +57,8 @@
     "erc721",
     "erc1155",
     "non-fungible"
-  ]
+  ],
+  "dependencies": {
+    "typechain-target-ethers-v5": "^5.0.1"
+  }
 }

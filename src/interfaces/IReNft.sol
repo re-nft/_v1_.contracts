@@ -23,6 +23,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         uint16 maxRentDuration,
         bytes4 dailyRentPrice,
         bytes4 nftPrice,
+        bool isERC721,
         IResolver.PaymentToken paymentToken
     );
 
@@ -32,6 +33,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         uint256 lendingId,
         address indexed renterAddress,
         uint16 rentDuration,
+        bool isERC721,
         uint32 rentedAt
     );
 
