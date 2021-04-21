@@ -23,7 +23,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
     args: [deployer],
-    deterministicDeployment: true,
   });
 
   const resolver = ((await ethers.getContract(
@@ -31,11 +30,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     deployer
   )) as any) as Resolver;
 
-  await deploy('ReNft', {
+  await deploy('ReNFT', {
     from: deployer,
     log: true,
     args: [resolver.address, beneficiary, deployer],
-    deterministicDeployment: true,
   });
 
   const erc721 = ((await ethers.getContract(
