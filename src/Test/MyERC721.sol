@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 contract MyERC721 is IERC721Metadata, ERC721Enumerable {
     event NewFace(address indexed owner, uint256 indexed tokenId, string tokenURI);
-    uint256 private tokenId;
+    uint256 private counter = 0;
     string[] private tokenUris = [
         "https://nft.service.cometh.io/3000013",
         "https://nft.service.cometh.io/3000015",
@@ -25,14 +25,14 @@ contract MyERC721 is IERC721Metadata, ERC721Enumerable {
     }
 
     function award() public returns (uint256) {
-        tokenId++;
-        _mint(msg.sender, tokenId);
-        return tokenId;
+        counter++;
+        _mint(msg.sender, counter);
+        return counter;
     }
 
     function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {
         require(_exists(_tokenId), "ERC721Metadata: URI query for nonexistent token");
-        string memory uri = tokenUris[tokenId];
+        string memory uri = tokenUris[_tokenId];
         return uri;
     }
 }
