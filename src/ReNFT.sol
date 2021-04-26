@@ -7,13 +7,13 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./interfaces/IResolver.sol";
-import "./interfaces/IReNft.sol";
+import "./interfaces/IReNFT.sol";
 
 // - TODO: erc1155 amounts not supported in this version
 // adding the amounts, would imply that lending struct would
 // become two single storage slots, since it only has 4 bits
 // of free space.
-contract ReNft is IReNft, ReentrancyGuard {
+contract ReNFT is IReNft, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IResolver private resolver;
@@ -99,6 +99,11 @@ contract ReNft is IReNft, ReentrancyGuard {
                 paymentToken: _paymentToken[i]
             });
 
+            bool isERC721 = false;
+            {
+                isERC721 = _isERC721(_nft[i]);
+            }
+
             emit Lent(
                 _nft[i],
                 _tokenId[i],
@@ -107,6 +112,7 @@ contract ReNft is IReNft, ReentrancyGuard {
                 _maxRentDuration[i],
                 _dailyRentPrice[i],
                 _nftPrice[i],
+                isERC721,
                 _paymentToken[i]
             );
 
@@ -155,17 +161,17 @@ contract ReNft is IReNft, ReentrancyGuard {
             }
 
             {
-            uint256 scale = 10**decimals;
-            // max is 1825 * 65535. Nowhere near the overflow
-            uint256 rentPrice = rentDuration * _unpackPrice(item.lending.dailyRentPrice, scale);
-            uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
-            require(rentPrice > 0, "rent price is zero");
-            uint256 upfrontPayment = rentPrice + nftPrice;
-            if (isERC20) {
-                IERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
-            } else {
-                ethPmtRequired += upfrontPayment;
-            }
+                uint256 scale = 10**decimals;
+                // max is 1825 * 65535. Nowhere near the overflow
+                uint256 rentPrice = rentDuration * _unpackPrice(item.lending.dailyRentPrice, scale);
+                uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
+                require(rentPrice > 0, "rent price is zero");
+                uint256 upfrontPayment = rentPrice + nftPrice;
+                if (isERC20) {
+                    IERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
+                } else {
+                    ethPmtRequired += upfrontPayment;
+                }
             }
 
             if (i == nftLen) {
@@ -178,7 +184,7 @@ contract ReNft is IReNft, ReentrancyGuard {
 
             _safeTransfer(address(this), msg.sender, nft, tokenId);
 
-            emit Rented(nft, tokenId, lendingId, msg.sender, rentDuration, uint32(block.timestamp));
+            emit Rented(nft, tokenId, lendingId, msg.sender, rentDuration, _isERC721(nft), uint32(block.timestamp));
         }
     }
 
@@ -346,8 +352,8 @@ contract ReNft is IReNft, ReentrancyGuard {
         address _nft,
         uint256 _tokenId
     ) private {
-        bool isERC721 = IERC165(_nft).supportsInterface(type(IERC721).interfaceId);
-        bool isERC1155 = IERC165(_nft).supportsInterface(type(IERC1155).interfaceId);
+        bool isERC721 = _isERC721(_nft);
+        bool isERC1155 = _isERC1155(_nft);
 
         if (isERC721) {
             IERC721(_nft).transferFrom(_from, _to, _tokenId);
@@ -423,6 +429,14 @@ contract ReNft is IReNft, ReentrancyGuard {
     // _____*.¸¸.•*¨`
     //
     // ----
+
+    function _isERC721(address _nft) internal view returns (bool) {
+        return IERC165(_nft).supportsInterface(type(IERC721).interfaceId);
+    }
+
+    function _isERC1155(address _nft) internal view returns (bool) {
+        return IERC165(_nft).supportsInterface(type(IERC1155).interfaceId);
+    }
 
     /**
      * @dev this was added to maintain single storage slot for lending

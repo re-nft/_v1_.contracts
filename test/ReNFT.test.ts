@@ -3,7 +3,7 @@ import { Event } from '@ethersproject/contracts/lib';
 import { ethers, deployments, getNamedAccounts } from 'hardhat';
 
 import { expect } from './chai-setup';
-import { ReNft as ReNftT } from '../frontend/src/hardhat/typechain/ReNft';
+import { ReNFT as ReNFTT } from '../frontend/src/hardhat/typechain/ReNFT';
 import { Resolver as ResolverT } from '../frontend/src/hardhat/typechain/Resolver';
 import { ERC20 as ERC20T } from '../frontend/src/hardhat/typechain/ERC20';
 import { MyERC721 as ERC721T } from '../frontend/src/hardhat/typechain/MyERC721';
@@ -40,7 +40,7 @@ const setup = deployments.createFixture(async () => {
     'ERC1155',
     'Utils',
     'Resolver',
-    'ReNft',
+    'ReNFT',
   ]);
   const { deployer, beneficiary, renter, lender } = await getNamedAccounts();
 
@@ -62,20 +62,20 @@ const setup = deployments.createFixture(async () => {
 
   const utils = ((await ethers.getContract('Utils')) as unknown) as UtilsT;
 
-  const renft = ((await ethers.getContract('ReNft')) as unknown) as ReNftT;
+  const renft = ((await ethers.getContract('ReNFT')) as unknown) as ReNFTT;
   await resolver.setPaymentToken(PAYMENT_TOKEN, myERC20.address);
 
   await myERC20.transfer(renter, ERC20_SEND_AMT);
   await myERC20.transfer(lender, ERC20_SEND_AMT);
 
   const renftRenter = ((await ethers.getContract(
-    'ReNft',
+    'ReNFT',
     renter
-  )) as unknown) as ReNftT;
+  )) as unknown) as ReNFTT;
   const renftLender = ((await ethers.getContract(
-    'ReNft',
+    'ReNFT',
     lender
-  )) as unknown) as ReNftT;
+  )) as unknown) as ReNFTT;
   const myERC20Renter = ((await ethers.getContract(
     'MyERC20',
     renter
@@ -117,7 +117,7 @@ const setup = deployments.createFixture(async () => {
   await myERC1155.setApprovalForAll(renft.address, true);
   return {
     Resolver: resolver,
-    ReNft: renft,
+    ReNFT: renft,
     ERC20: myERC20,
     ERC721: myERC721,
     ERC1155: myERC1155,
@@ -157,14 +157,14 @@ type lendBatchArgs = {
   expectedLendingIds?: number[];
 };
 
-describe('ReNft', function () {
+describe('ReNFT', function () {
   context('Lending', async function () {
-    let ReNft: ReNftT;
+    let ReNFT: ReNFTT;
     let ERC721: ERC721T;
     let ERC1155: ERC1155T;
     type NamedAccount = {
       address: string;
-      renft: ReNftT;
+      renft: ReNFTT;
       erc20: ERC20T;
       erc721: ERC721T;
     };
@@ -172,7 +172,7 @@ describe('ReNft', function () {
 
     beforeEach(async () => {
       const o = await setup();
-      ReNft = o.lender.renft;
+      ReNFT = o.lender.renft;
       ERC721 = o.lender.erc721;
       ERC1155 = o.lender.erc1155;
       lender = o.lender;
@@ -209,7 +209,7 @@ describe('ReNft', function () {
         _expectedLendingIds = tokenIds.map((_, ix) => ix + 1);
       }
 
-      const txn = await ReNft.lend(
+      const txn = await ReNFT.lend(
         nftAddresses,
         tokenIds,
         _maxRentDurations,
@@ -245,11 +245,11 @@ describe('ReNft', function () {
         expect(nftPrice).to.eq(decimalToPaddedHexString(NFT_PRICE, 32));
         expect(paymentToken).to.eq(PAYMENT_TOKEN);
         try {
-          const balance = await ERC1155.balanceOf(ReNft.address, tokenIds[i]);
+          const balance = await ERC1155.balanceOf(ReNFT.address, tokenIds[i]);
           expect(balance).to.eq(1);
         } catch (e) {
           const newNftOwner = await ERC721.ownerOf(tokenIds[i]);
-          expect(newNftOwner).to.eq(ReNft.address);
+          expect(newNftOwner).to.eq(ReNFT.address);
         }
       }
     };
@@ -412,12 +412,12 @@ describe('ReNft', function () {
   });
 
   context('Renting', async function () {
-    let ReNft: ReNftT;
+    let ReNFT: ReNFTT;
     let ERC721: ERC721T;
     let ERC20: ERC20T;
     type NamedAccount = {
       address: string;
-      renft: ReNftT;
+      renft: ReNFTT;
       erc20: ERC20T;
       erc721: ERC721T;
     };
@@ -428,7 +428,7 @@ describe('ReNft', function () {
       const o = await setup();
       lender = o.lender;
       renter = o.renter;
-      ReNft = renter.renft;
+      ReNFT = renter.renft;
       ERC721 = renter.erc721;
       ERC20 = renter.erc20;
     });
@@ -517,13 +517,13 @@ describe('ReNft', function () {
       const lendingId = [1];
       const rentDuration = [2];
       const dudeBalancePre = await getBalance(renter.address);
-      const renftBalancePre = await getBalance(ReNft.address);
+      const renftBalancePre = await getBalance(ReNFT.address);
       expect(renftBalancePre).to.be.equal(0);
       const rentAmounts = BigNumber.from(rentDuration[0]).mul(
         unpackPrice(DAILY_RENT_PRICE, DP18)
       );
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(rentAmounts);
-      const tx = await ReNft.rent(
+      const tx = await ReNFT.rent(
         nftAddress,
         tokenId,
         lendingId,
@@ -531,7 +531,7 @@ describe('ReNft', function () {
         { value: pmtAmount }
       );
       const dudeBalancePost = await getBalance(renter.address);
-      const renftBalancePost = await getBalance(ReNft.address);
+      const renftBalancePost = await getBalance(ReNFT.address);
       expect(renftBalancePost).to.be.equal(pmtAmount);
       const receipt = await tx.wait();
       expect(
@@ -563,7 +563,7 @@ describe('ReNft', function () {
       const lendingId = [1];
       const rentDuration = [2];
       await expect(
-        ReNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+        ReNFT.rent(nftAddress, tokenId, lendingId, rentDuration, {
           value: 0,
         })
       ).to.be.revertedWith('insufficient amount');
@@ -585,12 +585,12 @@ describe('ReNft', function () {
         renter.address
       );
       expect(dudeBalancePre).to.be.equal(ERC20_SEND_AMT.add(ERC20_INITIAL_AMT));
-      const renftBalancePre = await ERC20.balanceOf(ReNft.address);
+      const renftBalancePre = await ERC20.balanceOf(ReNFT.address);
       expect(renftBalancePre).to.be.equal(0);
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
         BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
       );
-      const tx = await ReNft.rent(
+      const tx = await ReNFT.rent(
         nftAddress,
         tokenIds,
         lendingId,
@@ -598,7 +598,7 @@ describe('ReNft', function () {
       );
       const receipt = await tx.wait();
       const dudeBalancePost = await ERC20.balanceOf(renter.address);
-      const renftBalancePost = await ERC20.balanceOf(ReNft.address);
+      const renftBalancePost = await ERC20.balanceOf(ReNFT.address);
       expect(renftBalancePost).to.be.equal(pmtAmount);
       expect(dudeBalancePre.sub(pmtAmount)).to.be.equal(dudeBalancePost);
       const rentedAt = [(await getLatestBlock()).timestamp];
@@ -629,7 +629,7 @@ describe('ReNft', function () {
       const allRentersBalance = await renter.erc20.balanceOf(renter.address);
       await renter.erc20.transfer(lender.address, allRentersBalance);
       await expect(
-        ReNft.rent(nftAddress, tokenId, lendingId, rentDuration)
+        ReNFT.rent(nftAddress, tokenId, lendingId, rentDuration)
       ).to.be.revertedWith('transfer amount exceeds balance');
     });
 
@@ -651,10 +651,10 @@ describe('ReNft', function () {
       expect(renterBalancePreERC20).to.be.equal(
         ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
       );
-      const renftBalancePreERC20 = await ERC20.balanceOf(ReNft.address);
+      const renftBalancePreERC20 = await ERC20.balanceOf(ReNFT.address);
       expect(renftBalancePreERC20).to.be.equal(0);
       const dudeBalancePre = await getBalance(renter.address);
-      const renftBalancePre = await getBalance(ReNft.address);
+      const renftBalancePre = await getBalance(ReNFT.address);
       const pmtAmounts = [
         unpackPrice(NFT_PRICE, DP18).add(
           BigNumber.from(rentDuration[0]).mul(
@@ -667,7 +667,7 @@ describe('ReNft', function () {
           )
         ),
       ];
-      const tx = await ReNft.rent(
+      const tx = await ReNFT.rent(
         nftAddress,
         tokenIds,
         lendingId,
@@ -683,14 +683,14 @@ describe('ReNft', function () {
       );
       const renftBalancePostERC20 = await getErc20Balance(
         renter.erc20,
-        ReNft.address
+        ReNFT.address
       );
       expect(renftBalancePostERC20).to.be.equal(pmtAmounts[1]);
       expect(renterBalancePreERC20.sub(pmtAmounts[1])).to.be.equal(
         renterBalancePostERC20
       );
       const renterBalancePost = await getBalance(renter.address);
-      const renftBalancePost = await getBalance(ReNft.address);
+      const renftBalancePost = await getBalance(ReNFT.address);
       expect(
         dudeBalancePre
           .sub(tx.gasPrice.mul(receipt.gasUsed))
@@ -725,9 +725,9 @@ describe('ReNft', function () {
       expect(renterBalancePreERC20).to.be.equal(
         ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
       );
-      const renftBalancePreERC20 = await ERC20.balanceOf(ReNft.address);
+      const renftBalancePreERC20 = await ERC20.balanceOf(ReNFT.address);
       expect(renftBalancePreERC20).to.be.equal(0);
-      const tx = ReNft.rent(nftAddress, tokenIds, lendingId, rentDuration, {
+      const tx = ReNFT.rent(nftAddress, tokenIds, lendingId, rentDuration, {
         value: 0,
       });
       await expect(tx).to.be.revertedWith('insufficient amount');
@@ -745,7 +745,7 @@ describe('ReNft', function () {
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
       const renterBalancePre = await getBalance(renter.address);
-      const renftBalancePre = await getBalance(ReNft.address);
+      const renftBalancePre = await getBalance(ReNFT.address);
       const pmtAmounts = [
         unpackPrice(NFT_PRICE, DP18).add(
           BigNumber.from(rentDuration[0]).mul(
@@ -766,12 +766,12 @@ describe('ReNft', function () {
       // deposited because the second part of the transaction i.e. erc20
       // will be reverted
       await expect(
-        ReNft.rent(nftAddress, tokenIds, lendingId, rentDuration, {
+        ReNFT.rent(nftAddress, tokenIds, lendingId, rentDuration, {
           value: pmtAmounts[0],
         })
       ).to.be.revertedWith('transfer amount exceeds balance');
       const dudeBalancePost = await getBalance(renter.address);
-      const renftBalancePost = await getBalance(ReNft.address);
+      const renftBalancePost = await getBalance(ReNFT.address);
       const latestBlock = await getLatestBlock();
       const failedTxnHash = latestBlock.transactions[0];
       const failedTxn = await ethers.provider.getTransaction(failedTxnHash);
@@ -799,7 +799,7 @@ describe('ReNft', function () {
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
       const dudeBalancePre = await getBalance(renter.address);
-      const renftBalancePre = await getBalance(ReNft.address);
+      const renftBalancePre = await getBalance(ReNFT.address);
       expect(renftBalancePre).to.be.equal(0);
       const pmtAmounts = [
         unpackPrice(NFT_PRICE, DP18).add(
@@ -813,7 +813,7 @@ describe('ReNft', function () {
           )
         ),
       ];
-      const tx = await ReNft.rent(
+      const tx = await ReNFT.rent(
         nftAddress,
         tokenId,
         lendingId,
@@ -821,7 +821,7 @@ describe('ReNft', function () {
         { value: pmtAmounts[0].add(pmtAmounts[1]) }
       );
       const renterBalancePost = await getBalance(renter.address);
-      const renftBalancePost = await getBalance(ReNft.address);
+      const renftBalancePost = await getBalance(ReNFT.address);
       expect(renftBalancePost).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
       const receipt = await tx.wait();
       expect(
@@ -855,7 +855,7 @@ describe('ReNft', function () {
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
       let renterBalancePre = await renter.erc20.balanceOf(renter.address);
-      const renftBalancePre = await renter.erc20.balanceOf(ReNft.address);
+      const renftBalancePre = await renter.erc20.balanceOf(ReNFT.address);
       expect(renterBalancePre).to.be.equal(
         ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
       );
@@ -876,9 +876,9 @@ describe('ReNft', function () {
           )
         ),
       ];
-      const tx = await ReNft.rent(nftAddress, tokenId, lendingId, rentDuration);
+      const tx = await ReNFT.rent(nftAddress, tokenId, lendingId, rentDuration);
       const dudeBalancePost = await renter.erc20.balanceOf(renter.address);
-      const renftBalancePost = await renter.erc20.balanceOf(ReNft.address);
+      const renftBalancePost = await renter.erc20.balanceOf(ReNFT.address);
       expect(renftBalancePost).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
       const receipt = await tx.wait();
       expect(
@@ -910,7 +910,7 @@ describe('ReNft', function () {
       const lendingId = [1];
       const rentDuration = [0];
       await expect(
-        ReNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+        ReNFT.rent(nftAddress, tokenId, lendingId, rentDuration, {
           value: 0,
         })
       ).to.be.revertedWith('should rent for at least a day');
@@ -929,7 +929,7 @@ describe('ReNft', function () {
       const lendingId = [1];
       const rentDuration = [4];
       await expect(
-        ReNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+        ReNFT.rent(nftAddress, tokenId, lendingId, rentDuration, {
           value: 0,
         })
       ).to.be.revertedWith('max rent duration exceeded');
@@ -950,11 +950,11 @@ describe('ReNft', function () {
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
         BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
       );
-      ReNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+      ReNFT.rent(nftAddress, tokenId, lendingId, rentDuration, {
         value: pmtAmount,
       });
       await expect(
-        ReNft.rent(nftAddress, tokenId, lendingId, rentDuration, {
+        ReNFT.rent(nftAddress, tokenId, lendingId, rentDuration, {
           value: pmtAmount,
         })
       ).to.be.revertedWith('renter address is not zero address');
@@ -999,7 +999,7 @@ describe('ReNft', function () {
       address: string;
       erc20: ERC20T;
       erc721: ERC721T;
-      renft: ReNftT;
+      renft: ReNFTT;
     };
     let renter: NamedAccount;
     let lender: NamedAccount;
@@ -1367,7 +1367,7 @@ describe('ReNft', function () {
       address: string;
       erc20: ERC20T;
       erc721: ERC721T;
-      renft: ReNftT;
+      renft: ReNFTT;
     };
     let renter: NamedAccount;
     let lender: NamedAccount;
@@ -1744,9 +1744,9 @@ describe('ReNft', function () {
     it('sets the rentFee', async () => {
       const { deployer } = await setup();
       const deployerRenft = ((await ethers.getContract(
-        'ReNft',
+        'ReNFT',
         deployer
-      )) as unknown) as ReNftT;
+      )) as unknown) as ReNFTT;
       await deployerRenft.setRentFee('559');
       const rentFee = await deployerRenft.rentFee();
       expect(rentFee).to.be.equal('559');
@@ -1758,9 +1758,9 @@ describe('ReNft', function () {
     it('disallows to set the fee that exceeds 100', async () => {
       const { deployer } = await setup();
       const deployerRenft = ((await ethers.getContract(
-        'ReNft',
+        'ReNFT',
         deployer
-      )) as unknown) as ReNftT;
+      )) as unknown) as ReNFTT;
       await expect(deployerRenft.setRentFee('123456789')).to.be.revertedWith(
         ''
       );
@@ -1768,9 +1768,9 @@ describe('ReNft', function () {
     it('sets the beneficiary', async () => {
       const { deployer, signers } = await setup();
       const deployerRenft = ((await ethers.getContract(
-        'ReNft',
+        'ReNFT',
         deployer
-      )) as unknown) as ReNftT;
+      )) as unknown) as ReNFTT;
       await deployerRenft.setBeneficiary(signers[4].address);
     });
     it('disallows non deployer to set the beneficiary', async () => {

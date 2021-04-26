@@ -10,17 +10,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
     args: [deployer],
-    deterministicDeployment: true,
   });
 
-  await deploy('ReNft', {
+  await deploy('ReNFT', {
     from: deployer,
     log: true,
     args: [resolver.address, beneficiary, deployer],
-    deterministicDeployment: true,
   });
 };
 
 export default func;
 
-func.tags = ['ReNft'];
+func.tags = ['ReNFT'];
