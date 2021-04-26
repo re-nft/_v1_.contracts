@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
-contract MyERC721 is ERC721 {
+contract MyERC721 is IERC721Metadata, ERC721Enumerable {
     event NewFace(address indexed owner, uint256 indexed tokenId, string tokenURI);
     uint256 private tokenId;
     string[] private tokenUris = [
@@ -29,9 +30,8 @@ contract MyERC721 is ERC721 {
         return tokenId;
     }
 
-    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+    function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {
         require(_exists(_tokenId), "ERC721Metadata: URI query for nonexistent token");
-
         string memory uri = tokenUris[tokenId];
         return uri;
     }
