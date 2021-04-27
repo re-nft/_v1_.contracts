@@ -45,6 +45,12 @@ contract ReNFT is IReNft, ReentrancyGuard {
         Renting renting;
     }
 
+    struct TwoPointer {
+        uint256 lastIx;
+        uint256 currIx;
+        uint256 endIx;
+    }
+
     // 32 bytes key to 64 bytes struct
     mapping(bytes32 => LendingRenting) private lendingRenting;
 
@@ -80,12 +86,12 @@ contract ReNFT is IReNft, ReentrancyGuard {
      */
     function lend(
         address[] memory _nft,
-        uint256[] memory _tokenId,
-        uint256[] memory _amounts,
-        uint16[] memory _maxRentDuration,
-        bytes4[] memory _dailyRentPrice,
-        bytes4[] memory _nftPrice,
-        IResolver.PaymentToken[] memory _paymentToken
+        uint256[] calldata _tokenId,
+        uint256[] calldata _amounts,
+        uint16[] calldata _maxRentDuration,
+        bytes4[] calldata _dailyRentPrice,
+        bytes4[] calldata _nftPrice,
+        IResolver.PaymentToken[] calldata _paymentToken
     ) external override nonReentrant {
         require(_nft.length == _tokenId.length, "_nft.length != _tokenId.length");
         require(_tokenId.length == _amounts.length, "_tokenId.length != _amounts.length");
@@ -93,10 +99,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         require(_maxRentDuration.length == _dailyRentPrice.length, "_maxRentDuration.length != _dailyRentPrice.length");
         require(_nftPrice.length == _paymentToken.length, "_nftPrice.length != _paymentToken.length");
 
-        uint256 lastIx = 0;
-        uint256 currIx = 0;
-        uint256 endIx = _nft.length - 1;
-
+        TwoPointer memory tp = TwoPointer({currIx:0,lastIx:0,endIx:_nft.length - 1});
 
         for (uint256 i = 0; i < _nft.length; i++) {
             require(_maxRentDuration[i] > 0, "must be at least one day lend");
@@ -108,9 +111,9 @@ contract ReNFT is IReNft, ReentrancyGuard {
             bool is721;
             bool is1155;
             {
-                lastNftAddress = _nft[lastIx];
-                currNftAddress = _nft[currIx];
-                isEndOfLoop = i == endIx;
+                lastNftAddress = _nft[tp.lastIx];
+                currNftAddress = _nft[tp.currIx];
+                isEndOfLoop = i == tp.endIx;
                 is721 = _isERC721(lastNftAddress);
                 is1155 = _isERC1155(lastNftAddress);
             }
@@ -118,20 +121,18 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 // ! you can have two 721s in a row with the same address but different tokenIds
                 // treat them as different by observing subsequent zero amounts
                 // if two consecutive zeros, then this is the same 721 but with different tokenIds
-                if ((lastIx + 1 == currIx) && (_amounts[lastIx] == 0) && (_amounts[currIx] == 0)) {
-                    if (!is721) revert('incorrect usage');
-                    _handleLend(
+                if ((tp.lastIx + 1 == tp.currIx) && (_amounts[tp.lastIx] == 0) && (_amounts[tp.currIx] == 0)) {
+                    if (!is721) revert("incorrect usage");
+                    _handleLend721(
                         lastNftAddress,
-                        true,
-                        [_tokenId[lastIx]],
-                        [0],
-                        [_maxRentDuration[lastIx]],
-                        [_dailyRentPrice[lastIx]],
-                        [_nftPrice[lastIx]],
-                        [_paymentToken[lastIx]]
+                        _tokenId[tp.lastIx],
+                        _maxRentDuration[tp.lastIx],
+                        _dailyRentPrice[tp.lastIx],
+                        _nftPrice[tp.lastIx],
+                        _paymentToken[tp.lastIx]
                     );
-                    lastIx = currIx;
-                    currIx++;
+                    tp.lastIx = tp.currIx;
+                    tp.currIx++;
                     continue;
                 }
                 continue;
@@ -154,85 +155,106 @@ contract ReNFT is IReNft, ReentrancyGuard {
             // however, if 1155 then we perform safeBatchTransferFrom
 
             if (is721) {
-                _handleLend(
+                _handleLend721(
                     lastNftAddress,
-                    true,
-                    [_tokenId[lastIx]],
-                    [uint256(0)],
-                    [_maxRentDuration[lastIx]],
-                    [_dailyRentPrice[lastIx]],
-                    [_nftPrice[lastIx]],
-                    [_paymentToken[lastIx]]
+                    _tokenId[tp.lastIx],
+                    _maxRentDuration[tp.lastIx],
+                    _dailyRentPrice[tp.lastIx],
+                    _nftPrice[tp.lastIx],
+                    _paymentToken[tp.lastIx]
                 );
             } else if (is1155) {
-                _handleLend(
+                _handleLend1155(
                     lastNftAddress,
-                    false,
-                    _tokenId[lastIx:currIx],
-                    _amounts[lastIx:currIx],
-                    _maxRentDuration[lastIx:currIx],
-                    _dailyRentPrice[lastIx:currIx],
-                    _nftPrice[lastIx:currIx],
-                    _paymentToken[lastIx:currIx]
+                    _tokenId[tp.lastIx:tp.currIx],
+                    _amounts[tp.lastIx:tp.currIx],
+                    _maxRentDuration[tp.lastIx:tp.currIx],
+                    _dailyRentPrice[tp.lastIx:tp.currIx],
+                    _nftPrice[tp.lastIx:tp.currIx],
+                    _paymentToken[tp.lastIx:tp.currIx]
                 );
             } else {
-                revert('last nft address is unsupported');
+                revert("last nft address is unsupported");
             }
 
             if (isEndOfLoop) {
                 is721 = _isERC721(currNftAddress);
                 is1155 = _isERC1155(currNftAddress);
                 if (is721) {
-                    _handleLend(
+                    _handleLend721(
                         currNftAddress,
-                        true,
-                        [_tokenId[lastIx]],
-                        [0],
-                        [_maxRentDuration[lastIx]],
-                        [_dailyRentPrice[lastIx]],
-                        [_nftPrice[lastIx]],
-                        [_paymentToken[lastIx]]
+                        _tokenId[tp.lastIx],
+                        _maxRentDuration[tp.lastIx],
+                        _dailyRentPrice[tp.lastIx],
+                        _nftPrice[tp.lastIx],
+                        _paymentToken[tp.lastIx]
                     );
                 } else if (is1155) {
-                    _handleLend(
+                    _handleLend1155(
                         currNftAddress,
-                        false,
-                        _tokenId[lastIx:currIx],
-                        _amounts[lastIx:currIx],
-                        _maxRentDuration[lastIx:currIx],
-                        _dailyRentPrice[lastIx:currIx],
-                        _nftPrice[lastIx:currIx],
-                        _paymentToken[lastIx:currIx]
+                        _tokenId[tp.lastIx:tp.currIx],
+                        _amounts[tp.lastIx:tp.currIx],
+                        _maxRentDuration[tp.lastIx:tp.currIx],
+                        _dailyRentPrice[tp.lastIx:tp.currIx],
+                        _nftPrice[tp.lastIx:tp.currIx],
+                        _paymentToken[tp.lastIx:tp.currIx]
                     );
                 } else {
-                    revert('curr nft address is unsupported');
+                    revert("curr nft address is unsupported");
                 }
                 return;
             }
-            lastIx = currIx;
-            currIx++;
+            tp.lastIx = tp.currIx;
+            tp.currIx++;
         }
     }
 
-    function _handleLend(
+    function _handleLend721(
         address _nft,
-        bool _is721,
-        uint256[] memory _tokenId,
-        uint256[] memory _amounts,
-        uint16[] memory _maxRentDuration,
-        bytes4[] memory _dailyRentPrice,
-        bytes4[] memory _nftPrice,
-        IResolver.PaymentToken[] memory _paymentToken
+        uint256 _tokenId,
+        uint16 _maxRentDuration,
+        bytes4 _dailyRentPrice,
+        bytes4 _nftPrice,
+        IResolver.PaymentToken _paymentToken
     ) internal nonReentrant {
-        if (_is721) {
-            IERC721(_nft).safeTransferFrom(msg.sender, address(this), _tokenId[0]);
-        } else {
-            IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, "");
-        }
+        IERC721(_nft).safeTransferFrom(msg.sender, address(this), _tokenId);
+        bytes32 itemHash = keccak256(abi.encodePacked(_nft, _tokenId, lendingId));
+        LendingRenting storage item = lendingRenting[itemHash];
+        item.lending = Lending({
+            lenderAddress: payable(msg.sender),
+            maxRentDuration: _maxRentDuration,
+            dailyRentPrice: _dailyRentPrice,
+            nftPrice: _nftPrice,
+            paymentToken: _paymentToken
+        });
+        emit Lent(
+            _nft,
+            _tokenId,
+            lendingId,
+            msg.sender,
+            _maxRentDuration,
+            _dailyRentPrice,
+            _nftPrice,
+            0,
+            true,
+            _paymentToken
+        );
+        lendingId++;
+    }
 
+    // todo: function that extracts the itemHash and etc. and is being used in the below and in the above
+
+    function _handleLend1155(
+        address _nft,
+        uint256[] calldata _tokenId,
+        uint256[] calldata _amounts,
+        uint16[] calldata _maxRentDuration,
+        bytes4[] calldata _dailyRentPrice,
+        bytes4[] calldata _nftPrice,
+        IResolver.PaymentToken[] calldata _paymentToken
+    ) internal nonReentrant {
+        IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, "");
         for (uint256 i = 0; i < _tokenId.length; i++) {
-            // we need amounts here because imagine 1155 is lent out twice for amount=1, they both would have
-            // the same itemHash
             bytes32 itemHash = keccak256(abi.encodePacked(_nft, _tokenId[i], _amounts[i], lendingId));
             LendingRenting storage item = lendingRenting[itemHash];
             item.lending = Lending({
@@ -242,7 +264,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 nftPrice: _nftPrice[i],
                 paymentToken: _paymentToken[i]
             });
-
             emit Lent(
                 _nft,
                 _tokenId[i],
@@ -252,7 +273,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 _dailyRentPrice[i],
                 _nftPrice[i],
                 _amounts[i],
-                _is721,
+                false,
                 _paymentToken[i]
             );
             lendingId++;

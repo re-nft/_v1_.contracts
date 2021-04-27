@@ -66,11 +66,12 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
      */
     function lend(
         address[] memory _nft,
-        uint256[] memory _tokenId,
-        uint16[] memory _maxRentDuration,
-        bytes4[] memory _dailyRentPrice,
-        bytes4[] memory _nftPrice,
-        IResolver.PaymentToken[] memory _paymentToken
+        uint256[] calldata _tokenId,
+        uint256[] calldata _amounts,
+        uint16[] calldata _maxRentDuration,
+        bytes4[] calldata _dailyRentPrice,
+        bytes4[] calldata _nftPrice,
+        IResolver.PaymentToken[] calldata _paymentToken
     ) external;
 
     /**
