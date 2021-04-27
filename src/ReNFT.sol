@@ -69,28 +69,106 @@ contract ReNFT is IReNft, ReentrancyGuard {
     // You need a parachute to go skydiving twice.
     // ----
 
+    /**
+     * amounts: if 0 then that is 721. For how and why we have implemented the below, see the pdf in the docs folder in
+     * this repo. Titled optimal-1155-721-lend.pdf
+     *
+     * Batch transfers are performed even on single tokenId 1155 transactions because
+     * marginal cost is 4k gas when compared to safeTransferFrom. And this cost is worth
+     * the added complexity of the below function.
+     * Please look into the docs folder again for some screenshots.
+     */
     function lend(
         address[] memory _nft,
         uint256[] memory _tokenId,
+        uint256[] memory _amounts,
         uint16[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
         IResolver.PaymentToken[] memory _paymentToken
     ) external override nonReentrant {
         require(_nft.length == _tokenId.length, "_nft.length != _tokenId.length");
-        require(_tokenId.length == _maxRentDuration.length, "_tokenId.length != _maxRentDuration.length");
+        require(_tokenId.length == _amounts.length, "_tokenId.length != _amounts.length");
+        require(_amounts.length  == _maxRentDuration.length, "_amounts.length != _maxRentDuration.length");
         require(_maxRentDuration.length == _dailyRentPrice.length, "_maxRentDuration.length != _dailyRentPrice.length");
         require(_nftPrice.length == _paymentToken.length, "_nftPrice.length != _paymentToken.length");
+
+        uint256 lastIx = 0;
+        uint256 currIx = 0;
+        uint256 endIx = _nft.length - 1;
 
         for (uint256 i = 0; i < _nft.length; i++) {
             require(_maxRentDuration[i] > 0, "must be at least one day lend");
             require(_maxRentDuration[i] <= 1825, "must be less than five years");
 
-            _safeTransfer(msg.sender, address(this), _nft[i], _tokenId[i]);
+            address currNftAddress;
+            bool isEndOfLoop;
+            {
+                currNftAddress = _nft[currIx];
+                isEndOfLoop = i == endIx;
+            }
+            if ((_nft[lastIx] == currNftAddress) && !isEndOfLoop) continue;
+            // (i) _nft[lastIx] != currNftAddress. denote as event A
+            // (ii) i == endIx.                    denote as event B
+            // which produces the set of the following potential scenarios
+            // { (A and !B), (A and B), (!A and B) }
+            // i.e. (different addresses and not last), (different addresses and last), (not different, but last)
+            // 1. usual spiel. if 721 send simply. if 1155 send batch etc. finally, set lastIx = i.
+            // 2. ditto above
+            // 3. complex case. Can be broken down into a number of cases itself
+            //    - the simplest:     different 721 addresses. Just handle both of them as per usual, but obviously 2 calls
+            //    - more challenging: one is 721 and one is 1155
+            //    - equally challening:  different 1155 addresses.
 
-            bytes32 itemHash = keccak256(abi.encodePacked(_nft[i], _tokenId[i], lendingId));
+            // we are at the end of the array || there are more nfts, but we have a different nft address
+
+            // if 721, then it is a simple transfer
+            // however, if 1155 then we perform safeBatchTransferFrom
+            bool is721 = _isERC721(currentAddress);
+            bool is1155 = _isERC1155(currentAddress);
+
+            if (is721) {
+
+            } else {
+
+            }
+
+            // lastIx handling
+            if (i == endIx) {
+
+            }
+
+            currIx++;
+        }
+    }
+
+    function _handleLend(
+        address _nft,
+        bool _is721,
+        uint256[] memory _tokenId,
+        uint256[] memory _amounts,
+        uint16[] memory _maxRentDuration,
+        bytes4[] memory _dailyRentPrice,
+        bytes4[] memory _nftPrice,
+        IResolver.PaymentToken[] memory _paymentToken
+    ) internal nonReentrant {
+        // in the case of 1155, there are multiple LENT emitted events.
+        bool isERC721 = _isERC721(_nft);
+        bool isERC1155 = _isERC1155(_nft);
+
+        if (isERC721) {
+            IERC721(_nft).safeTransferFrom(msg.sender, address(this), _tokenId[0]);
+        } else if (isERC1155) {
+            IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, 0);
+        } else {
+            revert('unsupported token');
+        }
+
+        for (uint256 i = 0; i < _tokenId.length; i++) {
+            // we need amounts here because imagine 1155 is lent out twice for amount=1, they both would have
+            // the same itemHash
+            bytes32 itemHash = keccak256(abi.encodePacked(_nft, _tokenId[i], _amounts[i], lendingId));
             LendingRenting storage item = lendingRenting[itemHash];
-
             item.lending = Lending({
                 lenderAddress: payable(msg.sender),
                 maxRentDuration: _maxRentDuration[i],
@@ -98,11 +176,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 nftPrice: _nftPrice[i],
                 paymentToken: _paymentToken[i]
             });
-
-            bool isERC721 = false;
-            {
-                isERC721 = _isERC721(_nft[i]);
-            }
 
             emit Lent(
                 _nft[i],
@@ -115,7 +188,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 isERC721,
                 _paymentToken[i]
             );
-
             lendingId++;
         }
     }
