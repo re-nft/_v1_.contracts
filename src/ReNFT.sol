@@ -97,18 +97,46 @@ contract ReNFT is IReNft, ReentrancyGuard {
         uint256 currIx = 0;
         uint256 endIx = _nft.length - 1;
 
+
         for (uint256 i = 0; i < _nft.length; i++) {
             require(_maxRentDuration[i] > 0, "must be at least one day lend");
             require(_maxRentDuration[i] <= 1825, "must be less than five years");
 
             address currNftAddress;
+            address lastNftAddress;
             bool isEndOfLoop;
+            bool is721;
+            bool is1155;
             {
+                lastNftAddress = _nft[lastIx];
                 currNftAddress = _nft[currIx];
                 isEndOfLoop = i == endIx;
+                is721 = _isERC721(lastNftAddress);
+                is1155 = _isERC1155(lastNftAddress);
             }
-            if ((_nft[lastIx] == currNftAddress) && !isEndOfLoop) continue;
-            // (i) _nft[lastIx] != currNftAddress. denote as event A
+            if ((lastNftAddress == currNftAddress) && !isEndOfLoop) {
+                // ! you can have two 721s in a row with the same address but different tokenIds
+                // treat them as different by observing subsequent zero amounts
+                // if two consecutive zeros, then this is the same 721 but with different tokenIds
+                if ((lastIx + 1 == currIx) && (_amounts[lastIx] == 0) && (_amounts[currIx] == 0)) {
+                    if (!is721) revert('incorrect usage');
+                    _handleLend(
+                        lastNftAddress,
+                        true,
+                        [_tokenId[lastIx]],
+                        [0],
+                        [_maxRentDuration[lastIx]],
+                        [_dailyRentPrice[lastIx]],
+                        [_nftPrice[lastIx]],
+                        [_paymentToken[lastIx]]
+                    );
+                    lastIx = currIx;
+                    currIx++;
+                    continue;
+                }
+                continue;
+            }
+            // (i) lastNftAddress != currNftAddress. denote as event A
             // (ii) i == endIx.                    denote as event B
             // which produces the set of the following potential scenarios
             // { (A and !B), (A and B), (!A and B) }
@@ -124,20 +152,64 @@ contract ReNFT is IReNft, ReentrancyGuard {
 
             // if 721, then it is a simple transfer
             // however, if 1155 then we perform safeBatchTransferFrom
-            bool is721 = _isERC721(currentAddress);
-            bool is1155 = _isERC1155(currentAddress);
 
             if (is721) {
-
+                _handleLend(
+                    lastNftAddress,
+                    true,
+                    [_tokenId[lastIx]],
+                    [uint256(0)],
+                    [_maxRentDuration[lastIx]],
+                    [_dailyRentPrice[lastIx]],
+                    [_nftPrice[lastIx]],
+                    [_paymentToken[lastIx]]
+                );
+            } else if (is1155) {
+                _handleLend(
+                    lastNftAddress,
+                    false,
+                    _tokenId[lastIx:currIx],
+                    _amounts[lastIx:currIx],
+                    _maxRentDuration[lastIx:currIx],
+                    _dailyRentPrice[lastIx:currIx],
+                    _nftPrice[lastIx:currIx],
+                    _paymentToken[lastIx:currIx]
+                );
             } else {
-
+                revert('last nft address is unsupported');
             }
 
-            // lastIx handling
-            if (i == endIx) {
-
+            if (isEndOfLoop) {
+                is721 = _isERC721(currNftAddress);
+                is1155 = _isERC1155(currNftAddress);
+                if (is721) {
+                    _handleLend(
+                        currNftAddress,
+                        true,
+                        [_tokenId[lastIx]],
+                        [0],
+                        [_maxRentDuration[lastIx]],
+                        [_dailyRentPrice[lastIx]],
+                        [_nftPrice[lastIx]],
+                        [_paymentToken[lastIx]]
+                    );
+                } else if (is1155) {
+                    _handleLend(
+                        currNftAddress,
+                        false,
+                        _tokenId[lastIx:currIx],
+                        _amounts[lastIx:currIx],
+                        _maxRentDuration[lastIx:currIx],
+                        _dailyRentPrice[lastIx:currIx],
+                        _nftPrice[lastIx:currIx],
+                        _paymentToken[lastIx:currIx]
+                    );
+                } else {
+                    revert('curr nft address is unsupported');
+                }
+                return;
             }
-
+            lastIx = currIx;
             currIx++;
         }
     }
@@ -152,16 +224,10 @@ contract ReNFT is IReNft, ReentrancyGuard {
         bytes4[] memory _nftPrice,
         IResolver.PaymentToken[] memory _paymentToken
     ) internal nonReentrant {
-        // in the case of 1155, there are multiple LENT emitted events.
-        bool isERC721 = _isERC721(_nft);
-        bool isERC1155 = _isERC1155(_nft);
-
-        if (isERC721) {
+        if (_is721) {
             IERC721(_nft).safeTransferFrom(msg.sender, address(this), _tokenId[0]);
-        } else if (isERC1155) {
-            IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, 0);
         } else {
-            revert('unsupported token');
+            IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, "");
         }
 
         for (uint256 i = 0; i < _tokenId.length; i++) {
@@ -178,14 +244,15 @@ contract ReNFT is IReNft, ReentrancyGuard {
             });
 
             emit Lent(
-                _nft[i],
+                _nft,
                 _tokenId[i],
                 lendingId,
                 msg.sender,
                 _maxRentDuration[i],
                 _dailyRentPrice[i],
                 _nftPrice[i],
-                isERC721,
+                _amounts[i],
+                _is721,
                 _paymentToken[i]
             );
             lendingId++;

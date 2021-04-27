@@ -23,6 +23,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         uint16 maxRentDuration,
         bytes4 dailyRentPrice,
         bytes4 nftPrice,
+        uint256 amount,
         bool isERC721,
         IResolver.PaymentToken paymentToken
     );
