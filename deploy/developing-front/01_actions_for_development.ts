@@ -44,18 +44,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   for (let i = 0; i < 10; i++) await erc721.award();
 
   // * also send through 100 erc20 tokens to everyone
-  const erc20 = ((await ethers.getContract(
-    'MyERC20',
+  const td18 = ((await ethers.getContract(
+    'TD18',
+    deployer
+  )) as any) as ERC20;
+  const td1 = ((await ethers.getContract(
+    'TD1',
     deployer
   )) as any) as ERC20;
   const amtToSend = ethers.utils.parseEther('100');
 
-  await erc20.transfer(lender, amtToSend);
-  await erc20.transfer(beneficiary, amtToSend);
-  await erc20.transfer(renter, amtToSend);
+  await td1.transfer(lender, amtToSend);
+  await td1.transfer(beneficiary, amtToSend);
+  await td1.transfer(renter, amtToSend);
+
+  await td18.transfer(lender, amtToSend);
+  await td18.transfer(beneficiary, amtToSend);
+  await td18.transfer(renter, amtToSend);
 
   // * set the resolver to resolve to the correct payment token
-  await resolver.setPaymentToken(1, erc20.address);
+  await resolver.setPaymentToken(1, td18.address);
+  await resolver.setPaymentToken(2, td1.address);
 };
 
 export default func;

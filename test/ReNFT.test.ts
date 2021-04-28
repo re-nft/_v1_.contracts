@@ -26,7 +26,7 @@ import {
 const MAX_RENT_DURATION = 1; // 1 day
 const DAILY_RENT_PRICE = 2; // 2 full tokens or 2 ETH
 const NFT_PRICE = 3; // 3 full tokens or 3 ETH
-const PAYMENT_TOKEN = 2; // default token is DAI (our ERC20)
+const PAYMENT_TOKEN = 2; // default token is DAI (our TD18)
 
 const SECONDS_IN_A_DAY = 86400;
 const DP18 = ethers.utils.parseEther('1');
@@ -35,13 +35,15 @@ const ERC20_INITIAL_AMT = ERC20_SEND_AMT;
 
 const setup = deployments.createFixture(async () => {
   await deployments.fixture([
-    'ERC20',
+    'TD1',
+    'TD18',
     'ERC721',
     'ERC1155',
     'Utils',
     'Resolver',
     'ReNFT',
   ]);
+  // beneficiary is the party that receives the rent fee cuts
   const { deployer, beneficiary, renter, lender } = await getNamedAccounts();
 
   const signers = await ethers.getSigners();
@@ -50,7 +52,8 @@ const setup = deployments.createFixture(async () => {
     'Resolver'
   )) as unknown) as ResolverT;
 
-  const myERC20 = ((await ethers.getContract('MyERC20')) as unknown) as ERC20T;
+  const td18 = ((await ethers.getContract('TD18')) as unknown) as ERC20T;
+  const td1 = ((await ethers.getContract('TD1')) as unknown) as ERC20T;
 
   const myERC721 = ((await ethers.getContract(
     'MyERC721'
@@ -63,10 +66,14 @@ const setup = deployments.createFixture(async () => {
   const utils = ((await ethers.getContract('Utils')) as unknown) as UtilsT;
 
   const renft = ((await ethers.getContract('ReNFT')) as unknown) as ReNFTT;
-  await resolver.setPaymentToken(PAYMENT_TOKEN, myERC20.address);
 
-  await myERC20.transfer(renter, ERC20_SEND_AMT);
-  await myERC20.transfer(lender, ERC20_SEND_AMT);
+  await resolver.setPaymentToken(PAYMENT_TOKEN, td18.address);
+  await resolver.setPaymentToken(PAYMENT_TOKEN, td1.address);
+
+  await td18.transfer(renter, ERC20_SEND_AMT);
+  await td18.transfer(lender, ERC20_SEND_AMT);
+  await td1.transfer(renter, ERC20_SEND_AMT);
+  await td1.transfer(lender, ERC20_SEND_AMT);
 
   const renftRenter = ((await ethers.getContract(
     'ReNFT',
@@ -76,12 +83,20 @@ const setup = deployments.createFixture(async () => {
     'ReNFT',
     lender
   )) as unknown) as ReNFTT;
-  const myERC20Renter = ((await ethers.getContract(
-    'MyERC20',
+  const td18Renter = ((await ethers.getContract(
+    'TD18',
     renter
   )) as unknown) as ERC20T;
-  const myERC20Lender = ((await ethers.getContract(
-    'MyERC20',
+  const td18Lender = ((await ethers.getContract(
+    'TD18',
+    lender
+  )) as unknown) as ERC20T;
+  const td1Renter = ((await ethers.getContract(
+    'TD1',
+    renter
+  )) as unknown) as ERC20T;
+  const td1Lender = ((await ethers.getContract(
+    'TD1',
     lender
   )) as unknown) as ERC20T;
   const myERC721Renter = ((await ethers.getContract(
@@ -100,8 +115,10 @@ const setup = deployments.createFixture(async () => {
     'MyERC1155',
     lender
   )) as unknown) as ERC1155T;
-  await myERC20Renter.approve(renft.address, ethers.constants.MaxUint256);
-  await myERC20Lender.approve(renft.address, ethers.constants.MaxUint256);
+  await td18Renter.approve(renft.address, ethers.constants.MaxUint256);
+  await td18Lender.approve(renft.address, ethers.constants.MaxUint256);
+  await td1Renter.approve(renft.address, ethers.constants.MaxUint256);
+  await td1Lender.approve(renft.address, ethers.constants.MaxUint256);
   await myERC721Renter.setApprovalForAll(renft.address, true);
   await myERC721Lender.setApprovalForAll(renft.address, true);
   await myERC1155Renter.setApprovalForAll(renft.address, true);
@@ -118,7 +135,8 @@ const setup = deployments.createFixture(async () => {
   return {
     Resolver: resolver,
     ReNFT: renft,
-    ERC20: myERC20,
+    TD18: td18,
+    TD1: td1,
     ERC721: myERC721,
     ERC1155: myERC1155,
     Utils: utils,
@@ -127,14 +145,16 @@ const setup = deployments.createFixture(async () => {
     beneficiary,
     renter: {
       address: renter,
-      erc20: myERC20Renter,
+      td18: td18Renter,
+      td1: td1Renter,
       erc721: myERC721Renter,
       erc1155: myERC1155Renter,
       renft: renftRenter,
     },
     lender: {
       address: lender,
-      erc20: myERC20Lender,
+      td18: td18Lender,
+      td1: td1Lender,
       erc721: myERC721Lender,
       erc1155: myERC1155Lender,
       renft: renftLender,

@@ -20,7 +20,7 @@ contract MyERC721 is IERC721Metadata, ERC721Enumerable {
         "https://api.bccg.digital/api/bccg/1"
     ];
 
-    constructor() ERC721("GANFACE", "GF") {
+    constructor() ERC721("721", "721") {
         this;
     }
 
