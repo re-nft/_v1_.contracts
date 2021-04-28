@@ -93,38 +93,24 @@ contract ReNFT is IReNft, ReentrancyGuard {
         bytes4[] calldata _nftPrice,
         IResolver.PaymentToken[] calldata _paymentToken
     ) external override nonReentrant {
-        require(_nft.length == _tokenId.length, "_nft.length != _tokenId.length");
-        require(_tokenId.length == _amounts.length, "_tokenId.length != _amounts.length");
-        require(_amounts.length  == _maxRentDuration.length, "_amounts.length != _maxRentDuration.length");
-        require(_maxRentDuration.length == _dailyRentPrice.length, "_maxRentDuration.length != _dailyRentPrice.length");
-        require(_nftPrice.length == _paymentToken.length, "_nftPrice.length != _paymentToken.length");
+        // _requireSameLengths(_nft, _tokenId, _amounts, _maxRentDuration, _dailyRentPrice, _nftPrice, _paymentToken);
 
-        TwoPointer memory tp = TwoPointer({currIx:0,lastIx:0,endIx:_nft.length - 1});
+        TwoPointer memory tp = TwoPointer({currIx: 0, lastIx: 0, endIx: _nft.length - 1});
 
         for (uint256 i = 0; i < _nft.length; i++) {
-            require(_maxRentDuration[i] > 0, "must be at least one day lend");
-            require(_maxRentDuration[i] <= 1825, "must be less than five years");
+            // _requireReasonableMaxDur(_maxRentDuration[i]);
 
-            address currNftAddress;
-            address lastNftAddress;
-            bool isEndOfLoop;
-            bool is721;
-            bool is1155;
-            {
-                lastNftAddress = _nft[tp.lastIx];
-                currNftAddress = _nft[tp.currIx];
-                isEndOfLoop = i == tp.endIx;
-                is721 = _isERC721(lastNftAddress);
-                is1155 = _isERC1155(lastNftAddress);
-            }
-            if ((lastNftAddress == currNftAddress) && !isEndOfLoop) {
+            address lastNftAddress = _nft[tp.lastIx];
+            address currNftAddress = _nft[tp.currIx];
+
+            if ((_nft[tp.lastIx] == currNftAddress) && !(i == tp.endIx)) {
                 // ! you can have two 721s in a row with the same address but different tokenIds
                 // treat them as different by observing subsequent zero amounts
                 // if two consecutive zeros, then this is the same 721 but with different tokenIds
                 if ((tp.lastIx + 1 == tp.currIx) && (_amounts[tp.lastIx] == 0) && (_amounts[tp.currIx] == 0)) {
-                    if (!is721) revert("incorrect usage");
+                    if (!_isERC721(_nft[tp.lastIx])) revert("incorrect usage");
                     _handleLend721(
-                        lastNftAddress,
+                        _nft[tp.lastIx],
                         _tokenId[tp.lastIx],
                         _maxRentDuration[tp.lastIx],
                         _dailyRentPrice[tp.lastIx],
@@ -154,18 +140,18 @@ contract ReNFT is IReNft, ReentrancyGuard {
             // if 721, then it is a simple transfer
             // however, if 1155 then we perform safeBatchTransferFrom
 
-            if (is721) {
+            if (_isERC721(_nft[tp.lastIx])) {
                 _handleLend721(
-                    lastNftAddress,
+                    _nft[tp.lastIx],
                     _tokenId[tp.lastIx],
                     _maxRentDuration[tp.lastIx],
                     _dailyRentPrice[tp.lastIx],
                     _nftPrice[tp.lastIx],
                     _paymentToken[tp.lastIx]
                 );
-            } else if (is1155) {
+            } else if (_isERC721(_nft[tp.lastIx])) {
                 _handleLend1155(
-                    lastNftAddress,
+                    _nft[tp.lastIx],
                     _tokenId[tp.lastIx:tp.currIx],
                     _amounts[tp.lastIx:tp.currIx],
                     _maxRentDuration[tp.lastIx:tp.currIx],
@@ -177,21 +163,19 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 revert("last nft address is unsupported");
             }
 
-            if (isEndOfLoop) {
-                is721 = _isERC721(currNftAddress);
-                is1155 = _isERC1155(currNftAddress);
-                if (is721) {
+            if (i == tp.endIx) {
+                if (_isERC721(_nft[tp.currIx])) {
                     _handleLend721(
-                        currNftAddress,
+                        _nft[tp.currIx],
                         _tokenId[tp.lastIx],
                         _maxRentDuration[tp.lastIx],
                         _dailyRentPrice[tp.lastIx],
                         _nftPrice[tp.lastIx],
                         _paymentToken[tp.lastIx]
                     );
-                } else if (is1155) {
+                } else if (_isERC1155(_nft[tp.currIx])) {
                     _handleLend1155(
-                        currNftAddress,
+                        _nft[tp.currIx],
                         _tokenId[tp.lastIx:tp.currIx],
                         _amounts[tp.lastIx:tp.currIx],
                         _maxRentDuration[tp.lastIx:tp.currIx],
@@ -207,6 +191,25 @@ contract ReNFT is IReNft, ReentrancyGuard {
             tp.lastIx = tp.currIx;
             tp.currIx++;
         }
+    }
+
+    function _requireSameLengths(address[] memory _nft,
+        uint256[] calldata _tokenId,
+        uint256[] calldata _amounts,
+        uint16[] calldata _maxRentDuration,
+        bytes4[] calldata _dailyRentPrice,
+        bytes4[] calldata _nftPrice,
+        IResolver.PaymentToken[] calldata _paymentToken) internal {
+        require(_nft.length == _tokenId.length, "_nft.length != _tokenId.length");
+        require(_tokenId.length == _amounts.length, "_tokenId.length != _amounts.length");
+        require(_amounts.length  == _maxRentDuration.length, "_amounts.length != _maxRentDuration.length");
+        require(_maxRentDuration.length == _dailyRentPrice.length, "_maxRentDuration.length != _dailyRentPrice.length");
+        require(_nftPrice.length == _paymentToken.length, "_nftPrice.length != _paymentToken.length");
+    }
+
+    function _requireReasonableMaxDur(uint256 _maxRentDuration) internal {
+        require(_maxRentDuration > 0, "must be at least one day lend");
+        require(_maxRentDuration <= 1825, "must be less than five years");
     }
 
     function _handleLend721(
