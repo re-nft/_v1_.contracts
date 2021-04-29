@@ -213,14 +213,14 @@ contract ReNFT is IReNft, ReentrancyGuard {
     function _handleLend(
         address _nft,
         uint256 _tokenId,
-        uint256 _amount,
+        uint8 _amount,
         uint8 _maxRentDuration,
         bytes4 _dailyRentPrice,
         bytes4 _nftPrice,
         IResolver.PaymentToken _paymentToken
     ) private {
-        require(_amount < 256, "maximum lend duration exceeded");
-        require(_amount > 0, "at least one day lend");
+        // will only occur if someone passed an amount greater than uint8. i.e. >= 256
+        require(_amount > 0, "invalid lend amount");
         // to avoid stack too deep
         bool is721 = false;
         {
@@ -231,8 +231,8 @@ contract ReNFT is IReNft, ReentrancyGuard {
         LendingRenting storage item = lendingRenting[itemHash];
         item.lending = Lending({
             lenderAddress: payable(msg.sender),
-            lentAmount: uint8(_amount),
-            availableAmount: uint8(_amount),
+            lentAmount: _amount,
+            availableAmount: _amount,
             maxRentDuration: _maxRentDuration,
             dailyRentPrice: _dailyRentPrice,
             nftPrice: _nftPrice,
@@ -246,7 +246,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
             _maxRentDuration,
             _dailyRentPrice,
             _nftPrice,
-            uint8(_amount),
+            _amount,
             is721,
             _paymentToken
         );
@@ -284,12 +284,13 @@ contract ReNFT is IReNft, ReentrancyGuard {
         IResolver.PaymentToken[] memory _paymentToken
     ) private {
         // emit individual Lend events
-        for (uint256 i = _tp.currIx; i < _tp.endIx; i++) {
+        for (uint256 i = _tp.currIx; i < _tp.endIx + 1; i++) {
             console.log("~~~~~~~~~~ handling a single 1155 lend ~~~~~~~~~~~");
             _handleLend(
                 _nft,
                 _tokenId[i],
-                _amounts[i],
+                // if 256 and larger will convert to zero
+                uint8(_amounts[i]),
                 _maxRentDuration[i],
                 _dailyRentPrice[i],
                 _nftPrice[i],
@@ -664,11 +665,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
     // |    |   )|   )|    |___)|    |
     // |    |    |__/ |__  |__  |__  |__
     // ----
-
-    function _requireReasonableMaxDur(uint256 _maxRentDuration) private pure {
-        require(_maxRentDuration > 0, "must be at least one day lend");
-        require(_maxRentDuration <= 1825, "must be less than five years");
-    }
 
     function _ensureIsNotNull(Lending memory _lending) private pure {
         require(_lending.lenderAddress != address(0), "lender is zero address");

@@ -211,78 +211,49 @@ describe('ReNFT', function () {
     const lendBatch = async ({
       tokenIds,
       amounts = Array(tokenIds.length).fill(0),
-      maxRentDurations = [],
-      dailyRentPrices = [],
-      nftPrices = [],
-      expectedLendingIds = [],
+      maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION),
+      dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE).map((x) => decimalToPaddedHexString(x, 32)),
+      nftPrices = Array(tokenIds.length).fill(NFT_PRICE).map((x) => decimalToPaddedHexString(x, 32)),
+      expectedLendingIds = tokenIds.map((_, ix) => ix + 1),
       nftAddresses = Array(tokenIds.length).fill(ERC721.address),
     }: lendBatchArgs & {
       nftAddresses?: string[];
     }) => {
-      let _maxRentDurations = maxRentDurations;
-      let _dailyRentPrices = dailyRentPrices;
-      let _nftPrices = nftPrices;
-      let _expectedLendingIds = expectedLendingIds;
-      if (maxRentDurations.length === 0) {
-        _maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION);
-      }
-      if (dailyRentPrices.length === 0) {
-        _dailyRentPrices = Array(tokenIds.length)
-          .fill(DAILY_RENT_PRICE)
-          .map((x) => decimalToPaddedHexString(x, 32));
-      }
-      if (nftPrices.length === 0) {
-        _nftPrices = Array(tokenIds.length)
-          .fill(NFT_PRICE)
-          .map((x) => decimalToPaddedHexString(x, 32));
-      }
-      if (expectedLendingIds.length === 0) {
-        _expectedLendingIds = tokenIds.map((_, ix) => ix + 1);
-      }
-
       const txn = await ReNFT.lend(
         nftAddresses,
         tokenIds,
         amounts,
-        _maxRentDurations,
-        _dailyRentPrices,
-        _nftPrices,
+        maxRentDurations,
+        dailyRentPrices,
+        nftPrices,
         Array(tokenIds.length).fill(PAYMENT_TOKEN)
       );
 
       const receipt = await txn.wait();
       const e = getEvents(receipt.events ?? [], 'Lent');
-      // console.log('------------------------- e', e);
+      // Lent events emitted == length of the events
       expect(e.length).to.eq(tokenIds.length);
+
       for (let i = 0; i < tokenIds.length; i++) {
-        const event = e[i].args;
-        if (!event) throw new Error('No args');
-        const {
-          nftAddress,
-          tokenId: _tokenId,
-          lendingId,
-          lenderAddress,
-          maxRentDuration,
-          dailyRentPrice,
-          nftPrice,
-          paymentToken,
-        } = event;
-        expect(nftAddress).to.eq(nftAddresses[i]);
-        expect(_tokenId).to.eq(tokenIds[i]);
-        expect(lendingId).to.eq(_expectedLendingIds[i]);
-        expect(lenderAddress).to.eq(lender.address);
-        expect(maxRentDuration).to.eq(MAX_RENT_DURATION);
-        expect(dailyRentPrice).to.eq(
+        const ev = e[i].args;
+        if (!ev) throw new Error('No args');
+        expect(ev.nftAddress).to.eq(nftAddresses[i]);
+        expect(ev.tokenId).to.eq(tokenIds[i]);
+        expect(ev.lendingId).to.eq(expectedLendingIds[i]);
+        expect(ev.lenderAddress).to.eq(lender.address);
+        expect(ev.maxRentDuration).to.eq(MAX_RENT_DURATION);
+        expect(ev.dailyRentPrice).to.eq(
           decimalToPaddedHexString(DAILY_RENT_PRICE, 32)
         );
-        expect(nftPrice).to.eq(decimalToPaddedHexString(NFT_PRICE, 32));
-        expect(paymentToken).to.eq(PAYMENT_TOKEN);
-        try {
-          const balance = await ERC1155.balanceOf(ReNFT.address, tokenIds[i]);
-          expect(balance).to.eq(1);
-        } catch (e) {
+        expect(ev.nftPrice).to.eq(decimalToPaddedHexString(NFT_PRICE, 32));
+        expect(ev.paymentToken).to.eq(PAYMENT_TOKEN);
+
+        if (amounts[i] === 0) {
           const newNftOwner = await ERC721.ownerOf(tokenIds[i]);
           expect(newNftOwner).to.eq(ReNFT.address);
+        } else {
+          const balance = await ERC1155.balanceOf(ReNFT.address, tokenIds[i]);
+          expect(balance).to.eq(amounts[i]);
         }
       }
     };
