@@ -20,10 +20,10 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         uint256 indexed tokenId,
         uint256 lendingId,
         address indexed lenderAddress,
-        uint16 maxRentDuration,
+        uint8 maxRentDuration,
         bytes4 dailyRentPrice,
         bytes4 nftPrice,
-        uint256 amount,
+        uint8 amount,
         bool isERC721,
         IResolver.PaymentToken paymentToken
     );
@@ -33,7 +33,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         uint256 indexed tokenId,
         uint256 lendingId,
         address indexed renterAddress,
-        uint16 rentDuration,
+        uint8 rentDuration,
         bool isERC721,
         uint32 rentedAt
     );
@@ -66,12 +66,12 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
      */
     function lend(
         address[] memory _nft,
-        uint256[] calldata _tokenId,
-        uint256[] calldata _amounts,
-        uint16[] calldata _maxRentDuration,
-        bytes4[] calldata _dailyRentPrice,
-        bytes4[] calldata _nftPrice,
-        IResolver.PaymentToken[] calldata _paymentToken
+        uint256[] memory _tokenId,
+        uint256[] memory _amounts,
+        uint8[] memory _maxRentDuration,
+        bytes4[] memory _dailyRentPrice,
+        bytes4[] memory _nftPrice,
+        IResolver.PaymentToken[] memory _paymentToken
     ) external;
 
     /**
@@ -83,7 +83,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id,
-        uint16[] memory _rentDuration
+        uint8[] memory _rentDuration
     ) external payable;
 
     /**

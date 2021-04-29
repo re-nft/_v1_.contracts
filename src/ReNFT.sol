@@ -28,17 +28,18 @@ contract ReNFT is IReNft, ReentrancyGuard {
     // single storage slot: address - 160 bits, 176, 208, 240, 248, 256
     struct Lending {
         address payable lenderAddress;
-        uint16 maxRentDuration;
+        uint8 maxRentDuration;
         bytes4 dailyRentPrice;
         bytes4 nftPrice;
-        uint8 amount;
+        uint8 lentAmount;
+        uint8 availableAmount;
         IResolver.PaymentToken paymentToken;
     }
 
     // single storage slot: 160 bits, 176, 198, 206
     struct Renting {
         address payable renterAddress;
-        uint16 rentDuration;
+        uint8 rentDuration;
         uint32 rentedAt;
         uint8 amount;
     }
@@ -91,7 +92,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _amounts,
-        uint16[] memory _maxRentDuration,
+        uint8[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
         IResolver.PaymentToken[] memory _paymentToken
@@ -99,8 +100,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
         TwoPointer memory tp = TwoPointer({currIx: 0, lastIx: 0, endIx: _nft.length - 1});
 
         for (uint256 i = 0; i < _nft.length; i++) {
-            _requireReasonableMaxDur(_maxRentDuration[i]);
-
             address lastNftAddress = _nft[tp.lastIx];
             address currNftAddress = _nft[tp.currIx];
             bool endOfLoop = i == tp.endIx;
@@ -179,7 +178,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         TwoPointer memory _tp,
         uint256[] memory _tokenId,
         uint256[] memory _amounts,
-        uint16[] memory _maxRentDuration,
+        uint8[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
         IResolver.PaymentToken[] memory _paymentToken
@@ -215,21 +214,25 @@ contract ReNFT is IReNft, ReentrancyGuard {
         address _nft,
         uint256 _tokenId,
         uint256 _amount,
-        uint16 _maxRentDuration,
+        uint8 _maxRentDuration,
         bytes4 _dailyRentPrice,
         bytes4 _nftPrice,
         IResolver.PaymentToken _paymentToken
     ) private {
+        require(_amount < 256, "maximum lend duration exceeded");
+        require(_amount > 0, "at least one day lend");
         // to avoid stack too deep
         bool is721 = false;
         {
-            console.log("I am a 721 dDDDDDDDSSSSSADFSDFSFASDFSF");
+            console.log("||||||| I am a 721 |||||||");
             is721 = _isERC721(_nft);
         }
         bytes32 itemHash = keccak256(abi.encodePacked(_nft, _tokenId, _amount, lendingId));
         LendingRenting storage item = lendingRenting[itemHash];
         item.lending = Lending({
             lenderAddress: payable(msg.sender),
+            lentAmount: uint8(_amount),
+            availableAmount: uint8(_amount),
             maxRentDuration: _maxRentDuration,
             dailyRentPrice: _dailyRentPrice,
             nftPrice: _nftPrice,
@@ -243,7 +246,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
             _maxRentDuration,
             _dailyRentPrice,
             _nftPrice,
-            _amount,
+            uint8(_amount),
             is721,
             _paymentToken
         );
@@ -253,7 +256,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
     function _handleLend721(
         address _nft,
         uint256 _tokenId,
-        uint16 _maxRentDuration,
+        uint8 _maxRentDuration,
         bytes4 _dailyRentPrice,
         bytes4 _nftPrice,
         IResolver.PaymentToken _paymentToken
@@ -261,7 +264,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         _handleLend(
             _nft,
             _tokenId,
-            0,
+            1,
             _maxRentDuration,
             _dailyRentPrice,
             _nftPrice,
@@ -275,15 +278,14 @@ contract ReNFT is IReNft, ReentrancyGuard {
         TwoPointer memory _tp,
         uint256[] memory _tokenId,
         uint256[] memory _amounts,
-        uint16[] memory _maxRentDuration,
+        uint8[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
         IResolver.PaymentToken[] memory _paymentToken
     ) private {
         // emit individual Lend events
         for (uint256 i = _tp.currIx; i < _tp.endIx; i++) {
-            require(_amounts[i] < 255, "lending struct constraint");
-            console.log("handling a single 1155 lend ~~~~~~~~~~~");
+            console.log("~~~~~~~~~~ handling a single 1155 lend ~~~~~~~~~~~");
             _handleLend(
                 _nft,
                 _tokenId[i],
@@ -301,7 +303,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _id,
-        uint16[] memory _rentDuration
+        uint8[] memory _rentDuration
     ) external payable override  {
         uint256 ethPmtRequired = 0;
         uint256 nftLen = _nft.length - 1;
@@ -315,7 +317,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
             _ensureIsNull(item.renting);
             require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
 
-            uint16 rentDuration = _rentDuration[i];
+            uint8 rentDuration = _rentDuration[i];
             require(rentDuration > 0, "should rent for at least a day");
             require(rentDuration <= item.lending.maxRentDuration, "max rent duration exceeded");
 
