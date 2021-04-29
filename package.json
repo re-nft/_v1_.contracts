@@ -6,8 +6,9 @@
   "scripts": {
     "lint": "eslint --fix \"**/*.{js,ts}\" && solhint --fix src/**/*.sol",
     "format": "prettier --write \"**/*.{ts,js,sol}\"",
+    "clean": "rm -rf artifacts cache frontend",
     "compile": "hardhat compile",
-    "test": "yarn compile && cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
+    "test": "yarn clean && yarn compile && cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
     "dev": "hardhat node --watch --export contractsInfo.json",
     "deploy": "hardhat --network mainnet deploy",
     "export": "hardhat --network mainnet export"

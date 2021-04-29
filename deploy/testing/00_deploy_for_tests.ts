@@ -6,12 +6,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('T1', {
+  await deploy('TD1', {
     from: deployer,
     log: true,
   });
 
-  await deploy('T18', {
+  await deploy('TD18', {
     from: deployer,
     log: true,
   });

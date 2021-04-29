@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNFT.sol";
+import "hardhat/console.sol";
 
 // - TODO: erc1155 amounts not supported in this version
 // adding the amounts, would imply that lending struct would
@@ -24,12 +25,13 @@ contract ReNFT is IReNft, ReentrancyGuard {
     uint256 public rentFee = 500;
     bytes4 private constant ERC20_DECIMALS_SELECTOR = bytes4(keccak256(bytes("decimals()")));
 
-    // single storage slot: address - 160 bits, 176, 208, 240, 248
+    // single storage slot: address - 160 bits, 176, 208, 240, 248, 256
     struct Lending {
         address payable lenderAddress;
         uint16 maxRentDuration;
         bytes4 dailyRentPrice;
         bytes4 nftPrice;
+        uint8 amount;
         IResolver.PaymentToken paymentToken;
     }
 
@@ -100,7 +102,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
 
             address lastNftAddress = _nft[tp.lastIx];
             address currNftAddress = _nft[tp.currIx];
-            bool lastIs721 = _isERC721(lastNftAddress);
             bool endOfLoop = i == tp.endIx;
 
             if ((lastNftAddress == currNftAddress) && !endOfLoop) {
@@ -108,7 +109,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 // ! treat them as different by observing consecutive zero amounts
                 // ! if two consecutive zeros, then this is the same 721 but with different tokenIds
                 if ((tp.lastIx + 1 == tp.currIx) && (_amounts[tp.lastIx] == 0) && (_amounts[tp.currIx] == 0)) {
-                    if (!lastIs721) revert("incorrect usage");
+                    if (!_isERC721(lastNftAddress)) revert("incorrect usage");
                     _handleLend721(
                         lastNftAddress,
                         _tokenId[tp.lastIx],
@@ -192,6 +193,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 _paymentToken[_tp.lastIx]
             );
         } else if (_isERC1155(_nft)) {
+            console.log("||||||| handling 1155 ||||||||||||||||||||||||||||||");
             _handleLend1155(
                 _nft,
                 _tp.lastIx,
@@ -218,8 +220,9 @@ contract ReNFT is IReNft, ReentrancyGuard {
         IResolver.PaymentToken _paymentToken
     ) private {
         // to avoid stack too deep
-        bool is721;
+        bool is721 = false;
         {
+            console.log("I am a 721 dDDDDDDDSSSSSADFSDFSFASDFSF");
             is721 = _isERC721(_nft);
         }
         bytes32 itemHash = keccak256(abi.encodePacked(_nft, _tokenId, _amount, lendingId));
@@ -254,8 +257,8 @@ contract ReNFT is IReNft, ReentrancyGuard {
         bytes4 _nftPrice,
         IResolver.PaymentToken _paymentToken
     ) private  {
-        IERC721(_nft).safeTransferFrom(msg.sender, address(this), _tokenId);
         _handleLend(_nft, _tokenId, 0, _maxRentDuration, _dailyRentPrice, _nftPrice, _paymentToken);
+        IERC721(_nft).transferFrom(msg.sender, address(this), _tokenId);
     }
 
     function _handleLend1155(
@@ -268,12 +271,14 @@ contract ReNFT is IReNft, ReentrancyGuard {
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
         IResolver.PaymentToken[] memory _paymentToken
-    ) private  {
-        IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, "");
+    ) private {
         // emit individual Lend events
-        for (uint256 i = _startIx; i < _endIx; i++) {
+        for (uint256 i = _startIx; i < _endIx + 1; i++) {
+            require(_amounts[i] < 255, "lending struct constraint");
+            console.log("handling a single 1155 lend ~~~~~~~~~~~");
             _handleLend(_nft, _tokenId[i], _amounts[i], _maxRentDuration[i], _dailyRentPrice[i], _nftPrice[i], _paymentToken[i]);
         }
+        IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, "");
     }
 
     /**
