@@ -35,11 +35,12 @@ contract ReNFT is IReNft, ReentrancyGuard {
         IResolver.PaymentToken paymentToken;
     }
 
-    // single storage slot: 160 bits, 176, 198
+    // single storage slot: 160 bits, 176, 198, 206
     struct Renting {
         address payable renterAddress;
         uint16 rentDuration;
         uint32 rentedAt;
+        uint8 amount;
     }
 
     struct LendingRenting {
@@ -184,6 +185,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         IResolver.PaymentToken[] memory _paymentToken
     ) private {
         if (_isERC721(_nft)) {
+            console.log("||||||| handling 721 |||||||");
             _handleLend721(
                 _nft,
                 _tokenId[_tp.lastIx],
@@ -193,11 +195,10 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 _paymentToken[_tp.lastIx]
             );
         } else if (_isERC1155(_nft)) {
-            console.log("||||||| handling 1155 ||||||||||||||||||||||||||||||");
+            console.log("||||||| handling 1155 |||||||");
             _handleLend1155(
                 _nft,
-                _tp.lastIx,
-                _tp.currIx,
+                _tp,
                 _tokenId,
                 _amounts,
                 _maxRentDuration,
@@ -257,14 +258,21 @@ contract ReNFT is IReNft, ReentrancyGuard {
         bytes4 _nftPrice,
         IResolver.PaymentToken _paymentToken
     ) private  {
-        _handleLend(_nft, _tokenId, 0, _maxRentDuration, _dailyRentPrice, _nftPrice, _paymentToken);
+        _handleLend(
+            _nft,
+            _tokenId,
+            0,
+            _maxRentDuration,
+            _dailyRentPrice,
+            _nftPrice,
+            _paymentToken
+        );
         IERC721(_nft).transferFrom(msg.sender, address(this), _tokenId);
     }
 
     function _handleLend1155(
         address _nft,
-        uint256 _startIx,
-        uint256 _endIx,
+        TwoPointer memory _tp,
         uint256[] memory _tokenId,
         uint256[] memory _amounts,
         uint16[] memory _maxRentDuration,
@@ -273,19 +281,22 @@ contract ReNFT is IReNft, ReentrancyGuard {
         IResolver.PaymentToken[] memory _paymentToken
     ) private {
         // emit individual Lend events
-        for (uint256 i = _startIx; i < _endIx + 1; i++) {
+        for (uint256 i = _tp.currIx; i < _tp.endIx; i++) {
             require(_amounts[i] < 255, "lending struct constraint");
             console.log("handling a single 1155 lend ~~~~~~~~~~~");
-            _handleLend(_nft, _tokenId[i], _amounts[i], _maxRentDuration[i], _dailyRentPrice[i], _nftPrice[i], _paymentToken[i]);
+            _handleLend(
+                _nft,
+                _tokenId[i],
+                _amounts[i],
+                _maxRentDuration[i],
+                _dailyRentPrice[i],
+                _nftPrice[i],
+                _paymentToken[i]
+            );
         }
         IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, "");
     }
 
-    /**
-     * domain:
-     *  any set of non-repeating NFTs (if repeating, you will incur unnecessary cost)
-     *  any set of sorted in ascending order, respective tokenIds
-     */
     function rent(
         address[] memory _nft,
         uint256[] memory _tokenId,
