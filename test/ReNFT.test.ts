@@ -291,11 +291,13 @@ describe('ReNFT', function () {
       const tokenIds = [1, 2];
       await lendBatch({
         tokenIds: [tokenIds[0]],
+        amounts: [1],
         expectedLendingIds: [1],
         nftAddresses: [ERC1155.address],
       });
       await lendBatch({
         tokenIds: [tokenIds[1]],
+        amounts: [1],
         expectedLendingIds: [2],
         nftAddresses: [ERC1155.address],
       });
@@ -310,6 +312,7 @@ describe('ReNFT', function () {
       const tokenIds = [1, 2];
       await lendBatch({
         tokenIds,
+        amounts: [1, 1],
         nftAddresses: [ERC1155.address, ERC1155.address],
       });
     });
@@ -326,11 +329,13 @@ describe('ReNFT', function () {
       const tokenIds = [1];
       await lendBatch({
         tokenIds,
+        amounts: [1],
         nftAddresses: [ERC1155.address],
       });
       await expect(
         lendBatch({
           tokenIds,
+          amounts: [1],
           nftAddresses: [ERC1155.address],
         })
       ).to.be.revertedWith('ERC1155: insufficient balance for transfer');
@@ -343,36 +348,18 @@ describe('ReNFT', function () {
       ).to.be.revertedWith('must be at least one day lend');
     });
 
-    it('disallows args diff length - ERC721', async () => {
-      const tokenIds = [1];
-      const longerThanTokenIds = [1, 2];
-      await expect(
-        lendBatch({ tokenIds, maxRentDurations: longerThanTokenIds })
-      ).to.be.revertedWith('');
-    });
-
     it('disallows zero day lend - ERC1155', async () => {
       const tokenIds = [1];
       await expect(
         lendBatch({
           tokenIds,
+          amounts: [1],
           maxRentDurations: [0],
           nftAddresses: [ERC1155.address],
         })
       ).to.be.revertedWith('must be at least one day lend');
     });
 
-    it('disallows args diff length - ERC1155', async () => {
-      const tokenIds = [1];
-      const longerThanTokenIds = [1, 2];
-      await expect(
-        lendBatch({
-          tokenIds,
-          maxRentDurations: longerThanTokenIds,
-          nftAddresses: [ERC1155.address],
-        })
-      ).to.be.revertedWith('');
-    });
   });
 
   context('Price Unpacking', async function () {
