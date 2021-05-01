@@ -13,7 +13,20 @@
     "deploy": "hardhat --network mainnet deploy",
     "export": "hardhat --network mainnet export"
   },
-  "devDependencies": {
+  "keywords": [
+    "ethereum",
+    "smart-contracts",
+    "hardhat",
+    "solidity",
+    "renft",
+    "lending",
+    "nft",
+    "renting",
+    "erc721",
+    "erc1155",
+    "non-fungible"
+  ],
+  "dependencies": {
     "@ethereum-waffle/chai": "^3.2.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.1",
     "@openzeppelin/contracts": "^4.0.0-rc.0",
@@ -32,7 +45,6 @@
     "hardhat": "^2.0.8",
     "hardhat-deploy": "^0.7.0-beta.44",
     "hardhat-deploy-ethers": "^0.3.0-beta.7",
-    "hardhat-gas-reporter": "^1.0.4",
     "hardhat-typechain": "^0.3.4",
     "mocha": "^8.3.2",
     "prettier": "^2.2.1",
@@ -43,19 +55,5 @@
     "ts-node": "^9.1.1",
     "typechain": "4.0.0",
     "typescript": "4.1.5"
-  },
-  "keywords": [
-    "ethereum",
-    "smart-contracts",
-    "hardhat",
-    "solidity",
-    "renft",
-    "lending",
-    "nft",
-    "renting",
-    "erc721",
-    "erc1155",
-    "non-fungible"
-  ],
-  "dependencies": {}
+  }
 }

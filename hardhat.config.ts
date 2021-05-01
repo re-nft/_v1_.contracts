@@ -2,7 +2,6 @@ import 'dotenv/config';
 import { HardhatUserConfig } from 'hardhat/types';
 import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
-import 'hardhat-gas-reporter';
 import '@nomiclabs/hardhat-etherscan';
 import '@symfoni/hardhat-react';
 
@@ -45,12 +44,6 @@ const config: HardhatUserConfig = {
   },
   paths: {
     sources: 'src',
-  },
-  gasReporter: {
-    currency: 'USD',
-    gasPrice: 200,
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-    maxMethodDiff: 10,
   },
   mocha: {
     timeout: 0,
