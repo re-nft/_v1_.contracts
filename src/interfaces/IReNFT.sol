@@ -35,7 +35,8 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         address indexed renterAddress,
         uint8 rentDuration,
         bool isERC721,
-        uint32 rentedAt
+        uint32 rentedAt,
+        uint8 rentedAmount
     );
 
     event Returned(
