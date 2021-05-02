@@ -254,8 +254,8 @@ contract ReNFT is IReNft, ReentrancyGuard {
 
     function _handleLend1155(
         address _nft,
-        uint256 lastIx,
-        uint256 currIx,
+        uint256 _lastIx,
+        uint256 _currIx,
         uint256[] memory _tokenId,
         uint256[] memory _amounts,
         uint8[] memory _maxRentDuration,
@@ -264,7 +264,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         IResolver.PaymentToken[] memory _paymentToken
     ) private {
         // emit individual Lend events
-        for (uint256 i = lastIx; i < currIx; i++) {
+        for (uint256 i = _lastIx; i < _currIx; i++) {
             _emitLend(
                 _nft,
                 _tokenId[i],
@@ -277,7 +277,13 @@ contract ReNFT is IReNft, ReentrancyGuard {
             );
         }
         // TODO: need to splice
-        IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, "");
+        IERC1155(_nft).safeBatchTransferFrom(
+            msg.sender,
+            address(this),
+            _sliceMemoryArray(_lastIx, _currIx, _tokenId),
+            _sliceMemoryArray(_lastIx, _currIx, _amounts),
+            ""
+        );
     }
 
     function handleRent(
@@ -349,7 +355,13 @@ contract ReNFT is IReNft, ReentrancyGuard {
             return;
         } else if (_isERC1155(_nft)) {
             // TODO: need to splice
-            IERC1155(_nft).safeBatchTransferFrom(address(this), msg.sender, _tokenId, _rentAmounts, "");
+            IERC1155(_nft).safeBatchTransferFrom(
+                address(this),
+                msg.sender,
+                _sliceMemoryArray(_lastIx, _currIx, _tokenId),
+                _sliceMemoryArray(_lastIx, _currIx, _rentAmounts),
+                ""
+            );
             return;
         } else {
             revert("unsupported token type");
@@ -698,6 +710,20 @@ contract ReNFT is IReNft, ReentrancyGuard {
             price = decimalScale;
         }
         return price;
+    }
+
+    function _sliceMemoryArray(
+        uint256 startIx,
+        uint256 endIx,
+        uint256[] memory self
+    ) private pure returns (uint256[] memory r) {
+        require(endIx < self.length);
+        require(startIx < endIx);
+
+        r = new uint256[](self.length);
+        for (uint256 i = startIx; i < endIx; i++) {
+            r[i - startIx] = self[i];
+        }
     }
 
     /**
