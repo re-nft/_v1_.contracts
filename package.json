@@ -8,8 +8,8 @@
     "format": "prettier --write \"**/*.{ts,js,sol}\"",
     "clean": "rm -rf artifacts cache frontend",
     "compile": "hardhat compile",
-    "coverage": "yarn clean && yarn compile && yarn cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat coverage",
-    "test": "yarn clean && yarn compile && cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
+    "test": "yarn clean && yarn compile && yarn cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat coverage",
+    "test:quick": "yarn clean && yarn compile && yarn cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
     "dev": "hardhat node --watch --export contractsInfo.json",
     "deploy": "hardhat --network mainnet deploy",
     "export": "hardhat --network mainnet export"

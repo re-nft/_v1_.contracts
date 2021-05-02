@@ -21,7 +21,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
+  await deploy('E721B', {
+    from: deployer,
+    log: true,
+  });
+
   await deploy('MyERC1155', {
+    from: deployer,
+    log: true,
+  });
+
+  await deploy('E1155B', {
     from: deployer,
     log: true,
   });

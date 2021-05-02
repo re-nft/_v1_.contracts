@@ -68,8 +68,16 @@ const setup = deployments.createFixture(async () => {
     'MyERC721'
   )) as unknown) as ERC721T;
 
+  const E721B = ((await ethers.getContract(
+    'E721B'
+  )) as unknown) as ERC721T;
+
   const myERC1155 = ((await ethers.getContract(
     'MyERC1155'
+  )) as unknown) as ERC1155T;
+
+  const E1155B = ((await ethers.getContract(
+    'E1155B'
   )) as unknown) as ERC1155T;
 
   const utils = ((await ethers.getContract('Utils')) as unknown) as UtilsT;
@@ -122,6 +130,14 @@ const setup = deployments.createFixture(async () => {
     'MyERC721',
     lender
   )) as unknown) as ERC721T;
+  const E721BRenter = ((await ethers.getContract(
+    'E721B',
+    renter
+  )) as unknown) as ERC721T;
+  const E721BLender = ((await ethers.getContract(
+    'E721B',
+    lender
+  )) as unknown) as ERC721T;
   const myERC1155Renter = ((await ethers.getContract(
     'MyERC1155',
     renter
@@ -130,23 +146,39 @@ const setup = deployments.createFixture(async () => {
     'MyERC1155',
     lender
   )) as unknown) as ERC1155T;
+  const E1155BRenter = ((await ethers.getContract(
+    'E1155B',
+    renter
+  )) as unknown) as ERC1155T;
+  const E1155BLender = ((await ethers.getContract(
+    'E1155B',
+    lender
+  )) as unknown) as ERC1155T;
   await td18Renter.approve(renft.address, ethers.constants.MaxUint256);
   await td18Lender.approve(renft.address, ethers.constants.MaxUint256);
   await td1Renter.approve(renft.address, ethers.constants.MaxUint256);
   await td1Lender.approve(renft.address, ethers.constants.MaxUint256);
   await myERC721Renter.setApprovalForAll(renft.address, true);
   await myERC721Lender.setApprovalForAll(renft.address, true);
+  await E721BRenter.setApprovalForAll(renft.address, true);
+  await E721BLender.setApprovalForAll(renft.address, true);
   await myERC1155Renter.setApprovalForAll(renft.address, true);
   await myERC1155Lender.setApprovalForAll(renft.address, true);
+  await E1155BRenter.setApprovalForAll(renft.address, true);
+  await E1155BLender.setApprovalForAll(renft.address, true);
 
   // * Ramda.repeat(await myERC721.award(), 10) does not work like I expected
   // * const award = Ramda.repeat(myERC721.award(), 10); await Promise.all(award) doesn't either
   for (let i = 0; i < 10; i++) {
     await myERC721Lender.award();
+    await E721BLender.award();
     await myERC1155Lender.award();
+    await E1155BLender.award();
   }
   await myERC721.setApprovalForAll(renft.address, true);
+  await E721B.setApprovalForAll(renft.address, true);
   await myERC1155.setApprovalForAll(renft.address, true);
+  await E1155B.setApprovalForAll(renft.address, true);
   return {
     Resolver: resolver,
     ReNFT: renft,
@@ -154,6 +186,8 @@ const setup = deployments.createFixture(async () => {
     TD1: td1,
     ERC721: myERC721,
     ERC1155: myERC1155,
+    E721B,
+    E1155B,
     Utils: utils,
     signers,
     deployer,
@@ -163,7 +197,9 @@ const setup = deployments.createFixture(async () => {
       td18: td18Renter,
       td1: td1Renter,
       erc721: myERC721Renter,
+      e721b: E721BRenter,
       erc1155: myERC1155Renter,
+      e1155b: E1155BRenter,
       renft: renftRenter,
     },
     lender: {
@@ -171,7 +207,9 @@ const setup = deployments.createFixture(async () => {
       td18: td18Lender,
       td1: td1Lender,
       erc721: myERC721Lender,
+      e721b: E721BLender,
       erc1155: myERC1155Lender,
+      e1155b: E1155BLender,
       renft: renftLender,
     },
   };
@@ -196,15 +234,21 @@ type lendBatchArgs = {
 describe('ReNFT', function () {
   context('Lending', async function () {
     let ReNFT: ReNFTT;
+    let TD1: ERC20T;
     let ERC721: ERC721T;
+    let E721B: ERC721T;
     let ERC1155: ERC1155T;
+    let E1155B: ERC1155T;
     let lender: NamedAccount;
 
     beforeEach(async () => {
       const o = await setup();
       ReNFT = o.lender.renft;
+      TD1 = o.lender.td1;
       ERC721 = o.lender.erc721;
+      E721B = o.lender.e721b;
       ERC1155 = o.lender.erc1155;
+      E1155B = o.lender.e1155b;
       lender = o.lender;
     });
 
@@ -315,6 +359,168 @@ describe('ReNFT', function () {
         amounts: [1, 1],
         nftAddresses: [ERC1155.address, ERC1155.address],
       });
+    });
+
+    it('E721, E721', async () => {
+      await ReNFT.lend(
+        [ERC721.address, ERC721.address],
+        [1, 2],
+        [1, 1],
+        [1, 1],
+        [packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+     });
+
+    it('E721, E721B', async () => {
+      await ReNFT.lend(
+        [ERC721.address, E721B.address],
+        [1, 1],
+        [1, 1],
+        [1, 1],
+        [packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+     });
+
+    it('E721, E1155', async () => {
+      await ReNFT.lend(
+        [ERC721.address, ERC1155.address],
+        [1, 1],
+        [1, 1],
+        [1, 1],
+        [packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+     });
+
+    it('E1155, E721', async () => {
+      await ReNFT.lend(
+        [ERC1155.address, ERC721.address],
+        [1, 1],
+        [1, 1],
+        [1, 1],
+        [packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E1155, E1155', async () => {
+      await ReNFT.lend(
+        [ERC1155.address, ERC1155.address],
+        [1, 2],
+        [1, 1],
+        [1, 1],
+        [packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E1155, E1155B', async () => {
+      await ReNFT.lend(
+        [ERC1155.address, E1155B.address],
+        [1, 1],
+        [1, 1],
+        [1, 1],
+        [packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E721, E721, E1155', async () => {
+      await ReNFT.lend(
+        [ERC721.address, ERC721.address, ERC1155.address],
+        [1, 2, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E721, E1155, E721', async () => {
+      await ReNFT.lend(
+        [ERC721.address, ERC1155.address, ERC721.address],
+        [1, 1, 2],
+        [1, 1, 1],
+        [1, 1, 1],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E721, E1155, E1155', async () => {
+      await ReNFT.lend(
+        [ERC721.address, ERC1155.address, ERC1155.address],
+        [1, 1, 2],
+        [1, 1, 1],
+        [1, 1, 1],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E721, E1155, E1155B', async () => {
+      await ReNFT.lend(
+        [ERC721.address, ERC1155.address, E1155B.address],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E721, E1155, E1155, E721', async () => {
+      await ReNFT.lend(
+        [ERC721.address, ERC1155.address, ERC1155.address, ERC721.address],
+        [1, 1, 2, 2],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+        [packPrice(1), packPrice(1), packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1), packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E721, E1155, E1155B, E721', async () => {
+      await ReNFT.lend(
+        [ERC721.address, ERC1155.address, E1155B.address, ERC721.address],
+        [1, 1, 1, 2],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+        [packPrice(1), packPrice(1), packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1), packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('E1155, E721, E721', async () => {
+      await ReNFT.lend(
+        [ERC1155.address, ERC721.address, ERC721.address],
+        [1, 1, 2],
+        [1, 1, 1],
+        [1, 1, 1],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [packPrice(1), packPrice(1), packPrice(1)],
+        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
+      );
+    });
+
+    it('reverts on unsupported token type', async () => {
+      await expect(
+        lendBatch({ nftAddresses: [TD1.address], tokenIds: [1] }))
+        .to.be.reverted;
     });
 
     it('reverts if tries to lend again - ERC721', async function () {

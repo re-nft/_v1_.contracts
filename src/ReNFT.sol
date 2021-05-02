@@ -717,8 +717,8 @@ contract ReNFT is IReNft, ReentrancyGuard {
         uint256 endIx,
         uint256[] memory self
     ) private pure returns (uint256[] memory r) {
-        require(endIx < self.length);
-        require(startIx < endIx);
+        require(endIx <= self.length, "not endIx le self.length");
+        require(startIx < endIx, "not startIx le endIx");
 
         r = new uint256[](self.length);
         for (uint256 i = startIx; i < endIx; i++) {

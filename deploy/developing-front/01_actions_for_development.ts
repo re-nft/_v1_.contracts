@@ -40,8 +40,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     'MyERC721',
     lender
   )) as any) as MyERC721;
+  const e721b = ((await ethers.getContract(
+    'E721B',
+    lender
+  )) as any) as MyERC721;
 
   for (let i = 0; i < 10; i++) await erc721.award();
+  for (let i = 0; i < 10; i++) await e721b.award();
 
   // * also send through 100 erc20 tokens to everyone
   const td18 = ((await ethers.getContract(
