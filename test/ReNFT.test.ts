@@ -43,17 +43,7 @@ type NamedAccount = {
 };
 
 const setup = deployments.createFixture(async () => {
-  await deployments.fixture([
-    'TD1',
-    'TD18',
-    'ERC721',
-    'E721B',
-    'ERC1155',
-    'E1155B',
-    'Utils',
-    'Resolver',
-    'ReNFT',
-  ]);
+  await deployments.fixture(['Test', 'Development']);
   // beneficiary is the party that receives the rent fee cuts
   const { deployer, beneficiary, renter, lender } = await getNamedAccounts();
 

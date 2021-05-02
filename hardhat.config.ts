@@ -5,6 +5,7 @@ import 'hardhat-deploy';
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-etherscan';
 import '@symfoni/hardhat-react';
+import 'hardhat-gas-reporter';
 
 // * due to auto-generation the tests run much slower
 // * unless this becomes opt-in, remove the comment out
@@ -48,6 +49,9 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 0,
+  },
+  gasReporter: {
+    currency: 'USD',
   }
 };
 

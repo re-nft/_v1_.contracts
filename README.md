@@ -53,6 +53,10 @@
 
 ---
 
+1. Note that `test:gas` will not work since node needs to run as a daemon. You need to open a terminal, open two tabs, in one run the node, and in another one run the test. Now you will have gas estimates.
+
+2. Note that gas reporter will appear to be working with `test:quick`, but it should not! It will not work. It will only work if you run separately a node, and separetely a test with `localhost` network to ping the node.
+
 ### TODO
 
 ---
