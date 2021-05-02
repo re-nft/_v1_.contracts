@@ -8,6 +8,7 @@
     "format": "prettier --write \"**/*.{ts,js,sol}\"",
     "clean": "rm -rf artifacts cache frontend",
     "compile": "hardhat compile",
+    "coverage": "yarn clean && yarn compile && yarn cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat coverage",
     "test": "yarn clean && yarn compile && cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
     "dev": "hardhat node --watch --export contractsInfo.json",
     "deploy": "hardhat --network mainnet deploy",
@@ -43,7 +44,6 @@
     "eslint-config-prettier": "^7.2.0",
     "hardhat": "^2.0.8",
     "hardhat-deploy": "^0.7.0-beta.44",
-    "hardhat-deploy-ethers": "^0.3.0-beta.7",
     "hardhat-typechain": "^0.3.5",
     "mocha": "^8.3.2",
     "prettier": "^2.2.1",
@@ -55,5 +55,9 @@
     "ts-node": "^9.1.1",
     "typechain": "^4.0.3",
     "typescript": "4.1.5"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
+    "solidity-coverage": "^0.7.16"
   }
 }
