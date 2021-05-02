@@ -47,7 +47,9 @@ const setup = deployments.createFixture(async () => {
     'TD1',
     'TD18',
     'ERC721',
+    'E721B',
     'ERC1155',
+    'E1155B',
     'Utils',
     'Resolver',
     'ReNFT',
@@ -215,13 +217,6 @@ const setup = deployments.createFixture(async () => {
   };
 });
 
-// all the below share the following
-// NFT(s) is(are) taken from the lender and deposited into our contract
-// - when someone lends: their NFT deposited into our contract
-// - when someone unsafely deposits: we revert their txn
-// - when someone lends: if ERC721 we call transferFrom, if ERC1155 we call safeTransferFrom
-// - when someone batch lends use appropriate ERC1155 function
-
 type lendBatchArgs = {
   tokenIds: number[];
   amounts?: number[];
@@ -252,6 +247,37 @@ describe('ReNFT', function () {
       lender = o.lender;
     });
 
+    const validateEvent = async (e: Event['args'], { nftAddress, tokenId, lendingId, amount }: { nftAddress: string, tokenId: number, lendingId: number, amount: number }) => {
+      if (!e) throw new Error('No args');
+      expect(e.nftAddress).to.eq(nftAddress);
+      expect(e.tokenId).to.eq(tokenId);
+      expect(e.lendingId).to.eq(lendingId);
+      expect(e.lenderAddress).to.eq(lender.address);
+      expect(e.maxRentDuration).to.eq(MAX_RENT_DURATION);
+      expect(e.dailyRentPrice).to.eq(
+        decimalToPaddedHexString(DAILY_RENT_PRICE, 32)
+      );
+      expect(e.nftPrice).to.eq(decimalToPaddedHexString(NFT_PRICE, 32));
+      expect(e.paymentToken).to.eq(PAYMENT_TOKEN);
+
+      switch (e.nftAddress.toLowerCase()) {
+        case ERC721.address.toLowerCase():
+          expect(await ERC721.ownerOf(tokenId)).to.eq(ReNFT.address);
+          break;
+        case E721B.address.toLowerCase():
+          expect(await E721B.ownerOf(tokenId)).to.eq(ReNFT.address);
+          break;
+        case E1155B.address.toLowerCase():
+          expect(await E1155B.balanceOf(ReNFT.address, tokenId)).to.eq(amount);
+          break;
+        case ERC1155.address.toLowerCase():
+          expect(await ERC1155.balanceOf(ReNFT.address, tokenId)).to.eq(amount);
+          break;
+        default:
+          throw new Error('unknown address');
+      }
+    }
+
     const lendBatch = async ({
       tokenIds,
       amounts = Array(tokenIds.length).fill(1),
@@ -275,39 +301,19 @@ describe('ReNFT', function () {
 
       const receipt = await txn.wait();
       const e = getEvents(receipt.events ?? [], 'Lent');
-      // Lent events emitted == length of the events
       expect(e.length).to.eq(tokenIds.length);
 
       for (let i = 0; i < tokenIds.length; i++) {
         const ev = e[i].args;
-        if (!ev) throw new Error('No args');
-        expect(ev.nftAddress).to.eq(nftAddresses[i]);
-        expect(ev.tokenId).to.eq(tokenIds[i]);
-        expect(ev.lendingId).to.eq(expectedLendingIds[i]);
-        expect(ev.lenderAddress).to.eq(lender.address);
-        expect(ev.maxRentDuration).to.eq(MAX_RENT_DURATION);
-        expect(ev.dailyRentPrice).to.eq(
-          decimalToPaddedHexString(DAILY_RENT_PRICE, 32)
+        await validateEvent(
+          ev,
+          {
+            nftAddress: nftAddresses[i],
+            tokenId: tokenIds[i],
+            lendingId: expectedLendingIds[i],
+            amount: amounts[i]
+          }
         );
-        expect(ev.nftPrice).to.eq(decimalToPaddedHexString(NFT_PRICE, 32));
-        expect(ev.paymentToken).to.eq(PAYMENT_TOKEN);
-
-        switch (ev.nftAddress.toLowerCase()) {
-          case ERC721.address.toLowerCase():
-            expect(await ERC721.ownerOf(tokenIds[i])).to.eq(ReNFT.address);
-            break;
-          case E721B.address.toLowerCase():
-            expect(await E721B.ownerOf(tokenIds[i])).to.eq(ReNFT.address);
-            break;
-          case E1155B.address.toLowerCase():
-            expect(await E1155B.balanceOf(ReNFT.address, tokenIds[i])).to.eq(amounts[i]);
-            break;
-          case ERC1155.address.toLowerCase():
-            expect(await ERC1155.balanceOf(ReNFT.address, tokenIds[i])).to.eq(amounts[i]);
-            break;
-          default:
-            throw new Error('unknown address');
-        }
       }
     };
 
