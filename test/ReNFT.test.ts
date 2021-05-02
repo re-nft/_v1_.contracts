@@ -254,7 +254,7 @@ describe('ReNFT', function () {
 
     const lendBatch = async ({
       tokenIds,
-      amounts = Array(tokenIds.length).fill(0),
+      amounts = Array(tokenIds.length).fill(1),
       maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION),
       dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE).map((x) => decimalToPaddedHexString(x, 32)),
       nftPrices = Array(tokenIds.length).fill(NFT_PRICE).map((x) => decimalToPaddedHexString(x, 32)),
@@ -292,12 +292,21 @@ describe('ReNFT', function () {
         expect(ev.nftPrice).to.eq(decimalToPaddedHexString(NFT_PRICE, 32));
         expect(ev.paymentToken).to.eq(PAYMENT_TOKEN);
 
-        if (amounts[i] === 0) {
-          const newNftOwner = await ERC721.ownerOf(tokenIds[i]);
-          expect(newNftOwner).to.eq(ReNFT.address);
-        } else {
-          const balance = await ERC1155.balanceOf(ReNFT.address, tokenIds[i]);
-          expect(balance).to.eq(amounts[i]);
+        switch (ev.nftAddress.toLowerCase()) {
+          case ERC721.address.toLowerCase():
+            expect(await ERC721.ownerOf(tokenIds[i])).to.eq(ReNFT.address);
+            break;
+          case E721B.address.toLowerCase():
+            expect(await E721B.ownerOf(tokenIds[i])).to.eq(ReNFT.address);
+            break;
+          case E1155B.address.toLowerCase():
+            expect(await E1155B.balanceOf(ReNFT.address, tokenIds[i])).to.eq(amounts[i]);
+            break;
+          case ERC1155.address.toLowerCase():
+            expect(await ERC1155.balanceOf(ReNFT.address, tokenIds[i])).to.eq(amounts[i]);
+            break;
+          default:
+            throw new Error('unknown address');
         }
       }
     };
