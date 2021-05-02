@@ -118,7 +118,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         }
 
         while (currIx < nftLen) {
-            if ((_nft[lastIx] == _nft[currIx]) && (_isERC1155(currIx))) {
+            if ((_nft[lastIx] == _nft[currIx]) && (_isERC1155(_nft[currIx]))) {
                 currIx++;
                 continue;
             }
@@ -276,47 +276,44 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 _paymentToken[i]
             );
         }
+        // TODO: need to splice
         IERC1155(_nft).safeBatchTransferFrom(msg.sender, address(this), _tokenId, _amounts, "");
     }
 
     function handleRent(
         uint256 _lastIx,
         uint256 _currIx,
-        address[] memory _nft,
+        address _nft,
         uint256[] memory _tokenId,
         uint8[] memory _lentAmounts,
-        uint8[] memory _rentAmounts,
+        uint256[] memory _rentAmounts,
         uint256[] memory _id,
         uint8[] memory _rentDuration
     ) private {
         uint256 ethPmtRequired = 0;
-        uint256 nftLen = _nft.length - 1;
 
         for (uint256 i = _lastIx; i < _currIx; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
+            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft, _tokenId[i], _lentAmounts[i], _id[i]))];
 
             _ensureIsNull(item.renting);
             require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
-            require(item.availableAmount >= _rentAmounts[i], "not enough nfts to rent");
-            require(_rentDuration[i] > 0, "should rent for at least a day");
             require(_rentDuration[i] <= item.lending.maxRentDuration, "max rent duration exceeded");
+            require(item.lending.availableAmount >= _rentAmounts[i], "not enough nfts to rent");
 
             uint8 paymentTokenIndex = uint8(item.lending.paymentToken);
             address paymentToken = resolver.getPaymentToken(paymentTokenIndex);
-            bool isERC20 = paymentTokenIndex > 1;
-
             uint256 decimals = 18;
-            if (isERC20) {
-                decimals = _decimals(paymentToken);
-            }
 
             {
+                if (paymentTokenIndex > 1) {
+                    decimals = _decimals(paymentToken);
+                }
                 uint256 scale = 10**decimals;
                 uint256 rentPrice = _rentDuration[i] * _unpackPrice(item.lending.dailyRentPrice, scale);
                 uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
                 require(rentPrice > 0, "rent price is zero");
                 uint256 upfrontPayment = rentPrice + nftPrice;
-                if (isERC20) {
+                if (paymentTokenIndex > 1) {
                     IERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
                 } else {
                     ethPmtRequired += upfrontPayment;
@@ -326,23 +323,33 @@ contract ReNFT is IReNft, ReentrancyGuard {
             item.renting.renterAddress = payable(msg.sender);
             item.renting.rentDuration = _rentDuration[i];
             item.renting.rentedAt = uint32(block.timestamp);
-            item.renting.rentedAmount = _rentAmounts[i];
-            item.lending.availableAmount = item.lending.availableAmount - _rentAmounts[i];
+            item.renting.rentedAmount = uint8(_rentAmounts[i]);
+            item.lending.availableAmount = item.lending.availableAmount - uint8(_rentAmounts[i]);
 
+            {
+            bool is721 = _isERC721(_nft);
+            uint8 rentAmount = uint8(_rentAmounts[i]);
             emit Rented(
-                _nft[i], _tokenId[i], _id[i], msg.sender,
-                _rentDuration[i], _isERC721(_nft[i]), uint32(block.timestamp),
-                _rentAmounts[i]
+                _nft,
+                _tokenId[i],
+                _id[i],
+                msg.sender,
+                _rentDuration[i],
+                is721,
+                uint32(block.timestamp),
+                rentAmount
             );
+            }
         }
 
         require(msg.value == ethPmtRequired, "insufficient amount");
 
-        if (_isERC721(_nft[i])) {
-            IERC721(_nft).transferFrom(address(this), msg.sender, _tokenId);
+        if (_isERC721(_nft)) {
+            IERC721(_nft).transferFrom(address(this), msg.sender, _tokenId[_lastIx]);
             return;
-        } else if (_isERC1155(_nft[i])) {
-            IERC1155(_nft).safeBatchTransferFrom(address(this), msg.sender, _tokenId, _amounts, "");
+        } else if (_isERC1155(_nft)) {
+            // TODO: need to splice
+            IERC1155(_nft).safeBatchTransferFrom(address(this), msg.sender, _tokenId, _rentAmounts, "");
             return;
         } else {
             revert("unsupported token type");
@@ -353,19 +360,23 @@ contract ReNFT is IReNft, ReentrancyGuard {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint8[] memory _lentAmounts,
-        uint8[] memory _rentAmounts,
+        uint256[] memory _rentAmounts,
         uint256[] memory _id,
         uint8[] memory _rentDuration
     ) external payable override  {
         uint256 lastIx = 0;
         uint256 currIx = 1;
 
+        // ! fails early to save gas
+        require(_rentAmounts[lastIx] < 256, "invalid rent amount");
+        require(_rentDuration[lastIx] > 0, "should rent for at least a day");
+
         uint256 nftLen = _nft.length;
         if (nftLen < 2) {
             handleRent(
                 lastIx,
                 currIx,
-                _nft,
+                _nft[0],
                 _tokenId,
                 _lentAmounts,
                 _rentAmounts,
@@ -376,7 +387,11 @@ contract ReNFT is IReNft, ReentrancyGuard {
         }
 
         while (currIx < nftLen) {
-            if ((_nft[lastIx] == _nft[currIx]) && (_isERC1155(currIx))) {
+            // ! fails early to save gas
+            require(_rentAmounts[currIx] < 256, "invalid rent amount");
+            require(_rentDuration[currIx] > 0, "should rent for at least a day");
+
+            if ((_nft[lastIx] == _nft[currIx]) && (_isERC1155(_nft[currIx]))) {
                 currIx++;
                 continue;
             }
@@ -384,7 +399,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
             handleRent(
                 lastIx,
                 currIx,
-                _nft,
+                _nft[lastIx],
                 _tokenId,
                 _lentAmounts,
                 _rentAmounts,
@@ -399,7 +414,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         handleRent(
             lastIx,
             currIx,
-            _nft,
+            _nft[lastIx],
             _tokenId,
             _lentAmounts,
             _rentAmounts,

@@ -83,6 +83,8 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function rent(
         address[] memory _nft,
         uint256[] memory _tokenId,
+        uint8[] memory _lentAmounts,
+        uint256[] memory _rentAmounts,
         uint256[] memory _id,
         uint8[] memory _rentDuration
     ) external payable;
