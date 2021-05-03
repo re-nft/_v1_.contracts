@@ -20,6 +20,7 @@ contract ReNFT is IReNft {
     address private admin;
     address payable private beneficiary;
     uint256 private lendingId = 1;
+    uint8 MAX_UINT8 = 255;
 
     uint256 public rentFee = 500;
     bytes4 private constant ERC20_DECIMALS_SELECTOR = bytes4(keccak256(bytes("decimals()")));
@@ -51,7 +52,11 @@ contract ReNFT is IReNft {
     struct TwoPointer {
         uint256 lastIx;
         uint256 currIx;
-        uint256 endIx;
+        address[] nft;
+        uint256[] tokenIds;
+        uint256[] lendingIds;
+        uint256[] lentAmounts;
+        uint256[] otherAmounts;
     }
 
     // 32 bytes key to 64 bytes struct
@@ -309,7 +314,7 @@ contract ReNFT is IReNft {
             require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
             console.log("rent duration %s", _rentDuration[i]);
             console.log("item.lending.maxRentDuration %s", item.lending.maxRentDuration);
-            require(_rentAmounts[i] < 256, "invalid rent amount");
+            require(_rentAmounts[i] <= MAX_UINT8, "invalid rent amount");
             require(_rentDuration[i] > 0, "should rent for at least a day");
             require(_rentDuration[i] <= item.lending.maxRentDuration, "max rent duration exceeded");
             require(item.lending.availableAmount >= _rentAmounts[i], "not enough nfts to rent");
@@ -531,42 +536,62 @@ contract ReNFT is IReNft {
         }
     }
 
-    // function _twoPointerLoop() private {
-
-    // }
+    function _twoPointerLoop(
+        function (
+            TwoPointer memory
+        ) f,
+        TwoPointer memory _tp
+    ) private {
+        if (_tp.nft.length < 2) {
+            f(_tp);
+            return;
+        }
+        while (_tp.currIx < _tp.nft.length) {
+            if ((_tp.nft[_tp.lastIx] == _tp.nft[_tp.currIx]) && (_isERC1155(_tp.nft[_tp.currIx]))) {
+                _tp.currIx++;
+                continue;
+            }
+            f(_tp);
+            _tp.lastIx = _tp.currIx;
+            _tp.currIx++;
+        }
+        f(_tp);
+    }
 
     function handleReturn(
-        uint256 _lastIx,
-        uint256 _currIx,
-        address _nft,
-        uint256[] memory _tokenId,
-        uint256[] memory _lentAmounts,
-        uint256[] memory _id
+        TwoPointer memory _tp
     ) private {
-        for (uint256 i = 0; i < _tokenId.length; i++) {
+        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             // TODO
             // ! if two different people rent same amounts of the same lendingId, trouble below
             // ! each renting must have an id as well. LendingRenting is no longer one lending and one renting
             // ! but one lending and multiple renting whose rentedAmounts sum is equal or less than the lending's
             // ! lentAmount
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft, _tokenId[i], _lentAmounts[i], _id[i]))];
+            LendingRenting storage item = lendingRenting[keccak256(
+                abi.encodePacked(
+                    _tp.nft[_tp.lastIx],
+                    _tp.tokenIds[i],
+                    _tp.lentAmounts[i],
+                    _tp.lendingIds[i]
+                )
+            )];
             require(item.renting.renterAddress == msg.sender, "not renter");
             require(!_isPastReturnDate(item.renting, block.timestamp), "is past return date");
-            require(_lentAmounts[i] < 256, "lent amounts out of bounds");
+            require(_tp.lentAmounts[i] <= MAX_UINT8, "lent amounts out of bounds");
+            require(_tp.otherAmounts[i] <= MAX_UINT8, "return amounts out of bounds");
 
             uint256 secondsSinceRentStart = block.timestamp - item.renting.rentedAt;
             _distributePayments(item, secondsSinceRentStart);
 
-            emit Returned(_nft, _tokenId[i], uint8(_lentAmounts[i]), _id[i], msg.sender, uint32(block.timestamp));
+            emit Returned(_tp.nft[_tp.lastIx], _tp.tokenIds[i], uint8(_tp.lentAmounts[i]), _tp.lendingIds[i], msg.sender, uint32(block.timestamp));
 
             // TODO: only delete if lentAmounts equals rentedAmounts
             delete item.renting;
         }
         // * lent amounts are bounded by 255 from above
-        _safeTransfer(_lastIx, _currIx, msg.sender, address(this), _nft, _tokenId, _lentAmounts);
+        _safeTransfer(_tp.lastIx, _tp.currIx, msg.sender, address(this), _tp.nft[_tp.lastIx], _tp.tokenIds, _tp.lentAmounts);
     }
 
-    // TODO: two pointer
     function returnIt(
         address[] memory _nft,
         uint256[] memory _tokenId,
@@ -575,48 +600,20 @@ contract ReNFT is IReNft {
         uint256[] memory _rentAmounts,
         uint256[] memory _id
     ) public override  {
-        uint256 lastIx = 0;
-        uint256 currIx = 1;
-
-        uint256 nftLen = _nft.length;
-        if (nftLen < 2) {
-            handleReturn(
-                lastIx,
-                currIx,
-                _nft[0],
-                _tokenId,
-                _lentAmounts,
-                _id
-            );
-            return;
-        }
-
-        while (currIx < nftLen) {
-            if ((_nft[lastIx] == _nft[currIx]) && (_isERC1155(_nft[currIx]))) {
-                currIx++;
-                continue;
+        TwoPointer memory tp = TwoPointer(
+            {
+                lastIx: 0,
+                currIx: 1,
+                nft: _nft,
+                tokenIds: _tokenId,
+                lendingIds: _id,
+                lentAmounts: _lentAmounts,
+                otherAmounts: _rentAmounts
             }
-
-            handleReturn(
-                lastIx,
-                currIx,
-                _nft[lastIx],
-                _tokenId,
-                _lentAmounts,
-                _id
-            );
-
-            lastIx = currIx;
-            currIx++;
-        }
-
-        handleReturn(
-            lastIx,
-            currIx,
-            _nft[lastIx],
-            _tokenId,
-            _lentAmounts,
-            _id
+        );
+        _twoPointerLoop(
+            handleReturn,
+            tp
         );
     }
 
@@ -632,8 +629,8 @@ contract ReNFT is IReNft {
         for (uint256 i = 0; i < _tokenId.length; i++) {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft, _tokenId[i], _lentAmounts[i], _id[i]))];
 
-            require(_lentAmounts[i] < 256, "lent amounts overflow");
-            require(_claimAmounts[i] < 256, "claim amounts overflow");
+            require(_lentAmounts[i] <= MAX_UINT8, "lent amounts overflow");
+            require(_claimAmounts[i] <= MAX_UINT8, "claim amounts overflow");
             require(_isPastReturnDate(item.renting, block.timestamp), "cant claim yet");
             console.log("item.lending.availableAmount %s", item.lending.availableAmount);
             console.log("_claimAmounts[i] %s", _claimAmounts[i]);
