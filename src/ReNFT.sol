@@ -531,45 +531,109 @@ contract ReNFT is IReNft {
         }
     }
 
+    // function _twoPointerLoop() private {
+
+    // }
+
+    function handleReturn(
+        uint256 _lastIx,
+        uint256 _currIx,
+        address _nft,
+        uint256[] memory _tokenId,
+        uint256[] memory _lentAmounts,
+        uint256[] memory _id
+    ) private {
+        for (uint256 i = 0; i < _tokenId.length; i++) {
+            // TODO
+            // ! if two different people rent same amounts of the same lendingId, trouble below
+            // ! each renting must have an id as well. LendingRenting is no longer one lending and one renting
+            // ! but one lending and multiple renting whose rentedAmounts sum is equal or less than the lending's
+            // ! lentAmount
+            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft, _tokenId[i], _lentAmounts[i], _id[i]))];
+            require(item.renting.renterAddress == msg.sender, "not renter");
+            require(!_isPastReturnDate(item.renting, block.timestamp), "is past return date");
+            require(_lentAmounts[i] < 256, "lent amounts out of bounds");
+
+            uint256 secondsSinceRentStart = block.timestamp - item.renting.rentedAt;
+            _distributePayments(item, secondsSinceRentStart);
+
+            emit Returned(_nft, _tokenId[i], uint8(_lentAmounts[i]), _id[i], msg.sender, uint32(block.timestamp));
+
+            // TODO: only delete if lentAmounts equals rentedAmounts
+            delete item.renting;
+        }
+        // * lent amounts are bounded by 255 from above
+        _safeTransfer(_lastIx, _currIx, msg.sender, address(this), _nft, _tokenId, _lentAmounts);
+    }
+
     // TODO: two pointer
     function returnIt(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint8[] memory _lentAmounts,
+        uint256[] memory _lentAmounts,
+        // TODO: require(< 256)
+        uint256[] memory _rentAmounts,
         uint256[] memory _id
     ) public override  {
-        for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
+        uint256 lastIx = 0;
+        uint256 currIx = 1;
 
-            require(item.renting.renterAddress == msg.sender, "not renter");
-
-            uint256 blockTimestamp = block.timestamp;
-            bool isPastReturn = _isPastReturnDate(item.renting, blockTimestamp);
-            require(!isPastReturn, "is past return date");
-
-            uint256 secondsSinceRentStart = blockTimestamp - item.renting.rentedAt;
-
-            _safeTransfer(msg.sender, address(this), _nft[i], _tokenId[i]);
-
-            _distributePayments(item, secondsSinceRentStart);
-
-            emit Returned(_nft[i], _tokenId[i], _lentAmounts[i], _id[i], msg.sender, uint32(block.timestamp));
-
-            delete item.renting;
+        uint256 nftLen = _nft.length;
+        if (nftLen < 2) {
+            handleReturn(
+                lastIx,
+                currIx,
+                _nft[0],
+                _tokenId,
+                _lentAmounts,
+                _id
+            );
+            return;
         }
+
+        while (currIx < nftLen) {
+            if ((_nft[lastIx] == _nft[currIx]) && (_isERC1155(_nft[currIx]))) {
+                currIx++;
+                continue;
+            }
+
+            handleReturn(
+                lastIx,
+                currIx,
+                _nft[lastIx],
+                _tokenId,
+                _lentAmounts,
+                _id
+            );
+
+            lastIx = currIx;
+            currIx++;
+        }
+
+        handleReturn(
+            lastIx,
+            currIx,
+            _nft[lastIx],
+            _tokenId,
+            _lentAmounts,
+            _id
+        );
     }
 
-    // TODO: two pointer
-    function claimCollateral(
-        address[] memory _nft,
+    function _handleClaimCollateral(
+        uint256 _lastIx,
+        uint256 _currIx,
+        address _nft,
         uint256[] memory _tokenId,
-        uint8[] memory _lentAmounts,
-        uint8[] memory _claimAmounts,
+        uint256[] memory _lentAmounts,
+        uint256[] memory _claimAmounts,
         uint256[] memory _id
-    ) public override  {
-        for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
+    ) private {
+        for (uint256 i = 0; i < _tokenId.length; i++) {
+            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft, _tokenId[i], _lentAmounts[i], _id[i]))];
 
+            require(_lentAmounts[i] < 256, "lent amounts overflow");
+            require(_claimAmounts[i] < 256, "claim amounts overflow");
             require(_isPastReturnDate(item.renting, block.timestamp), "cant claim yet");
             console.log("item.lending.availableAmount %s", item.lending.availableAmount);
             console.log("_claimAmounts[i] %s", _claimAmounts[i]);
@@ -578,11 +642,13 @@ contract ReNFT is IReNft {
             require(item.renting.rentedAmount >= _claimAmounts[i], "renter has not rented this many");
             _ensureIsNotNull(item.lending);
             _ensureIsNotNull(item.renting);
+            // * sends the claim amounts.
+            // TODO: ensure that it is proportional to the amounts
             _distributeClaimPayment(item);
 
             // TODO: each lending can now have multiple rentings!
-            uint8 newAvailableAmount = item.lending.lentAmount - _claimAmounts[i];
-            uint8 newRentAmount = item.renting.rentedAmount - _claimAmounts[i];
+            uint8 newAvailableAmount = item.lending.lentAmount - uint8(_claimAmounts[i]);
+            uint8 newRentAmount = item.renting.rentedAmount - uint8(_claimAmounts[i]);
 
             if (newRentAmount == 0) {
                 delete item.renting;
@@ -595,51 +661,114 @@ contract ReNFT is IReNft {
                 item.lending.availableAmount = newAvailableAmount;
             }
 
-            emit CollateralClaimed(_nft[i], _tokenId[i], _claimAmounts[i], _id[i], uint32(block.timestamp));
+            emit CollateralClaimed(_nft, _tokenId[i], uint8(_claimAmounts[i]), _id[i], uint32(block.timestamp));
         }
     }
 
-    // TODO: TwoPointer
+    function claimCollateral(
+        address[] memory _nft,
+        uint256[] memory _tokenId,
+        uint256[] memory _lentAmounts,
+        uint256[] memory _claimAmounts,
+        uint256[] memory _id
+    ) public override  {
+        uint256 lastIx = 0;
+        uint256 currIx = 1;
+
+        uint256 nftLen = _nft.length;
+        if (nftLen < 2) {
+            _handleClaimCollateral(
+                lastIx,
+                currIx,
+                _nft[0],
+                _tokenId,
+                _lentAmounts,
+                _claimAmounts,
+                _id
+            );
+            return;
+        }
+
+        while (currIx < nftLen) {
+            if ((_nft[lastIx] == _nft[currIx]) && (_isERC1155(_nft[currIx]))) {
+                currIx++;
+                continue;
+            }
+
+            _handleClaimCollateral(
+                lastIx,
+                currIx,
+                _nft[lastIx],
+                _tokenId,
+                _lentAmounts,
+                _claimAmounts,
+                _id
+            );
+
+            lastIx = currIx;
+            currIx++;
+        }
+
+        _handleClaimCollateral(
+            lastIx,
+            currIx,
+            _nft[lastIx],
+            _tokenId,
+            _lentAmounts,
+            _claimAmounts,
+            _id
+        );
+    }
+
+    function _handleStopLending() private {}
+
     function stopLending(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint8[] memory _lentAmounts,
+        uint256[] memory _lentAmounts,
+        uint256[] memory _stopAmounts,
         uint256[] memory _id
     ) public override  {
-        for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
+        true;
+        // for (uint256 i = 0; i < _nft.length; i++) {
+        //     LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
 
-            _ensureIsNull(item.renting);
+        //     _ensureIsNull(item.renting);
 
-            require(item.lending.lenderAddress == msg.sender, "only lender allowed");
+        //     require(item.lending.lenderAddress == msg.sender, "only lender allowed");
 
-            _safeTransfer(address(this), msg.sender, _nft[i], _tokenId[i]);
+        //     _safeTransfer(_lastIx, _currIx, address(this), msg.sender, _nft, _tokenId, _lentAmounts);
 
-            delete item.lending;
+        //     delete item.lending;
 
-            emit LendingStopped(_nft[i], _tokenId[i], _lentAmounts[i], _id[i], uint32(block.timestamp));
-        }
+        //     emit LendingStopped(_nft[i], _tokenId[i], _lentAmounts[i], _id[i], uint32(block.timestamp));
+        // }
     }
 
-    /**
-     * @dev determines what nft standrad we are dealing with
-     */
     function _safeTransfer(
+        uint256 _lastIx,
+        uint256 _currIx,
         address _from,
         address _to,
         address _nft,
-        uint256 _tokenId
+        uint256[] memory _tokenIds,
+        uint256[] memory _amounts
     ) private {
         bool isERC721 = _isERC721(_nft);
         bool isERC1155 = _isERC1155(_nft);
 
         if (isERC721) {
-            IERC721(_nft).transferFrom(_from, _to, _tokenId);
+            IERC721(_nft).transferFrom(_from, _to, _tokenIds[_lastIx]);
         } else if (isERC1155) {
-            // TODO: change the amount
-            IERC1155(_nft).safeTransferFrom(_from, _to, _tokenId, 1, "");
+            IERC1155(_nft).safeBatchTransferFrom(
+                _from,
+                _to,
+                _sliceMemoryArray(_lastIx, _currIx, _tokenIds),
+                _sliceMemoryArray(_lastIx, _currIx, _amounts),
+                ""
+            );
         } else {
-            revert("unsupported _from");
+            revert("unsupported token type");
         }
     }
 

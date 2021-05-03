@@ -99,7 +99,8 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function returnIt(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint8[] memory _lentAmounts,
+        uint256[] memory _lentAmounts,
+        uint256[] memory _rentAmounts,
         uint256[] memory _id
     ) external;
 
@@ -109,8 +110,8 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function claimCollateral(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint8[] memory _lentAmounts,
-        uint8[] memory _claimAmounts,
+        uint256[] memory _lentAmounts,
+        uint256[] memory _claimAmounts,
         uint256[] memory _id
     ) external;
 
@@ -121,7 +122,8 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function stopLending(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint8[] memory _lentAmounts,
+        uint256[] memory _lentAmounts,
+        uint256[] memory _stopAmounts,
         uint256[] memory _id
     ) external;
 }
