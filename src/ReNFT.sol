@@ -4,7 +4,6 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNFT.sol";
@@ -14,7 +13,7 @@ import "hardhat/console.sol";
 // adding the amounts, would imply that lending struct would
 // become two single storage slots, since it only has 4 bits
 // of free space.
-contract ReNFT is IReNft, ReentrancyGuard {
+contract ReNFT is IReNft {
     using SafeERC20 for IERC20;
 
     IResolver private resolver;
@@ -87,6 +86,9 @@ contract ReNFT is IReNft, ReentrancyGuard {
      * marginal cost is 4k gas when compared to safeTransferFrom. And this cost is worth
      * the added complexity of the below function.
      * Please look into the docs folder again for some screenshots.
+     *
+     * ! Extracting the below code into a separate function, e.g. _twoPointerLoop and passing
+     * ! to it a handler function, will not work due to EVM stack too deep limitations
      */
     function lend(
         address[] memory _nft,
@@ -222,12 +224,12 @@ contract ReNFT is IReNft, ReentrancyGuard {
         emit Lent(
             _nft,
             _tokenId,
+            _amount,
             lendingId,
             msg.sender,
             _maxRentDuration,
             _dailyRentPrice,
             _nftPrice,
-            _amount,
             is721,
             _paymentToken
         );
@@ -307,6 +309,8 @@ contract ReNFT is IReNft, ReentrancyGuard {
             require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
             console.log("rent duration %s", _rentDuration[i]);
             console.log("item.lending.maxRentDuration %s", item.lending.maxRentDuration);
+            require(_rentAmounts[i] < 256, "invalid rent amount");
+            require(_rentDuration[i] > 0, "should rent for at least a day");
             require(_rentDuration[i] <= item.lending.maxRentDuration, "max rent duration exceeded");
             require(item.lending.availableAmount >= _rentAmounts[i], "not enough nfts to rent");
 
@@ -352,12 +356,12 @@ contract ReNFT is IReNft, ReentrancyGuard {
             emit Rented(
                 _nft,
                 _tokenId[i],
+                rentAmount,
                 _id[i],
                 msg.sender,
                 _rentDuration[i],
                 is721,
-                uint32(block.timestamp),
-                rentAmount
+                uint32(block.timestamp)
             );
             }
         }
@@ -390,10 +394,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
         uint256 lastIx = 0;
         uint256 currIx = 1;
 
-        // ! fails early to save gas
-        require(_rentAmounts[lastIx] < 256, "invalid rent amount");
-        require(_rentDuration[lastIx] > 0, "should rent for at least a day");
-
         uint256 nftLen = _nft.length;
         if (nftLen < 2) {
             handleRent(
@@ -410,10 +410,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
         }
 
         while (currIx < nftLen) {
-            // ! fails early to save gas
-            require(_rentAmounts[currIx] < 256, "invalid rent amount");
-            require(_rentDuration[currIx] > 0, "should rent for at least a day");
-
             if ((_nft[lastIx] == _nft[currIx]) && (_isERC1155(_nft[currIx]))) {
                 currIx++;
                 continue;
@@ -535,6 +531,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
         }
     }
 
+    // TODO: two pointer
     function returnIt(
         address[] memory _nft,
         uint256[] memory _tokenId,
@@ -556,33 +553,53 @@ contract ReNFT is IReNft, ReentrancyGuard {
 
             _distributePayments(item, secondsSinceRentStart);
 
-            emit Returned(_nft[i], _tokenId[i], _id[i], msg.sender, uint32(block.timestamp));
+            emit Returned(_nft[i], _tokenId[i], _lentAmounts[i], _id[i], msg.sender, uint32(block.timestamp));
 
             delete item.renting;
         }
     }
 
+    // TODO: two pointer
     function claimCollateral(
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint8[] memory _lentAmounts,
+        uint8[] memory _claimAmounts,
         uint256[] memory _id
     ) public override  {
         for (uint256 i = 0; i < _nft.length; i++) {
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
 
             require(_isPastReturnDate(item.renting, block.timestamp), "cant claim yet");
+            console.log("item.lending.availableAmount %s", item.lending.availableAmount);
+            console.log("_claimAmounts[i] %s", _claimAmounts[i]);
+            console.log("item.renting.rentedAmounts %s", item.renting.rentedAmount);
+            require(item.lending.lentAmount >= _claimAmounts[i], "not enough to claim");
+            require(item.renting.rentedAmount >= _claimAmounts[i], "renter has not rented this many");
             _ensureIsNotNull(item.lending);
             _ensureIsNotNull(item.renting);
             _distributeClaimPayment(item);
 
-            delete item.lending;
-            delete item.renting;
+            // TODO: each lending can now have multiple rentings!
+            uint8 newAvailableAmount = item.lending.lentAmount - _claimAmounts[i];
+            uint8 newRentAmount = item.renting.rentedAmount - _claimAmounts[i];
 
-            emit CollateralClaimed(_nft[i], _tokenId[i], _id[i], uint32(block.timestamp));
+            if (newRentAmount == 0) {
+                delete item.renting;
+            } else {
+                item.renting.rentedAmount = newRentAmount;
+            }
+            if (newAvailableAmount == 0) {
+                delete item.lending;
+            } else {
+                item.lending.availableAmount = newAvailableAmount;
+            }
+
+            emit CollateralClaimed(_nft[i], _tokenId[i], _claimAmounts[i], _id[i], uint32(block.timestamp));
         }
     }
 
+    // TODO: TwoPointer
     function stopLending(
         address[] memory _nft,
         uint256[] memory _tokenId,
@@ -600,7 +617,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
 
             delete item.lending;
 
-            emit LendingStopped(_nft[i], _tokenId[i], _id[i], uint32(block.timestamp));
+            emit LendingStopped(_nft[i], _tokenId[i], _lentAmounts[i], _id[i], uint32(block.timestamp));
         }
     }
 

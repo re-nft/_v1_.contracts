@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./IResolver.sol";
 
-// TODO: add dev param comments after you change the spec a bit
 interface IReNft is IERC721Receiver, IERC1155Receiver {
     /// @dev quick test showed that LentBatch with arrays
     /// @dev would cost more than the non-array version
@@ -18,12 +17,12 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event Lent(
         address indexed nftAddress,
         uint256 indexed tokenId,
+        uint8 lentAmount,
         uint256 lendingId,
         address indexed lenderAddress,
         uint8 maxRentDuration,
         bytes4 dailyRentPrice,
         bytes4 nftPrice,
-        uint8 amount,
         bool isERC721,
         IResolver.PaymentToken paymentToken
     );
@@ -31,17 +30,18 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event Rented(
         address indexed nftAddress,
         uint256 indexed tokenId,
+        uint8 rentedAmount,
         uint256 lendingId,
         address indexed renterAddress,
         uint8 rentDuration,
         bool isERC721,
-        uint32 rentedAt,
-        uint8 rentedAmount
+        uint32 rentedAt
     );
 
     event Returned(
         address indexed nftAddress,
         uint256 indexed tokenId,
+        uint8 returnedAmount,
         uint256 indexed lendingId,
         address renterAddress,
         uint32 returnedAt
@@ -50,6 +50,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event CollateralClaimed(
         address indexed nftAddress,
         uint256 indexed tokenId,
+        uint8 claimedAmount,
         uint256 indexed lendingId,
         uint32 claimedAt
     );
@@ -57,6 +58,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event LendingStopped(
         address indexed nftAddress,
         uint256 indexed tokenId,
+        uint8 stoppedAmount,
         uint256 indexed lendingId,
         uint32 stoppedAt
     );
@@ -108,6 +110,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint8[] memory _lentAmounts,
+        uint8[] memory _claimAmounts,
         uint256[] memory _id
     ) external;
 

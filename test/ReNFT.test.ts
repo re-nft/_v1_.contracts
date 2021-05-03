@@ -1657,7 +1657,7 @@ describe('ReNFT', function () {
       await advanceTime(SECONDS_IN_A_DAY);
       const balancePre = await getBalance(lender.address);
       const beneficiaryBalancePre = await getBalance(beneficiary);
-      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], _id);
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], [1], _id);
       const balancePost = await getBalance(lender.address);
       const renftBalancePost = await getBalance(lender.renft.address);
       const receipt = await tx.wait();
@@ -1716,7 +1716,7 @@ describe('ReNFT', function () {
       const beneficiaryBalancePreErc20 = await lender.td18.balanceOf(
         beneficiary
       );
-      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1, 1], _id);
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1, 1], [1, 1], _id);
       const balancePostErc20 = await lender.td18.balanceOf(lender.address);
       const balancePost = await getBalance(lender.address);
       const renftBalancePost = await getBalance(lender.renft.address);
@@ -1780,7 +1780,7 @@ describe('ReNFT', function () {
       await advanceTime(SECONDS_IN_A_DAY + 100);
       const balancePre = await lender.td18.balanceOf(lender.address);
       const beneficiaryBalancePre = await lender.td18.balanceOf(beneficiary);
-      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], _id);
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], [1], _id);
       const balancePost = await lender.td18.balanceOf(lender.address);
       const renftBalancePost = await lender.td18.balanceOf(
         lender.renft.address
@@ -1828,7 +1828,7 @@ describe('ReNFT', function () {
       await renter.renft.rent(_nft, _tokenId, [1], [1], _id, _rentDuration);
       await advanceTime(SECONDS_IN_A_DAY - 30);
       await expect(
-        lender.renft.claimCollateral(_nft, _tokenId, [1], _id)
+        lender.renft.claimCollateral(_nft, _tokenId, [1], [1], _id)
       ).to.be.revertedWith('cant claim yet');
     });
   });
