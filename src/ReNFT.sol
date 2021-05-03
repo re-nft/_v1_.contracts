@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -206,8 +206,10 @@ contract ReNFT is IReNft, ReentrancyGuard {
         {
             is721 = _isERC721(_nft);
         }
+        console.log("keys used, _amount %s, lendingI %s", _amount, lendingId);
         bytes32 itemHash = keccak256(abi.encodePacked(_nft, _tokenId, _amount, lendingId));
         LendingRenting storage item = lendingRenting[itemHash];
+        console.log("setting maxRentDuration %s", _maxRentDuration);
         item.lending = Lending({
             lenderAddress: payable(msg.sender),
             lentAmount: _amount,
@@ -276,7 +278,6 @@ contract ReNFT is IReNft, ReentrancyGuard {
                 _paymentToken[i]
             );
         }
-        // TODO: need to splice
         IERC1155(_nft).safeBatchTransferFrom(
             msg.sender,
             address(this),
@@ -299,10 +300,13 @@ contract ReNFT is IReNft, ReentrancyGuard {
         uint256 ethPmtRequired = 0;
 
         for (uint256 i = _lastIx; i < _currIx; i++) {
+            console.log("keys with which retrieve. _lentAmounts %s, lendingId %s", _lentAmounts[i], _id[i]);
             LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft, _tokenId[i], _lentAmounts[i], _id[i]))];
 
             _ensureIsNull(item.renting);
             require(msg.sender != item.lending.lenderAddress, "cant rent own nft");
+            console.log("rent duration %s", _rentDuration[i]);
+            console.log("item.lending.maxRentDuration %s", item.lending.maxRentDuration);
             require(_rentDuration[i] <= item.lending.maxRentDuration, "max rent duration exceeded");
             require(item.lending.availableAmount >= _rentAmounts[i], "not enough nfts to rent");
 
@@ -310,20 +314,30 @@ contract ReNFT is IReNft, ReentrancyGuard {
             address paymentToken = resolver.getPaymentToken(paymentTokenIndex);
             uint256 decimals = 18;
 
+            console.log("paymentTokenIx %s", paymentTokenIndex);
+
             {
-                if (paymentTokenIndex > 1) {
-                    decimals = _decimals(paymentToken);
-                }
-                uint256 scale = 10**decimals;
-                uint256 rentPrice = _rentDuration[i] * _unpackPrice(item.lending.dailyRentPrice, scale);
-                uint256 nftPrice = _unpackPrice(item.lending.nftPrice, scale);
-                require(rentPrice > 0, "rent price is zero");
-                uint256 upfrontPayment = rentPrice + nftPrice;
-                if (paymentTokenIndex > 1) {
-                    IERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
-                } else {
-                    ethPmtRequired += upfrontPayment;
-                }
+            if (paymentTokenIndex > 1) {
+                decimals = _decimals(paymentToken);
+            }
+            uint256 scale = 10**decimals;
+            console.log("scale %s", scale);
+            // console.log("itemlendingdailyRentPrice %s", item.lending.dailyRentPrice);
+            console.log("unpackedPrice %s", _unpackPrice(item.lending.dailyRentPrice, scale));
+            uint256 rentPrice = _rentAmounts[i] * _rentDuration[i] * _unpackPrice(item.lending.dailyRentPrice, scale);
+            uint256 nftPrice = _rentAmounts[i] * _unpackPrice(item.lending.nftPrice, scale);
+            require(rentPrice > 0, "rent price is zero");
+            uint256 upfrontPayment = rentPrice + nftPrice;
+            console.log("rentPrice %s, nftPrice %s", rentPrice, nftPrice);
+            if (paymentTokenIndex > 1) {
+                console.log("sending from sender to this %s", upfrontPayment);
+                IERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
+            } else {
+                console.log("updating ethPmtRequired %s", ethPmtRequired);
+                ethPmtRequired = ethPmtRequired + upfrontPayment;
+                require(msg.value >= ethPmtRequired, "insufficient eth sent");
+                console.log("new ethPmtRequired %s", ethPmtRequired);
+            }
             }
 
             item.renting.renterAddress = payable(msg.sender);
@@ -348,13 +362,10 @@ contract ReNFT is IReNft, ReentrancyGuard {
             }
         }
 
-        require(msg.value == ethPmtRequired, "insufficient amount");
-
         if (_isERC721(_nft)) {
             IERC721(_nft).transferFrom(address(this), msg.sender, _tokenId[_lastIx]);
             return;
         } else if (_isERC1155(_nft)) {
-            // TODO: need to splice
             IERC1155(_nft).safeBatchTransferFrom(
                 address(this),
                 msg.sender,
@@ -527,10 +538,11 @@ contract ReNFT is IReNft, ReentrancyGuard {
     function returnIt(
         address[] memory _nft,
         uint256[] memory _tokenId,
+        uint8[] memory _lentAmounts,
         uint256[] memory _id
     ) public override  {
         for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
+            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
 
             require(item.renting.renterAddress == msg.sender, "not renter");
 
@@ -553,10 +565,11 @@ contract ReNFT is IReNft, ReentrancyGuard {
     function claimCollateral(
         address[] memory _nft,
         uint256[] memory _tokenId,
+        uint8[] memory _lentAmounts,
         uint256[] memory _id
     ) public override  {
         for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
+            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
 
             require(_isPastReturnDate(item.renting, block.timestamp), "cant claim yet");
             _ensureIsNotNull(item.lending);
@@ -573,10 +586,11 @@ contract ReNFT is IReNft, ReentrancyGuard {
     function stopLending(
         address[] memory _nft,
         uint256[] memory _tokenId,
+        uint8[] memory _lentAmounts,
         uint256[] memory _id
     ) public override  {
         for (uint256 i = 0; i < _nft.length; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _id[i]))];
+            LendingRenting storage item = lendingRenting[keccak256(abi.encodePacked(_nft[i], _tokenId[i], _lentAmounts[i], _id[i]))];
 
             _ensureIsNull(item.renting);
 
@@ -693,6 +707,7 @@ contract ReNFT is IReNft, ReentrancyGuard {
      * @param _scale if 18 decimal places, then pass 1000000000000000000
      */
     function _unpackPrice(bytes4 _price, uint256 _scale) private pure returns (uint256) {
+        require(_scale >= 10000, "invalid scale");
         uint16 whole = uint16(bytes2(_price));
         uint16 decimal = uint16(bytes2(_price << 16));
         uint256 decimalScale = _scale / 10000;
@@ -789,13 +804,13 @@ contract ReNFT is IReNft, ReentrancyGuard {
     // ----                                    /
 
     function setRentFee(uint256 _rentFee) external {
-        require(msg.sender == admin, "");
+        require(msg.sender == admin, "not admin");
         require(_rentFee < 10000, "cannot be taking 100 pct fee madlad");
         rentFee = _rentFee;
     }
 
     function setBeneficiary(address payable _newBeneficiary) external {
-        require(msg.sender == admin, "");
+        require(msg.sender == admin, "not admin");
         beneficiary = _newBeneficiary;
     }
 }

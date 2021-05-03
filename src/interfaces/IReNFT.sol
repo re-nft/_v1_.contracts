@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -97,6 +97,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function returnIt(
         address[] memory _nft,
         uint256[] memory _tokenId,
+        uint8[] memory _lentAmounts,
         uint256[] memory _id
     ) external;
 
@@ -106,6 +107,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function claimCollateral(
         address[] memory _nft,
         uint256[] memory _tokenId,
+        uint8[] memory _lentAmounts,
         uint256[] memory _id
     ) external;
 
@@ -116,6 +118,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function stopLending(
         address[] memory _nft,
         uint256[] memory _tokenId,
+        uint8[] memory _lentAmounts,
         uint256[] memory _id
     ) external;
 }
