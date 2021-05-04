@@ -165,7 +165,7 @@ contract ReNFT is IReNft {
     ) external override  {
         twoPointerLoop(
             handleReturn,
-            createReturnTP(
+            createActionTP(
                 _nfts,
                 _tokenIds,
                 _lentAmounts,
@@ -178,12 +178,11 @@ contract ReNFT is IReNft {
         address[] memory _nfts,
         uint256[] memory _tokenIds,
         uint256[] memory _lentAmounts,
-        uint256[] memory _stopAmounts,
         uint256[] memory _lendingIds
     ) external override  {
         twoPointerLoop(
             handleStopLending,
-            createStopLendingTP(
+            createActionTP(
                 _nfts,
                 _tokenIds,
                 _lentAmounts,
@@ -200,7 +199,7 @@ contract ReNFT is IReNft {
     ) external override  {
         twoPointerLoop(
             handleClaimCollateral,
-            createClaimCollateralTP(
+            createActionTP(
                 _nfts,
                 _tokenIds,
                 _lentAmounts,
@@ -373,7 +372,7 @@ contract ReNFT is IReNft {
             )];
 
             ensureIsNull(item.renting);
-            ensureIsRentable(item.lending, _tp, i);
+            ensureIsRentable(item.lending, _tp, i, msg.sender);
 
             uint8 paymentTokenIndex = uint8(item.lending.paymentToken);
             address paymentToken = resolver.getPaymentToken(paymentTokenIndex);
@@ -429,7 +428,7 @@ contract ReNFT is IReNft {
                 )
             )];
 
-            ensureIsReturnable(item.renting, _tp, i);
+            ensureIsReturnable(item.renting, msg.sender, block.timestamp);
 
             uint256 secondsSinceRentStart = block.timestamp - item.renting.rentedAt;
             distributePayments(item, secondsSinceRentStart);
@@ -460,7 +459,7 @@ contract ReNFT is IReNft {
 
             ensureIsNotNull(item.lending);
             ensureIsNull(item.renting);
-            ensureIsStoppable(item.lending, _tp, i);
+            ensureIsStoppable(item.lending, _tp, i, msg.sender);
 
             delete item.lending;
 
@@ -488,7 +487,7 @@ contract ReNFT is IReNft {
 
             ensureIsNotNull(item.lending);
             ensureIsNotNull(item.renting);
-            ensureIsClaimable(item.renting);
+            ensureIsClaimable(item.renting, block.timestamp);
 
             distributeClaimPayment(item);
 
@@ -582,49 +581,7 @@ contract ReNFT is IReNft {
         });
     }
 
-    function createReturnTP(
-        address[] memory _nfts,
-        uint256[] memory _tokenIds,
-        uint256[] memory _lentAmounts,
-        uint256[] memory _lendingIds
-    ) private returns (TwoPointer memory tp) {
-        tp = TwoPointer({
-            lastIx: 0,
-            currIx: 1,
-            nfts: _nfts,
-            tokenIds: _tokenIds,
-            lentAmounts: _lentAmounts,
-            lendingIds: _lendingIds,
-            rentDurations: new uint8[](0),
-            maxRentDurations: new uint8[](0),
-            dailyRentPrices: new bytes4[](0),
-            nftPrices: new bytes4[](0),
-            paymentTokens: new IResolver.PaymentToken[](0)
-        });
-    }
-
-    function createStopLendingTP(
-        address[] memory _nfts,
-        uint256[] memory _tokenIds,
-        uint256[] memory _lentAmounts,
-        uint256[] memory _lendingIds
-    ) private returns (TwoPointer memory tp) {
-        tp = TwoPointer({
-            lastIx: 0,
-            currIx: 1,
-            nfts: _nfts,
-            tokenIds: _tokenIds,
-            lentAmounts: _lentAmounts,
-            lendingIds: _lendingIds,
-            rentDurations: new uint8[](0),
-            maxRentDurations: new uint8[](0),
-            dailyRentPrices: new bytes4[](0),
-            nftPrices: new bytes4[](0),
-            paymentTokens: new IResolver.PaymentToken[](0)
-        });
-    }
-
-    function createClaimCollateralTP(
+    function createActionTP(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
         uint256[] memory _lentAmounts,
@@ -720,26 +677,25 @@ contract ReNFT is IReNft {
         require(_tp.maxRentDurations[_i] > 0, "must be at least one day lend");
     }
 
-    function ensureIsRentable(Lending memory _lending, TwoPointer memory _tp, uint256 _i) private pure {
-        require(msg.sender != _lending.lenderAddress, "cant rent own nft");
+    function ensureIsRentable(Lending memory _lending, TwoPointer memory _tp, uint256 _i, address _msgSender) private pure {
+        require(_msgSender != _lending.lenderAddress, "cant rent own nft");
         require(_tp.rentDurations[_i] > 0, "should rent for at least a day");
         require(_tp.rentDurations[_i] <= _lending.maxRentDuration, "max rent duration exceeded");
     }
 
-    function ensureIsReturnable(Renting memory _renting, TwoPointer memory _tp, uint256 _i) private pure {
-        require(_renting.renterAddress == msg.sender, "not renter");
-        require(!isPastReturnDate(_renting, block.timestamp), "is past return date");
-        require(_tp.lentAmounts[_i] <= MAX_UINT8, "lent amounts out of bounds");
+    function ensureIsReturnable(Renting memory _renting, address _msgSender, uint256 _blockTimestamp) private pure {
+        require(_renting.renterAddress == _msgSender, "not renter");
+        require(!isPastReturnDate(_renting, _blockTimestamp), "is past return date");
     }
 
-    function ensureIsStoppable(Lending memory _lending, TwoPointer memory _tp, uint256 _i) private pure {
-        require(_lending.lenderAddress == msg.sender, "only lender allowed");
+    function ensureIsStoppable(Lending memory _lending, TwoPointer memory _tp, uint256 _i, address _msgSender) private pure {
+        require(_lending.lenderAddress == _msgSender, "only lender allowed");
         require(_lending.lentAmount == uint8(_tp.lentAmounts[_i]), "incorrect lent amounts");
         require(_lending.availableAmount == _lending.lentAmount, "cant stop lend now");
     }
 
-    function ensureIsClaimable(Renting memory _renting) private pure {
-        require(isPastReturnDate(_renting, block.timestamp), "cant claim yet");
+    function ensureIsClaimable(Renting memory _renting, uint256 _blockTimestamp) private pure {
+        require(isPastReturnDate(_renting, _blockTimestamp), "cant claim yet");
     }
 
 //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
