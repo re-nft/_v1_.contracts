@@ -1,42 +1,42 @@
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction } from 'hardhat-deploy/types';
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { DeployFunction } from "hardhat-deploy/types";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy('TD1', {
+  await deploy("TD1", {
     from: deployer,
     log: true,
   });
 
-  await deploy('TD18', {
+  await deploy("TD18", {
     from: deployer,
     log: true,
   });
 
-  await deploy('MyERC721', {
+  await deploy("MyERC721", {
     from: deployer,
     log: true,
   });
 
-  await deploy('E721B', {
+  await deploy("E721B", {
     from: deployer,
     log: true,
   });
 
-  await deploy('MyERC1155', {
+  await deploy("MyERC1155", {
     from: deployer,
     log: true,
   });
 
-  await deploy('E1155B', {
+  await deploy("E1155B", {
     from: deployer,
     log: true,
   });
 
-  await deploy('Utils', {
+  await deploy("Utils", {
     from: deployer,
     log: true,
   });
@@ -44,4 +44,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 export default func;
 
-func.tags = ['Test'];
+func.tags = ["Test"];

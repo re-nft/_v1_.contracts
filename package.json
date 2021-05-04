@@ -4,7 +4,6 @@
   "author": "Nazariy Vavryk <nazariy@inbox.ru>",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "lint": "eslint --fix \"**/*.{js,ts}\" && solhint --fix src/ReNFT.sol",
     "format": "prettier --write \"**/*.{ts,js,sol}\"",
     "clean": "rm -rf artifacts cache frontend",
     "compile": "hardhat compile",
@@ -48,10 +47,6 @@
     "hardhat-gas-reporter": "^1.0.4",
     "hardhat-typechain": "^0.3.5",
     "mocha": "^8.3.2",
-    "prettier": "^2.2.1",
-    "prettier-plugin-solidity": "^1.0.0-beta.10",
-    "solhint": "^3.3.2",
-    "solhint-plugin-prettier": "^0.0.5",
     "ts-generator": "^0.1.1",
     "ts-morph": "^9.0.0",
     "ts-node": "^9.1.1",
@@ -60,7 +55,8 @@
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
-    "solhint": "^3.3.4",
+    "prettier": "^2.2.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.10",
     "solidity-coverage": "^0.7.16"
   }
 }

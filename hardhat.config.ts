@@ -1,23 +1,23 @@
-import 'dotenv/config';
-import { HardhatUserConfig } from 'hardhat/types';
-import 'solidity-coverage';
-import 'hardhat-deploy';
-import '@nomiclabs/hardhat-ethers'
-import '@nomiclabs/hardhat-etherscan';
-import '@symfoni/hardhat-react';
-import 'hardhat-gas-reporter';
+import "dotenv/config";
+import { HardhatUserConfig } from "hardhat/types";
+import "solidity-coverage";
+import "hardhat-deploy";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
+import "@symfoni/hardhat-react";
+import "hardhat-gas-reporter";
 
 // * due to auto-generation the tests run much slower
 // * unless this becomes opt-in, remove the comment out
 // * to generate the new types
 // * relating github issue: https://github.com/rhlsthrm/hardhat-typechain/issues/12
-import 'hardhat-typechain';
-import '@typechain/ethers-v5';
-import { node_url, accounts } from './utils/network';
+import "hardhat-typechain";
+import "@typechain/ethers-v5";
+import { node_url, accounts } from "./utils/network";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.4',
+    version: "0.8.4",
     settings: {
       optimizer: {
         enabled: true,
@@ -36,23 +36,23 @@ const config: HardhatUserConfig = {
       accounts: accounts(),
     },
     localhost: {
-      url: 'http://localhost:8545',
+      url: "http://localhost:8545",
       accounts: accounts(),
     },
     mainnet: {
-      url: node_url('mainnet'),
-      accounts: accounts('mainnet'),
+      url: node_url("mainnet"),
+      accounts: accounts("mainnet"),
     },
   },
   paths: {
-    sources: 'src',
+    sources: "src",
   },
   mocha: {
     timeout: 0,
   },
   gasReporter: {
-    currency: 'USD',
-  }
+    currency: "USD",
+  },
 };
 
 export default config;

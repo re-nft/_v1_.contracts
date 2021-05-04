@@ -1,12 +1,12 @@
 /* eslint-disable */
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction } from 'hardhat-deploy/types';
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { DeployFunction } from "hardhat-deploy/types";
 //@ts-ignore
-import { ERC20 } from '../../frontend/src/hardhat/typechain/ERC20';
+import { ERC20 } from "../../frontend/src/hardhat/typechain/ERC20";
 //@ts-ignore
-import { MyERC721 } from '../../frontend/src/hardhat/typechain/MyERC721';
+import { MyERC721 } from "../../frontend/src/hardhat/typechain/MyERC721";
 //@ts-ignore
-import { Resolver } from '../../frontend/src/hardhat/typechain/Resolver';
+import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
 
 /**
  * Gives everyone a bit of ERC20 test tokens & mints all erc721s
@@ -19,29 +19,29 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { lender, deployer, beneficiary, renter } = await getNamedAccounts();
   const { deploy } = deployments;
 
-  await deploy('Resolver', {
+  await deploy("Resolver", {
     from: deployer,
     log: true,
     args: [deployer],
   });
 
   const resolver = ((await ethers.getContract(
-    'Resolver',
+    "Resolver",
     deployer
   )) as any) as Resolver;
 
-  await deploy('ReNFT', {
+  await deploy("ReNFT", {
     from: deployer,
     log: true,
     args: [resolver.address, beneficiary, deployer],
   });
 
   const erc721 = ((await ethers.getContract(
-    'MyERC721',
+    "MyERC721",
     lender
   )) as any) as MyERC721;
   const e721b = ((await ethers.getContract(
-    'E721B',
+    "E721B",
     lender
   )) as any) as MyERC721;
 
@@ -49,15 +49,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   for (let i = 0; i < 10; i++) await e721b.award();
 
   // * also send through 100 erc20 tokens to everyone
-  const td18 = ((await ethers.getContract(
-    'TD18',
-    deployer
-  )) as any) as ERC20;
-  const td1 = ((await ethers.getContract(
-    'TD1',
-    deployer
-  )) as any) as ERC20;
-  const amtToSend = ethers.utils.parseEther('100000000');
+  const td18 = ((await ethers.getContract("TD18", deployer)) as any) as ERC20;
+  const td1 = ((await ethers.getContract("TD1", deployer)) as any) as ERC20;
+  const amtToSend = ethers.utils.parseEther("100000000");
 
   await td1.transfer(lender, amtToSend);
   await td1.transfer(beneficiary, amtToSend);
@@ -74,5 +68,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 export default func;
 
-func.tags = ['Development'];
-func.dependencies = ['Test'];
+func.tags = ["Development"];
+func.dependencies = ["Test"];

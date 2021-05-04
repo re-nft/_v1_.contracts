@@ -8,55 +8,53 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNFT.sol";
 
-    //              @@@@@@@@@@@@@@@@        ,@@@@@@@@@@@@@@@@
-    //              @@@,,,,,,,,,,@@@        ,@@&,,,,,,,,,,@@@
-    //         @@@@@@@@,,,,,,,,,,@@@@@@@@&  ,@@&,,,,,,,,,,@@@@@@@@
-    //         @@@**********@@@@@@@@@@@@@&  ,@@@@@@@@**********@@@
-    //         @@@**********@@@@@@@@@@@@@&  ,@@@@@@@@**********@@@@@@@@
-    //         @@@**********@@@@@@@@@@@@@&       .@@@**********@@@@@@@@
-    //    @@@@@@@@**********@@@@@@@@@@@@@&       .@@@**********@@@@@@@@
-    //    @@@**********@@@@@@@@@@@@@&            .@@@@@@@@**********@@@
-    //    @@@**********@@@@@@@@@@@@@&            .@@@@@@@@**********@@@@@@@@
-    //    @@@@@@@@**********@@@@@@@@&            .@@@**********@@@@@@@@@@@@@
-    //    @@@@@@@@//////////@@@@@@@@&            .@@@//////////@@@@@@@@@@@@@
-    //         @@@//////////@@@@@@@@&            .@@@//////////@@@@@@@@@@@@@
-    //         @@@//////////@@@@@@@@&       ,@@@@@@@@//////////@@@@@@@@@@@@@
-    //         @@@%%%%%/////(((((@@@&       ,@@@(((((/////%%%%%@@@@@@@@
-    //         @@@@@@@@//////////@@@@@@@@&  ,@@@//////////@@@@@@@@@@@@@
-    //              @@@%%%%%%%%%%@@@@@@@@&  ,@@@%%%%%%%%%%@@@@@@@@@@@@@
-    //              @@@@@@@@@@@@@@@@@@@@@&  ,@@@@@@@@@@@@@@@@@@@@@@@@@@
-    //                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
-    //                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
+//              @@@@@@@@@@@@@@@@        ,@@@@@@@@@@@@@@@@
+//              @@@,,,,,,,,,,@@@        ,@@&,,,,,,,,,,@@@
+//         @@@@@@@@,,,,,,,,,,@@@@@@@@&  ,@@&,,,,,,,,,,@@@@@@@@
+//         @@@**********@@@@@@@@@@@@@&  ,@@@@@@@@**********@@@
+//         @@@**********@@@@@@@@@@@@@&  ,@@@@@@@@**********@@@@@@@@
+//         @@@**********@@@@@@@@@@@@@&       .@@@**********@@@@@@@@
+//    @@@@@@@@**********@@@@@@@@@@@@@&       .@@@**********@@@@@@@@
+//    @@@**********@@@@@@@@@@@@@&            .@@@@@@@@**********@@@
+//    @@@**********@@@@@@@@@@@@@&            .@@@@@@@@**********@@@@@@@@
+//    @@@@@@@@**********@@@@@@@@&            .@@@**********@@@@@@@@@@@@@
+//    @@@@@@@@//////////@@@@@@@@&            .@@@//////////@@@@@@@@@@@@@
+//         @@@//////////@@@@@@@@&            .@@@//////////@@@@@@@@@@@@@
+//         @@@//////////@@@@@@@@&       ,@@@@@@@@//////////@@@@@@@@@@@@@
+//         @@@%%%%%/////(((((@@@&       ,@@@(((((/////%%%%%@@@@@@@@
+//         @@@@@@@@//////////@@@@@@@@&  ,@@@//////////@@@@@@@@@@@@@
+//              @@@%%%%%%%%%%@@@@@@@@&  ,@@@%%%%%%%%%%@@@@@@@@@@@@@
+//              @@@@@@@@@@@@@@@@@@@@@&  ,@@@@@@@@@@@@@@@@@@@@@@@@@@
+//                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
+//                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
 
 contract ReNFT is IReNft {
     using SafeERC20 for IERC20;
 
     IResolver private resolver;
     address private admin;
-    address payable private beneficiary;
+    address private beneficiary;
     uint256 private lendingId = 1;
-    uint8 MAX_UINT8 = 255;
 
     uint256 public rentFee = 500;
-    bytes4 private constant ERC20_DECIMALS_SELECTOR = bytes4(keccak256(bytes("decimals()")));
+    bytes4 private constant ERC20_DECIMALS_SELECTOR =
+        bytes4(keccak256(bytes("decimals()")));
 
-    // single storage slot: address - 160 bits, 176, 208, 240, 248, 256
+    // single storage slot: address - 160 bits, 168, 200, 232, 240, 248
     struct Lending {
-        address payable lenderAddress;
+        address lenderAddress;
         uint8 maxRentDuration;
         bytes4 dailyRentPrice;
         bytes4 nftPrice;
         uint8 lentAmount;
-        uint8 availableAmount;
         IResolver.PaymentToken paymentToken;
     }
 
-    // single storage slot: 160 bits, 176, 198, 206
+    // single storage slot: 160 bits, 168, 200
     struct Renting {
-        address payable renterAddress;
+        address renterAddress;
         uint8 rentDuration;
         uint32 rentedAt;
-        uint8 rentedAmount;
     }
 
     struct LendingRenting {
@@ -64,37 +62,35 @@ contract ReNFT is IReNft {
         Renting renting;
     }
 
+    // 32 bytes key to 64 bytes struct
+    mapping(bytes32 => LendingRenting) private lendingRenting;
+
     struct TwoPointer {
         uint256 lastIx;
         uint256 currIx;
         address[] nfts;
         uint256[] tokenIds;
-        uint256[] lendingIds;
         uint256[] lentAmounts;
+        uint8[] maxRentDurations;
         bytes4[] dailyRentPrices;
         bytes4[] nftPrices;
-        uint8[] maxRentDurations;
+        uint256[] lendingIds;
         uint8[] rentDurations;
         IResolver.PaymentToken[] paymentTokens;
     }
-
-    // 32 bytes key to 64 bytes struct
-    mapping(bytes32 => LendingRenting) private lendingRenting;
 
     constructor(
         address _resolver,
         address payable _beneficiary,
         address _admin
-    ) {
+    ) public {
         resolver = IResolver(_resolver);
         beneficiary = _beneficiary;
         admin = _admin;
     }
 
     function twoPointerLoop(
-        function (
-            TwoPointer memory
-        ) f,
+        function(TwoPointer memory) f,
         TwoPointer memory _tp
     ) private {
         if (_tp.nfts.length < 2) {
@@ -102,7 +98,10 @@ contract ReNFT is IReNft {
             return;
         }
         while (_tp.currIx < _tp.nfts.length) {
-            if ((_tp.nfts[_tp.lastIx] == _tp.nfts[_tp.currIx]) && (is1155(_tp.nfts[_tp.currIx]))) {
+            if (
+                (_tp.nfts[_tp.lastIx] == _tp.nfts[_tp.currIx]) &&
+                (is1155(_tp.nfts[_tp.currIx]))
+            ) {
                 _tp.currIx++;
                 continue;
             }
@@ -123,7 +122,7 @@ contract ReNFT is IReNft {
         bytes4[] memory _dailyRentPrices,
         bytes4[] memory _nftPrices,
         IResolver.PaymentToken[] memory _paymentTokens
-    ) external override  {
+    ) external override {
         twoPointerLoop(
             handleLend,
             createLendTP(
@@ -144,7 +143,7 @@ contract ReNFT is IReNft {
         uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
-    ) external payable override  {
+    ) external payable override {
         twoPointerLoop(
             handleRent,
             createRentTP(
@@ -162,15 +161,10 @@ contract ReNFT is IReNft {
         uint256[] memory _tokenIds,
         uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds
-    ) external override  {
+    ) external override {
         twoPointerLoop(
             handleReturn,
-            createActionTP(
-                _nfts,
-                _tokenIds,
-                _lentAmounts,
-                _lendingIds
-            )
+            createActionTP(_nfts, _tokenIds, _lentAmounts, _lendingIds)
         );
     }
 
@@ -179,15 +173,10 @@ contract ReNFT is IReNft {
         uint256[] memory _tokenIds,
         uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds
-    ) external override  {
+    ) external override {
         twoPointerLoop(
             handleStopLending,
-            createActionTP(
-                _nfts,
-                _tokenIds,
-                _lentAmounts,
-                _lendingIds
-            )
+            createActionTP(_nfts, _tokenIds, _lentAmounts, _lendingIds)
         );
     }
 
@@ -196,28 +185,27 @@ contract ReNFT is IReNft {
         uint256[] memory _tokenIds,
         uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds
-    ) external override  {
+    ) external override {
         twoPointerLoop(
             handleClaimCollateral,
-            createActionTP(
-                _nfts,
-                _tokenIds,
-                _lentAmounts,
-                _lendingIds
-            )
+            createActionTP(_nfts, _tokenIds, _lentAmounts, _lendingIds)
         );
     }
 
-//      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
-// `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
+    //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
+    // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
-    function takeFee(uint256 _rent, IResolver.PaymentToken _paymentToken) private returns (uint256 fee) {
+    function takeFee(uint256 _rent, IResolver.PaymentToken _paymentToken)
+        private
+        returns (uint256 fee)
+    {
         fee = _rent * rentFee;
         fee /= 10000;
         uint8 paymentTokenIx = uint8(_paymentToken);
 
         if (paymentTokenIx > 1) {
-            IERC20 paymentToken = IERC20(resolver.getPaymentToken(paymentTokenIx));
+            IERC20 paymentToken =
+                IERC20(resolver.getPaymentToken(paymentTokenIx));
             paymentToken.safeTransfer(beneficiary, fee);
         } else {
             beneficiary.transfer(fee);
@@ -225,8 +213,8 @@ contract ReNFT is IReNft {
     }
 
     function distributePayments(
-      LendingRenting storage _lendingRenting,
-      uint256 _secondsSinceRentStart
+        LendingRenting storage _lendingRenting,
+        uint256 _secondsSinceRentStart
     ) private {
         uint256 decimals = 18;
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
@@ -238,31 +226,47 @@ contract ReNFT is IReNft {
 
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
-        uint256 rentPrice = unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
-        uint256 renterPayment = rentPrice * _lendingRenting.renting.rentDuration;
+        uint256 rentPrice =
+            unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
+        uint256 renterPayment =
+            rentPrice * _lendingRenting.renting.rentDuration;
         uint256 sendLenderAmt = (_secondsSinceRentStart * rentPrice) / 86400;
 
-        require(renterPayment >= sendLenderAmt, "lender receiving more than renter pmt");
+        require(
+            renterPayment >= sendLenderAmt,
+            "lender receiving more than renter pmt"
+        );
 
         uint256 sendRenterAmt = renterPayment - sendLenderAmt;
 
         require(renterPayment > sendRenterAmt, "underflow issues prevention");
 
-        uint256 takenFee = takeFee(sendLenderAmt, _lendingRenting.lending.paymentToken);
+        uint256 takenFee =
+            takeFee(sendLenderAmt, _lendingRenting.lending.paymentToken);
         sendRenterAmt += nftPrice;
 
         if (paymentTokenIx > 1) {
-            IERC20(paymentToken).safeTransfer(_lendingRenting.lending.lenderAddress, sendLenderAmt - takenFee);
-            IERC20(paymentToken).safeTransfer(_lendingRenting.renting.renterAddress, sendRenterAmt);
+            IERC20(paymentToken).safeTransfer(
+                _lendingRenting.lending.lenderAddress,
+                sendLenderAmt - takenFee
+            );
+            IERC20(paymentToken).safeTransfer(
+                _lendingRenting.renting.renterAddress,
+                sendRenterAmt
+            );
         } else {
             require(paymentTokenIx == 1, "sentinels dont pay");
 
-            _lendingRenting.lending.lenderAddress.transfer(sendLenderAmt - takenFee);
+            _lendingRenting.lending.lenderAddress.transfer(
+                sendLenderAmt - takenFee
+            );
             _lendingRenting.renting.renterAddress.transfer(sendRenterAmt);
         }
     }
 
-    function distributeClaimPayment(LendingRenting memory _lendingRenting) private {
+    function distributeClaimPayment(LendingRenting memory _lendingRenting)
+        private
+    {
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
         IERC20 paymentToken = IERC20(resolver.getPaymentToken(paymentTokenIx));
 
@@ -274,13 +278,19 @@ contract ReNFT is IReNft {
 
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
-        uint256 rentPrice = unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
-        uint256 maxRentPayment = rentPrice * _lendingRenting.renting.rentDuration;
-        uint256 takenFee = takeFee(maxRentPayment, IResolver.PaymentToken(paymentTokenIx));
+        uint256 rentPrice =
+            unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
+        uint256 maxRentPayment =
+            rentPrice * _lendingRenting.renting.rentDuration;
+        uint256 takenFee =
+            takeFee(maxRentPayment, IResolver.PaymentToken(paymentTokenIx));
         uint256 finalAmt = maxRentPayment + nftPrice;
 
         if (isERC20) {
-            paymentToken.safeTransfer(_lendingRenting.lending.lenderAddress, finalAmt - takenFee);
+            paymentToken.safeTransfer(
+                _lendingRenting.lending.lenderAddress,
+                finalAmt - takenFee
+            );
         } else {
             _lendingRenting.lending.lenderAddress.transfer(finalAmt - takenFee);
         }
@@ -293,41 +303,42 @@ contract ReNFT is IReNft {
         address _to
     ) private {
         if (is721(_tp.nfts[_tp.lastIx])) {
-
-            IERC721(_tp.nfts[_tp.lastIx])
-                .transferFrom(_from, _to, _tp.tokenIds[_tp.lastIx]);
-
+            IERC721(_tp.nfts[_tp.lastIx]).transferFrom(
+                _from,
+                _to,
+                _tp.tokenIds[_tp.lastIx]
+            );
         } else if (is1155(_tp.nfts[_tp.lastIx])) {
-
-            IERC1155(_tp.nfts[_tp.lastIx])
-                .safeBatchTransferFrom(
-                    _from,
-                    _to,
-                    sliceMemoryArray(_tp, _tp.tokenIds),
-                    sliceMemoryArray(_tp, _amounts),
-                    ""
-                );
-
+            IERC1155(_tp.nfts[_tp.lastIx]).safeBatchTransferFrom(
+                _from,
+                _to,
+                sliceMemoryArray(_tp, _tp.tokenIds),
+                sliceMemoryArray(_tp, _amounts),
+                ""
+            );
         } else {
             revert("unsupported token type");
         }
     }
 
-//      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
-// `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
+    //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
+    // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
     function handleLend(TwoPointer memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             ensureIsLendable(_tp, i);
 
-            LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(
-                    _tp.nfts[_tp.lastIx],
-                    _tp.tokenIds[i],
-                    _tp.lentAmounts[i],
-                    _tp.lendingIds[i]
-                )
-            )];
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _tp.nfts[_tp.lastIx],
+                            _tp.tokenIds[i],
+                            _tp.lentAmounts[i],
+                            _tp.lendingIds[i]
+                        )
+                    )
+                ];
 
             item.lending = Lending({
                 lenderAddress: payable(msg.sender),
@@ -362,14 +373,17 @@ contract ReNFT is IReNft {
         uint256 ethPmtRequired = 0;
 
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(
-                    _tp.nfts[_tp.lastIx],
-                    _tp.tokenIds[i],
-                    _tp.lentAmounts[i],
-                    _tp.lendingIds[i]
-                )
-            )];
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _tp.nfts[_tp.lastIx],
+                            _tp.tokenIds[i],
+                            _tp.lentAmounts[i],
+                            _tp.lendingIds[i]
+                        )
+                    )
+                ];
 
             ensureIsNull(item.renting);
             ensureIsRentable(item.lending, _tp, i, msg.sender);
@@ -379,23 +393,35 @@ contract ReNFT is IReNft {
             uint256 decimals = 18;
 
             {
-            if (paymentTokenIndex > 1) {
-                decimals = __decimals(paymentToken);
-            }
-            uint256 scale = 10**decimals;
-            uint256 rentPrice = _tp.lentAmounts[i] * _tp.rentDurations[i] * unpackPrice(item.lending.dailyRentPrice, scale);
-            uint256 nftPrice = _tp.lentAmounts[i] * unpackPrice(item.lending.nftPrice, scale);
+                if (paymentTokenIndex > 1) {
+                    decimals = __decimals(paymentToken);
+                }
+                uint256 scale = 10**decimals;
+                uint256 rentPrice =
+                    _tp.lentAmounts[i] *
+                        _tp.rentDurations[i] *
+                        unpackPrice(item.lending.dailyRentPrice, scale);
+                uint256 nftPrice =
+                    _tp.lentAmounts[i] *
+                        unpackPrice(item.lending.nftPrice, scale);
 
-            require(rentPrice > 0, "rent price is zero");
+                require(rentPrice > 0, "rent price is zero");
 
-            uint256 upfrontPayment = rentPrice + nftPrice;
-            if (paymentTokenIndex > 1) {
-                IERC20(paymentToken).safeTransferFrom(msg.sender, address(this), upfrontPayment);
-            } else {
-                ethPmtRequired = ethPmtRequired + upfrontPayment;
+                uint256 upfrontPayment = rentPrice + nftPrice;
+                if (paymentTokenIndex > 1) {
+                    IERC20(paymentToken).safeTransferFrom(
+                        msg.sender,
+                        address(this),
+                        upfrontPayment
+                    );
+                } else {
+                    ethPmtRequired = ethPmtRequired + upfrontPayment;
 
-                require(msg.value >= ethPmtRequired, "insufficient eth sent");
-            }
+                    require(
+                        msg.value >= ethPmtRequired,
+                        "insufficient eth sent"
+                    );
+                }
             }
 
             item.renting.renterAddress = payable(msg.sender);
@@ -419,26 +445,30 @@ contract ReNFT is IReNft {
 
     function handleReturn(TwoPointer memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(
-                    _tp.nfts[_tp.lastIx],
-                    _tp.tokenIds[i],
-                    _tp.lentAmounts[i],
-                    _tp.lendingIds[i]
-                )
-            )];
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _tp.nfts[_tp.lastIx],
+                            _tp.tokenIds[i],
+                            _tp.lentAmounts[i],
+                            _tp.lendingIds[i]
+                        )
+                    )
+                ];
 
             ensureIsReturnable(item.renting, msg.sender, block.timestamp);
 
-            uint256 secondsSinceRentStart = block.timestamp - item.renting.rentedAt;
+            uint256 secondsSinceRentStart =
+                block.timestamp - item.renting.rentedAt;
             distributePayments(item, secondsSinceRentStart);
 
             emit Returned(
-              _tp.nfts[_tp.lastIx],
-              _tp.tokenIds[i],
-              _tp.lendingIds[i],
-              msg.sender,
-              uint32(block.timestamp)
+                _tp.nfts[_tp.lastIx],
+                _tp.tokenIds[i],
+                _tp.lendingIds[i],
+                msg.sender,
+                uint32(block.timestamp)
             );
 
             delete item.renting;
@@ -448,14 +478,17 @@ contract ReNFT is IReNft {
 
     function handleStopLending(TwoPointer memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(
-                    _tp.nfts[_tp.lastIx],
-                    _tp.tokenIds[i],
-                    _tp.lentAmounts[i],
-                    _tp.lendingIds[i]
-                )
-            )];
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _tp.nfts[_tp.lastIx],
+                            _tp.tokenIds[i],
+                            _tp.lentAmounts[i],
+                            _tp.lendingIds[i]
+                        )
+                    )
+                ];
 
             ensureIsNotNull(item.lending);
             ensureIsNull(item.renting);
@@ -463,7 +496,12 @@ contract ReNFT is IReNft {
 
             delete item.lending;
 
-            emit LendingStopped(_tp.nfts[_tp.lastIx], _tp.tokenIds[i], _tp.lendingIds[i], uint32(block.timestamp));
+            emit LendingStopped(
+                _tp.nfts[_tp.lastIx],
+                _tp.tokenIds[i],
+                _tp.lendingIds[i],
+                uint32(block.timestamp)
+            );
         }
 
         safeTransfer(_tp, _tp.lentAmounts, address(this), msg.sender);
@@ -476,14 +514,17 @@ contract ReNFT is IReNft {
      */
     function handleClaimCollateral(TwoPointer memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            LendingRenting storage item = lendingRenting[keccak256(
-                abi.encodePacked(
-                    _tp.nfts[_tp.lastIx],
-                    _tp.tokenIds[i],
-                    _tp.lentAmounts[i],
-                    _tp.lendingIds[i]
-                )
-            )];
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _tp.nfts[_tp.lastIx],
+                            _tp.tokenIds[i],
+                            _tp.lentAmounts[i],
+                            _tp.lendingIds[i]
+                        )
+                    )
+                ];
 
             ensureIsNotNull(item.lending);
             ensureIsNotNull(item.renting);
@@ -494,34 +535,62 @@ contract ReNFT is IReNft {
             delete item.lending;
             delete item.renting;
 
-            emit CollateralClaimed(_tp.nfts[_tp.lastIx], _tp.tokenIds[i], _tp.lendingIds[i], uint32(block.timestamp));
+            emit CollateralClaimed(
+                _tp.nfts[_tp.lastIx],
+                _tp.tokenIds[i],
+                _tp.lendingIds[i],
+                uint32(block.timestamp)
+            );
         }
     }
 
-//      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
-// `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
+    //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
+    // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
-    function onERC721Received(address,address,uint256,bytes calldata) external pure override returns (bytes4) {
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
         // 0xf0b9e5ba === `bytes4(keccak256("onERC721Received(address,uint256,bytes)"))`
         // 0xf0b9e5ba === `ERC721Receiver(0).onERC721Received.selector`
         return 0xf0b9e5ba;
     }
 
-    function onERC1155BatchReceived(address,address,uint256[] calldata,uint256[] calldata,bytes calldata) external pure override returns (bytes4) {
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external pure override returns (bytes4) {
         // bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`
         return 0xbc197c81;
     }
 
-    function onERC1155Received(address,address,uint256,uint256,bytes calldata) external pure override returns (bytes4) {
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
         // bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")) = 0xf23a6e61
         // ! note that single 1155 receives are not supported. So if you send something
         // ! directly, it will be forever lost
         return 0xf23a6e61;
     }
 
-    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        external
+        pure
+        override
+        returns (bool)
+    {
         return
-            (interfaceId == type(IERC721Receiver).interfaceId) || (interfaceId == type(IERC1155Receiver).interfaceId);
+            (interfaceId == type(IERC721Receiver).interfaceId) ||
+            (interfaceId == type(IERC1155Receiver).interfaceId);
     }
 
     function is721(address _nft) private view returns (bool) {
@@ -532,8 +601,8 @@ contract ReNFT is IReNft {
         return IERC165(_nft).supportsInterface(type(IERC1155).interfaceId);
     }
 
-//      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
-// `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
+    //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
+    // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
     function createLendTP(
         address[] memory _nfts,
@@ -602,7 +671,11 @@ contract ReNFT is IReNft {
         });
     }
 
-    function unpackPrice(bytes4 _price, uint256 _scale) private pure returns (uint256) {
+    function unpackPrice(bytes4 _price, uint256 _scale)
+        private
+        pure
+        returns (uint256)
+    {
         require(_scale >= 10000, "invalid scale");
         uint16 whole = uint16(bytes2(_price));
         uint16 decimal = uint16(bytes2(_price << 16));
@@ -623,10 +696,11 @@ contract ReNFT is IReNft {
         return price;
     }
 
-    function sliceMemoryArray(
-        TwoPointer memory _tp,
-        uint256[] memory _self
-    ) private pure returns (uint256[] memory r) {
+    function sliceMemoryArray(TwoPointer memory _tp, uint256[] memory _self)
+        private
+        pure
+        returns (uint256[] memory r)
+    {
         require(_tp.currIx <= _self.length, "not currIx le self.length");
         require(_tp.lastIx < _tp.currIx, "not lastIx le currIx");
         r = new uint256[](_self.length);
@@ -636,15 +710,16 @@ contract ReNFT is IReNft {
     }
 
     function __decimals(address _tokenAddress) private returns (uint256) {
-        (bool success, bytes memory data) = _tokenAddress.call(abi.encodeWithSelector(ERC20_DECIMALS_SELECTOR));
+        (bool success, bytes memory data) =
+            _tokenAddress.call(abi.encodeWithSelector(ERC20_DECIMALS_SELECTOR));
         require(success, "invalid decimals call");
         uint256 decimals = abi.decode(data, (uint256));
         require(decimals > 0, "decimals cant be zero");
         return decimals;
     }
 
-//      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
-// `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
+    //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
+    // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
     function ensureIsNull(Lending memory _lending) private pure {
         require(_lending.lenderAddress == address(0), "lender is zero address");
@@ -661,13 +736,19 @@ contract ReNFT is IReNft {
     }
 
     function ensureIsNull(Renting memory _renting) private pure {
-        require(_renting.renterAddress == address(0), "renter address is zero address");
+        require(
+            _renting.renterAddress == address(0),
+            "renter address is zero address"
+        );
         require(_renting.rentDuration == 0, "rent duration is zero");
         require(_renting.rentedAt == 0, "never rented");
     }
 
     function ensureIsNotNull(Renting memory _renting) private pure {
-        require(_renting.renterAddress != address(0), "renter address is zero address");
+        require(
+            _renting.renterAddress != address(0),
+            "renter address is zero address"
+        );
         require(_renting.rentDuration != 0, "rent duration is zero");
         require(_renting.rentedAt != 0, "never rented");
     }
@@ -677,31 +758,64 @@ contract ReNFT is IReNft {
         require(_tp.maxRentDurations[_i] > 0, "must be at least one day lend");
     }
 
-    function ensureIsRentable(Lending memory _lending, TwoPointer memory _tp, uint256 _i, address _msgSender) private pure {
+    function ensureIsRentable(
+        Lending memory _lending,
+        TwoPointer memory _tp,
+        uint256 _i,
+        address _msgSender
+    ) private pure {
         require(_msgSender != _lending.lenderAddress, "cant rent own nft");
         require(_tp.rentDurations[_i] > 0, "should rent for at least a day");
-        require(_tp.rentDurations[_i] <= _lending.maxRentDuration, "max rent duration exceeded");
+        require(
+            _tp.rentDurations[_i] <= _lending.maxRentDuration,
+            "max rent duration exceeded"
+        );
     }
 
-    function ensureIsReturnable(Renting memory _renting, address _msgSender, uint256 _blockTimestamp) private pure {
+    function ensureIsReturnable(
+        Renting memory _renting,
+        address _msgSender,
+        uint256 _blockTimestamp
+    ) private pure {
         require(_renting.renterAddress == _msgSender, "not renter");
-        require(!isPastReturnDate(_renting, _blockTimestamp), "is past return date");
+        require(
+            !isPastReturnDate(_renting, _blockTimestamp),
+            "is past return date"
+        );
     }
 
-    function ensureIsStoppable(Lending memory _lending, TwoPointer memory _tp, uint256 _i, address _msgSender) private pure {
+    function ensureIsStoppable(
+        Lending memory _lending,
+        TwoPointer memory _tp,
+        uint256 _i,
+        address _msgSender
+    ) private pure {
         require(_lending.lenderAddress == _msgSender, "only lender allowed");
-        require(_lending.lentAmount == uint8(_tp.lentAmounts[_i]), "incorrect lent amounts");
-        require(_lending.availableAmount == _lending.lentAmount, "cant stop lend now");
+        require(
+            _lending.lentAmount == uint8(_tp.lentAmounts[_i]),
+            "incorrect lent amounts"
+        );
+        require(
+            _lending.availableAmount == _lending.lentAmount,
+            "cant stop lend now"
+        );
     }
 
-    function ensureIsClaimable(Renting memory _renting, uint256 _blockTimestamp) private pure {
+    function ensureIsClaimable(Renting memory _renting, uint256 _blockTimestamp)
+        private
+        pure
+    {
         require(isPastReturnDate(_renting, _blockTimestamp), "cant claim yet");
     }
 
-//      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
-// `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
+    //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
+    // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
-    function isPastReturnDate(Renting memory _renting, uint256 _now) private pure returns (bool) {
+    function isPastReturnDate(Renting memory _renting, uint256 _now)
+        private
+        pure
+        returns (bool)
+    {
         return _now - _renting.rentedAt > _renting.rentDuration * 86400;
     }
 
@@ -717,22 +831,22 @@ contract ReNFT is IReNft {
     }
 }
 
-    //              @@@@@@@@@@@@@@@@        ,@@@@@@@@@@@@@@@@
-    //              @@@,,,,,,,,,,@@@        ,@@&,,,,,,,,,,@@@
-    //         @@@@@@@@,,,,,,,,,,@@@@@@@@&  ,@@&,,,,,,,,,,@@@@@@@@
-    //         @@@**********@@@@@@@@@@@@@&  ,@@@@@@@@**********@@@
-    //         @@@**********@@@@@@@@@@@@@&  ,@@@@@@@@**********@@@@@@@@
-    //         @@@**********@@@@@@@@@@@@@&       .@@@**********@@@@@@@@
-    //    @@@@@@@@**********@@@@@@@@@@@@@&       .@@@**********@@@@@@@@
-    //    @@@**********@@@@@@@@@@@@@&            .@@@@@@@@**********@@@
-    //    @@@**********@@@@@@@@@@@@@&            .@@@@@@@@**********@@@@@@@@
-    //    @@@@@@@@**********@@@@@@@@&            .@@@**********@@@@@@@@@@@@@
-    //    @@@@@@@@//////////@@@@@@@@&            .@@@//////////@@@@@@@@@@@@@
-    //         @@@//////////@@@@@@@@&            .@@@//////////@@@@@@@@@@@@@
-    //         @@@//////////@@@@@@@@&       ,@@@@@@@@//////////@@@@@@@@@@@@@
-    //         @@@%%%%%/////(((((@@@&       ,@@@(((((/////%%%%%@@@@@@@@
-    //         @@@@@@@@//////////@@@@@@@@&  ,@@@//////////@@@@@@@@@@@@@
-    //              @@@%%%%%%%%%%@@@@@@@@&  ,@@@%%%%%%%%%%@@@@@@@@@@@@@
-    //              @@@@@@@@@@@@@@@@@@@@@&  ,@@@@@@@@@@@@@@@@@@@@@@@@@@
-    //                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
-    //                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
+//              @@@@@@@@@@@@@@@@        ,@@@@@@@@@@@@@@@@
+//              @@@,,,,,,,,,,@@@        ,@@&,,,,,,,,,,@@@
+//         @@@@@@@@,,,,,,,,,,@@@@@@@@&  ,@@&,,,,,,,,,,@@@@@@@@
+//         @@@**********@@@@@@@@@@@@@&  ,@@@@@@@@**********@@@
+//         @@@**********@@@@@@@@@@@@@&  ,@@@@@@@@**********@@@@@@@@
+//         @@@**********@@@@@@@@@@@@@&       .@@@**********@@@@@@@@
+//    @@@@@@@@**********@@@@@@@@@@@@@&       .@@@**********@@@@@@@@
+//    @@@**********@@@@@@@@@@@@@&            .@@@@@@@@**********@@@
+//    @@@**********@@@@@@@@@@@@@&            .@@@@@@@@**********@@@@@@@@
+//    @@@@@@@@**********@@@@@@@@&            .@@@**********@@@@@@@@@@@@@
+//    @@@@@@@@//////////@@@@@@@@&            .@@@//////////@@@@@@@@@@@@@
+//         @@@//////////@@@@@@@@&            .@@@//////////@@@@@@@@@@@@@
+//         @@@//////////@@@@@@@@&       ,@@@@@@@@//////////@@@@@@@@@@@@@
+//         @@@%%%%%/////(((((@@@&       ,@@@(((((/////%%%%%@@@@@@@@
+//         @@@@@@@@//////////@@@@@@@@&  ,@@@//////////@@@@@@@@@@@@@
+//              @@@%%%%%%%%%%@@@@@@@@&  ,@@@%%%%%%%%%%@@@@@@@@@@@@@
+//              @@@@@@@@@@@@@@@@@@@@@&  ,@@@@@@@@@@@@@@@@@@@@@@@@@@
+//                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
+//                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@

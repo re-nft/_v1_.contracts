@@ -11,7 +11,12 @@ contract Resolver is IResolver {
         admin = _admin;
     }
 
-    function getPaymentToken(uint8 _pt) external view override returns (address) {
+    function getPaymentToken(uint8 _pt)
+        external
+        view
+        override
+        returns (address)
+    {
         return addresses[_pt];
     }
 
