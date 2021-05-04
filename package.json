@@ -4,7 +4,7 @@
   "author": "Nazariy Vavryk <nazariy@inbox.ru>",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "lint": "eslint --fix \"**/*.{js,ts}\" && solhint --fix src/**/*.sol",
+    "lint": "eslint --fix \"**/*.{js,ts}\" && solhint --fix src/ReNFT.sol",
     "format": "prettier --write \"**/*.{ts,js,sol}\"",
     "clean": "rm -rf artifacts cache frontend",
     "compile": "hardhat compile",
@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
+    "solhint": "^3.3.4",
     "solidity-coverage": "^0.7.16"
   }
 }

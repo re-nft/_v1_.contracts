@@ -30,7 +30,6 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event Rented(
         address indexed nftAddress,
         uint256 indexed tokenId,
-        uint8 rentedAmount,
         uint256 lendingId,
         address indexed renterAddress,
         uint8 rentDuration,
@@ -41,7 +40,6 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event Returned(
         address indexed nftAddress,
         uint256 indexed tokenId,
-        uint8 returnedAmount,
         uint256 indexed lendingId,
         address renterAddress,
         uint32 returnedAt
@@ -50,7 +48,6 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event CollateralClaimed(
         address indexed nftAddress,
         uint256 indexed tokenId,
-        uint8 claimedAmount,
         uint256 indexed lendingId,
         uint32 claimedAt
     );
@@ -58,7 +55,6 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event LendingStopped(
         address indexed nftAddress,
         uint256 indexed tokenId,
-        uint8 stoppedAmount,
         uint256 indexed lendingId,
         uint32 stoppedAt
     );
@@ -70,7 +66,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function lend(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint256[] memory _amounts,
+        uint256[] memory _lendAmounts,
         uint8[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
@@ -85,10 +81,9 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function rent(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint8[] memory _lentAmounts,
-        uint256[] memory _rentAmounts,
-        uint256[] memory _id,
-        uint8[] memory _rentDuration
+        uint256[] memory _lentAmounts,
+        uint256[] memory _lendingIds,
+        uint8[] memory _rentDurations
     ) external payable;
 
     /**
@@ -100,19 +95,17 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _lentAmounts,
-        uint256[] memory _rentAmounts,
-        uint256[] memory _id
+        uint256[] memory _lendingIds
     ) external;
 
     /**
      * @dev claim collateral on rentals that are past their due date
      */
     function claimCollateral(
-        address[] memory _nft,
-        uint256[] memory _tokenId,
+        address[] memory _nfts,
+        uint256[] memory _tokenIds,
         uint256[] memory _lentAmounts,
-        uint256[] memory _claimAmounts,
-        uint256[] memory _id
+        uint256[] memory _lendingIds
     ) external;
 
     /**
@@ -123,7 +116,6 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         address[] memory _nft,
         uint256[] memory _tokenId,
         uint256[] memory _lentAmounts,
-        uint256[] memory _stopAmounts,
-        uint256[] memory _id
+        uint256[] memory _lendingIds
     ) external;
 }
