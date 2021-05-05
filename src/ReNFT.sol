@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
+import "hardhat/console.sol";
+
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNFT.sol";
 
@@ -36,6 +38,7 @@ contract ReNFT is IReNft {
     address payable private beneficiary;
     uint256 private lendingId = 1;
 
+    // in bps. so 500 => 0.5%
     uint256 public rentFee = 500;
     bytes4 private constant ERC20_DECIMALS_SELECTOR =
         bytes4(keccak256(bytes("decimals()")));
@@ -353,8 +356,8 @@ contract ReNFT is IReNft {
         // or
         // for ERC721s
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            uint256 scale = __decimals(resolver.getPaymentToken(uint8(_tp.paymentTokens[i])));
-            ensureIsLendable(_tp, i, scale);
+            uint256 decimals = __decimals(resolver.getPaymentToken(uint8(_tp.paymentTokens[i])));
+            ensureIsLendable(_tp, i, 10**decimals);
 
             LendingRenting storage item =
                 lendingRenting[
@@ -367,7 +370,7 @@ contract ReNFT is IReNft {
                             _tp.lentAmounts[i],
                             // makes the whole thing unique, in case someone else turns
                             // up with the same nft and tokenId
-                            _tp.lendingIds[i]
+                            lendingId
                         )
                     )
                 ];
@@ -396,7 +399,7 @@ contract ReNFT is IReNft {
                 _tp.nfts[_tp.lastIx],
                 _tp.tokenIds[i],
                 uint8(_tp.lentAmounts[i]),
-                _tp.lendingIds[i],
+                lendingId,
                 msg.sender,
                 _tp.maxRentDurations[i],
                 _tp.dailyRentPrices[i],
