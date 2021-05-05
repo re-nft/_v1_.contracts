@@ -2,10 +2,9 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-
-import "hardhat/console.sol";
 
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNFT.sol";
@@ -31,7 +30,7 @@ import "./interfaces/IReNFT.sol";
 //                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
 
 contract ReNFT is IReNft {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
 
     IResolver private resolver;
     address private admin;
@@ -208,8 +207,8 @@ contract ReNFT is IReNft {
 
         // ReNFT fee
         if (paymentTokenIx > 1) {
-            IERC20 paymentToken =
-                IERC20(resolver.getPaymentToken(paymentTokenIx));
+            ERC20 paymentToken =
+                ERC20(resolver.getPaymentToken(paymentTokenIx));
             paymentToken.safeTransfer(beneficiary, fee);
         } else {
             beneficiary.transfer(fee);
@@ -228,7 +227,7 @@ contract ReNFT is IReNft {
 
         // if not ether
         if (paymentTokenIx > 1) {
-            decimals = __decimals(paymentToken);
+            decimals = __decimals(ERC20(paymentToken));
         }
 
         uint256 scale = 10**decimals;
@@ -264,11 +263,11 @@ contract ReNFT is IReNft {
         sendRenterAmt += nftPrice;
 
         if (paymentTokenIx > 1) {
-            IERC20(paymentToken).safeTransfer(
+            ERC20(paymentToken).safeTransfer(
                 _lendingRenting.lending.lenderAddress,
                 sendLenderAmt - takenFee
             );
-            IERC20(paymentToken).safeTransfer(
+            ERC20(paymentToken).safeTransfer(
                 _lendingRenting.renting.renterAddress,
                 sendRenterAmt
             );
@@ -288,11 +287,11 @@ contract ReNFT is IReNft {
         private
     {
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
-        IERC20 paymentToken = IERC20(resolver.getPaymentToken(paymentTokenIx));
+        ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
 
         uint256 decimals = 18;
         if (paymentTokenIx > 1) {
-            decimals = __decimals(address(paymentToken));
+            decimals = __decimals(ERC20(paymentToken));
         }
 
         uint256 scale = 10**decimals;
@@ -325,7 +324,6 @@ contract ReNFT is IReNft {
 
     function safeTransfer(
         TwoPointer memory _tp,
-        uint256[] memory _amounts,
         address _from,
         address _to
     ) private {
@@ -339,8 +337,8 @@ contract ReNFT is IReNft {
             IERC1155(_tp.nfts[_tp.lastIx]).safeBatchTransferFrom(
                 _from,
                 _to,
-                sliceMemoryArray(_tp, _tp.tokenIds),
-                sliceMemoryArray(_tp, _amounts),
+                sliceTokenIds(_tp),
+                sliceLentAmounts(_tp),
                 ""
             );
         } else {
@@ -360,7 +358,7 @@ contract ReNFT is IReNft {
             uint256 decimals = 18;
             uint8 paymentTokenIx = uint8(_tp.paymentTokens[i]);
             if (paymentTokenIx > 1) {
-                uint256 decimals = __decimals(resolver.getPaymentToken(paymentTokenIx));
+                decimals = __decimals(ERC20(resolver.getPaymentToken(paymentTokenIx)));
             }
             ensureIsLendable(_tp, i, 10**decimals);
 
@@ -385,17 +383,22 @@ contract ReNFT is IReNft {
             // sanity check
             ensureIsNull(item.renting);
 
+            // about lentAmount
+            // we have already checked that this is a valid uint8 amount in ensureIsLendable
+
+            // about maxRentDuration
+            // is a uint8 by default. The above is uint256 for convenience of batch transfers
+            // the erc1155 batch transfer accepts an array of uint256. So to avoid casting, we
+            // accept uint256, but check that it is uint8 in  ensureIsLendable
+
+            // about dailyRentPrice
+            // both the dailyRentPrices and nftPrices have been checked for valid non-zero amounts
+            // in the ensureIsLendable
             item.lending = Lending({
                 lenderAddress: payable(msg.sender),
-                lentAmount: // we have already checked that this is a valid uint8 amount in ensureIsLendable
-                uint8(_tp.lentAmounts[i]),
-                maxRentDuration: // is a uint8 by default. The above is uint256 for convenience of batch transfers
-                // the erc1155 batch transfer accepts an array of uint256. So to avoid casting, we
-                // accept uint256, but check that it is uint8 in  ensureIsLendable
-                _tp.maxRentDurations[i],
-                dailyRentPrice: // both the dailyRentPrices and nftPrices have been checked for valid non-zero amounts
-                // in the ensureIsLendable
-                _tp.dailyRentPrices[i],
+                lentAmount: uint8(_tp.lentAmounts[i]),
+                maxRentDuration: _tp.maxRentDurations[i],
+                dailyRentPrice: _tp.dailyRentPrices[i],
                 nftPrice: _tp.nftPrices[i],
                 paymentToken: _tp.paymentTokens[i]
             });
@@ -417,7 +420,7 @@ contract ReNFT is IReNft {
         }
 
         // finally we transfer the NFTs from the sender to this ReNFT contract
-        safeTransfer(_tp, _tp.lentAmounts, msg.sender, address(this));
+        safeTransfer(_tp, msg.sender, address(this));
     }
 
     function handleRent(TwoPointer memory _tp) private {
@@ -460,7 +463,7 @@ contract ReNFT is IReNft {
                 // only the admins of the contract are able to add payment tokens
                 // see towards the end of the contract
                 if (paymentTokenIndex > 1) {
-                    decimals = __decimals(paymentToken);
+                    decimals = __decimals(ERC20(paymentToken));
                 }
                 uint256 scale = 10**decimals;
                 uint256 rentPrice =
@@ -479,7 +482,7 @@ contract ReNFT is IReNft {
                 // if this is an erc20 transaction - send immediately
                 if (paymentTokenIndex > 1) {
                     // lock up the lump sum in escrow
-                    IERC20(paymentToken).safeTransferFrom(
+                    ERC20(paymentToken).safeTransferFrom(
                         msg.sender,
                         address(this),
                         upfrontPayment
@@ -508,7 +511,7 @@ contract ReNFT is IReNft {
             );
         }
 
-        safeTransfer(_tp, _tp.lentAmounts, address(this), msg.sender);
+        safeTransfer(_tp, address(this), msg.sender);
     }
 
     function handleReturn(TwoPointer memory _tp) private {
@@ -546,7 +549,7 @@ contract ReNFT is IReNft {
         // sending the NFTs back to the ReNFT contract for continuous lending
         // by default the lending continues after return so that the lender
         // does not have to re-lend after every rent
-        safeTransfer(_tp, _tp.lentAmounts, msg.sender, address(this));
+        safeTransfer(_tp, msg.sender, address(this));
     }
 
     function handleStopLending(TwoPointer memory _tp) private {
@@ -576,7 +579,7 @@ contract ReNFT is IReNft {
             delete item.lending;
         }
 
-        safeTransfer(_tp, _tp.lentAmounts, address(this), msg.sender);
+        safeTransfer(_tp, address(this), msg.sender);
     }
 
     /**
@@ -763,26 +766,22 @@ contract ReNFT is IReNft {
         return price;
     }
 
-    function sliceMemoryArray(TwoPointer memory _tp, uint256[] memory _self)
-        private
-        pure
-        returns (uint256[] memory r)
-    {
-        require(_tp.currIx <= _self.length, "not currIx le self.length");
-        require(_tp.lastIx < _tp.currIx, "not lastIx le currIx");
-        r = new uint256[](_self.length);
-        for (uint256 i = _tp.currIx; i < _tp.lastIx; i++) {
-            r[i - _tp.currIx] = _self[i];
+    function sliceTokenIds(TwoPointer memory _tp) private pure returns (uint256[] memory r) {
+        r = new uint256[](_tp.tokenIds.length);
+        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
+            r[i - _tp.lastIx] = _tp.tokenIds[i];
         }
     }
 
-    function __decimals(address _tokenAddress) private returns (uint256) {
-        (bool success, bytes memory data) =
-            _tokenAddress.call(abi.encodeWithSelector(ERC20_DECIMALS_SELECTOR));
-        require(success, "invalid decimals call");
-        uint256 decimals = abi.decode(data, (uint256));
-        // require(decimals > 0, "decimals cant be zero");
-        return decimals;
+    function sliceLentAmounts(TwoPointer memory _tp) private pure returns (uint256[] memory r) {
+        r = new uint256[](_tp.lentAmounts.length);
+        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
+            r[i - _tp.lastIx] = _tp.lentAmounts[i];
+        }
+    }
+
+    function __decimals(ERC20 _tokenAddress) private view returns (uint256) {
+        return _tokenAddress.decimals();
     }
 
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
