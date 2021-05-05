@@ -207,7 +207,7 @@ contract ReNFT is IReNft {
         uint8 paymentTokenIx = uint8(_paymentToken);
 
         // ReNFT fee
-        if (paymentTokenIx > 0) {
+        if (paymentTokenIx > 1) {
             IERC20 paymentToken =
                 IERC20(resolver.getPaymentToken(paymentTokenIx));
             paymentToken.safeTransfer(beneficiary, fee);
@@ -227,7 +227,7 @@ contract ReNFT is IReNft {
         address paymentToken = resolver.getPaymentToken(paymentTokenIx);
 
         // if not ether
-        if (paymentTokenIx > 0) {
+        if (paymentTokenIx > 1) {
             decimals = __decimals(paymentToken);
         }
 
@@ -263,7 +263,7 @@ contract ReNFT is IReNft {
             takeFee(sendLenderAmt, _lendingRenting.lending.paymentToken);
         sendRenterAmt += nftPrice;
 
-        if (paymentTokenIx > 0) {
+        if (paymentTokenIx > 1) {
             IERC20(paymentToken).safeTransfer(
                 _lendingRenting.lending.lenderAddress,
                 sendLenderAmt - takenFee
@@ -291,7 +291,7 @@ contract ReNFT is IReNft {
         IERC20 paymentToken = IERC20(resolver.getPaymentToken(paymentTokenIx));
 
         uint256 decimals = 18;
-        if (paymentTokenIx > 0) {
+        if (paymentTokenIx > 1) {
             decimals = __decimals(address(paymentToken));
         }
 
@@ -312,7 +312,7 @@ contract ReNFT is IReNft {
             "maxRentPayment is incorrect"
         );
 
-        if (paymentTokenIx > 0) {
+        if (paymentTokenIx > 1) {
             paymentToken.safeTransfer(
                 _lendingRenting.lending.lenderAddress,
                 finalAmt - takenFee
@@ -356,7 +356,12 @@ contract ReNFT is IReNft {
         // or
         // for ERC721s
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            uint256 decimals = __decimals(resolver.getPaymentToken(uint8(_tp.paymentTokens[i])));
+
+            uint256 decimals = 18;
+            uint8 paymentTokenIx = uint8(_tp.paymentTokens[i]);
+            if (paymentTokenIx > 1) {
+                uint256 decimals = __decimals(resolver.getPaymentToken(paymentTokenIx));
+            }
             ensureIsLendable(_tp, i, 10**decimals);
 
             LendingRenting storage item =
@@ -435,13 +440,13 @@ contract ReNFT is IReNft {
                     )
                 ];
 
-            // a lending item must exist to be able to rent it
+            // // a lending item must exist to be able to rent it
             ensureIsNotNull(item.lending);
-            // should never happen
+            // // should never happen
             ensureIsNull(item.renting);
-            // checks that requested rent duration is below the lending max rent duration
-            // that the renter is not the lender
-            // and that the rent duration is at least a day
+            // // checks that requested rent duration is below the lending max rent duration
+            // // that the renter is not the lender
+            // // and that the rent duration is at least a day
             ensureIsRentable(item.lending, _tp, i, msg.sender);
 
             // from enum to uint8
@@ -454,7 +459,7 @@ contract ReNFT is IReNft {
                 // if not sentinel and ether, then erc20, then pull the decimals
                 // only the admins of the contract are able to add payment tokens
                 // see towards the end of the contract
-                if (paymentTokenIndex > 0) {
+                if (paymentTokenIndex > 1) {
                     decimals = __decimals(paymentToken);
                 }
                 uint256 scale = 10**decimals;
@@ -472,7 +477,7 @@ contract ReNFT is IReNft {
                 uint256 upfrontPayment = rentPrice + nftPrice;
 
                 // if this is an erc20 transaction - send immediately
-                if (paymentTokenIndex > 0) {
+                if (paymentTokenIndex > 1) {
                     // lock up the lump sum in escrow
                     IERC20(paymentToken).safeTransferFrom(
                         msg.sender,
@@ -776,7 +781,7 @@ contract ReNFT is IReNft {
             _tokenAddress.call(abi.encodeWithSelector(ERC20_DECIMALS_SELECTOR));
         require(success, "invalid decimals call");
         uint256 decimals = abi.decode(data, (uint256));
-        require(decimals > 0, "decimals cant be zero");
+        // require(decimals > 0, "decimals cant be zero");
         return decimals;
     }
 
@@ -809,7 +814,7 @@ contract ReNFT is IReNft {
     function ensureIsNotNull(Renting memory _renting) private pure {
         require(
             _renting.renterAddress != address(0),
-            "renter address is zero address"
+            "renter address is a zero address"
         );
         require(_renting.rentDuration != 0, "rent duration is zero");
         require(_renting.rentedAt != 0, "never rented");
