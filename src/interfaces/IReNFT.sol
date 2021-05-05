@@ -28,36 +28,17 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     );
 
     event Rented(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
         uint256 lendingId,
         address indexed renterAddress,
         uint8 rentDuration,
-        bool isERC721,
         uint32 rentedAt
     );
 
-    event Returned(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        address renterAddress,
-        uint32 returnedAt
-    );
+    event Returned(uint256 indexed lendingId, uint32 returnedAt);
 
-    event CollateralClaimed(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        uint32 claimedAt
-    );
+    event CollateralClaimed(uint256 indexed lendingId, uint32 claimedAt);
 
-    event LendingStopped(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        uint32 stoppedAt
-    );
+    event LendingStopped(uint256 indexed lendingId, uint32 stoppedAt);
 
     /**
      * @dev lend will send your NFT to ReNft contract, it acts as an escrow
