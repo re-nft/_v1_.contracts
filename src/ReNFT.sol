@@ -354,11 +354,12 @@ contract ReNFT is IReNft {
         // or
         // for ERC721s
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-
             uint256 decimals = 18;
             uint8 paymentTokenIx = uint8(_tp.paymentTokens[i]);
             if (paymentTokenIx > 1) {
-                decimals = __decimals(ERC20(resolver.getPaymentToken(paymentTokenIx)));
+                decimals = __decimals(
+                    ERC20(resolver.getPaymentToken(paymentTokenIx))
+                );
             }
             ensureIsLendable(_tp, i, 10**decimals);
 
@@ -766,14 +767,22 @@ contract ReNFT is IReNft {
         return price;
     }
 
-    function sliceTokenIds(TwoPointer memory _tp) private pure returns (uint256[] memory r) {
+    function sliceTokenIds(TwoPointer memory _tp)
+        private
+        pure
+        returns (uint256[] memory r)
+    {
         r = new uint256[](_tp.tokenIds.length);
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             r[i - _tp.lastIx] = _tp.tokenIds[i];
         }
     }
 
-    function sliceLentAmounts(TwoPointer memory _tp) private pure returns (uint256[] memory r) {
+    function sliceLentAmounts(TwoPointer memory _tp)
+        private
+        pure
+        returns (uint256[] memory r)
+    {
         r = new uint256[](_tp.lentAmounts.length);
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             r[i - _tp.lastIx] = _tp.lentAmounts[i];
@@ -819,14 +828,21 @@ contract ReNFT is IReNft {
         require(_renting.rentedAt != 0, "never rented");
     }
 
-    function ensureIsLendable(TwoPointer memory _tp, uint256 _i, uint256 _scale) private pure {
+    function ensureIsLendable(
+        TwoPointer memory _tp,
+        uint256 _i,
+        uint256 _scale
+    ) private pure {
         // lending at least one token & the amount is less or equal than uint8 max 255
         require(_tp.lentAmounts[_i] > 0, "invalid lend amount");
         require(_tp.lentAmounts[_i] <= type(uint8).max, "cannot exceed uint8");
         // max rent duration is at least a day. it is uint8 so no need to check for max
         require(_tp.maxRentDurations[_i] > 0, "must be at least one day lend");
         // ensure that the daily rental price and the collateral prices are not zero
-        require(unpackPrice(_tp.dailyRentPrices[_i], _scale) > 0, "cant be zero");
+        require(
+            unpackPrice(_tp.dailyRentPrices[_i], _scale) > 0,
+            "cant be zero"
+        );
         require(unpackPrice(_tp.nftPrices[_i], _scale) > 0, "cant be zero");
     }
 

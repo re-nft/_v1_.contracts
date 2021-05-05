@@ -675,7 +675,7 @@ describe("ReNFT", function () {
       lendingId,
       rentDuration,
       rentedAt,
-      events
+      events,
     }: {
       lendingId: number[];
       renterAddress: string[];
@@ -707,14 +707,9 @@ describe("ReNFT", function () {
         unpackPrice(DAILY_RENT_PRICE, DP18)
       );
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(rentAmounts);
-      const tx = await ReNFT.rent(
-        [ERC721.address],
-        [1],
-        [1],
-        [1],
-        [2],
-        { value: pmtAmount }
-      );
+      const tx = await ReNFT.rent([ERC721.address], [1], [1], [1], [2], {
+        value: pmtAmount,
+      });
       const dudeBalancePost = await getBalance(renter.address);
       const renftBalancePost = await getBalance(ReNFT.address);
       expect(renftBalancePost).to.be.equal(pmtAmount);
@@ -950,16 +945,9 @@ describe("ReNFT", function () {
       // deposited because the second part of the transaction i.e. erc20
       // will be reverted
       await expect(
-        ReNFT.rent(
-          nftAddress,
-          tokenIds,
-          [1, 1],
-          lendingId,
-          rentDuration,
-          {
-            value: pmtAmounts[0],
-          }
-        )
+        ReNFT.rent(nftAddress, tokenIds, [1, 1], lendingId, rentDuration, {
+          value: pmtAmounts[0],
+        })
       ).to.be.revertedWith("transfer amount exceeds balance");
       const dudeBalancePost = await getBalance(renter.address);
       const renftBalancePost = await getBalance(ReNFT.address);
@@ -1177,16 +1165,9 @@ describe("ReNFT", function () {
         BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
       );
       await expect(
-        lender.renft.rent(
-          nftAddress,
-          tokenId,
-          [1],
-          lendingId,
-          rentDuration,
-          {
-            value: pmtAmount,
-          }
-        )
+        lender.renft.rent(nftAddress, tokenId, [1], lendingId, rentDuration, {
+          value: pmtAmount,
+        })
       ).to.be.revertedWith("cant rent own nft");
     });
   });
@@ -1657,12 +1638,7 @@ describe("ReNFT", function () {
       await advanceTime(SECONDS_IN_A_DAY);
       const balancePre = await getBalance(lender.address);
       const beneficiaryBalancePre = await getBalance(beneficiary);
-      const tx = await lender.renft.claimCollateral(
-        _nft,
-        _tokenId,
-        [1],
-        _id
-      );
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], _id);
       const balancePost = await getBalance(lender.address);
       const renftBalancePost = await getBalance(lender.renft.address);
       const receipt = await tx.wait();
@@ -1709,18 +1685,11 @@ describe("ReNFT", function () {
       const _tokenId = [1, 2];
       const _id = [1, 2];
       const _rentDuration = [1, 4];
-      await renter.renft.rent(
-        _nft,
-        _tokenId,
-        [1, 1],
-        _id,
-        _rentDuration,
-        {
-          value: ethers.utils
-            .parseEther(drpEth.toString())
-            .add(ethers.utils.parseEther(colEth.toString())),
-        }
-      );
+      await renter.renft.rent(_nft, _tokenId, [1, 1], _id, _rentDuration, {
+        value: ethers.utils
+          .parseEther(drpEth.toString())
+          .add(ethers.utils.parseEther(colEth.toString())),
+      });
       await advanceTime(_rentDuration[1] * SECONDS_IN_A_DAY);
       const balancePre = await getBalance(lender.address);
       const beneficiaryBalancePre = await getBalance(beneficiary);
@@ -1797,12 +1766,7 @@ describe("ReNFT", function () {
       await advanceTime(SECONDS_IN_A_DAY + 100);
       const balancePre = await lender.td18.balanceOf(lender.address);
       const beneficiaryBalancePre = await lender.td18.balanceOf(beneficiary);
-      const tx = await lender.renft.claimCollateral(
-        _nft,
-        _tokenId,
-        [1],
-        _id
-      );
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], _id);
       const balancePost = await lender.td18.balanceOf(lender.address);
       const renftBalancePost = await lender.td18.balanceOf(
         lender.renft.address
