@@ -33,7 +33,7 @@ contract ReNFT is IReNft {
 
     IResolver private resolver;
     address private admin;
-    address private beneficiary;
+    address payable private beneficiary;
     uint256 private lendingId = 1;
 
     uint256 public rentFee = 500;
@@ -42,7 +42,7 @@ contract ReNFT is IReNft {
 
     // single storage slot: address - 160 bits, 168, 200, 232, 240, 248
     struct Lending {
-        address lenderAddress;
+        address payable lenderAddress;
         uint8 maxRentDuration;
         bytes4 dailyRentPrice;
         bytes4 nftPrice;
@@ -52,7 +52,7 @@ contract ReNFT is IReNft {
 
     // single storage slot: 160 bits, 168, 200
     struct Renting {
-        address renterAddress;
+        address payable renterAddress;
         uint8 rentDuration;
         uint32 rentedAt;
     }
@@ -325,6 +325,9 @@ contract ReNFT is IReNft {
     // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
     function handleLend(TwoPointer memory _tp) private {
+        // for individual tokenIds within the same 1155
+        // or
+        // for ERC721s
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             ensureIsLendable(_tp, i);
 
@@ -340,10 +343,12 @@ contract ReNFT is IReNft {
                     )
                 ];
 
+            ensureIsNull(item.lending);
+            ensureIsUint8Amount(_tp.lentAmounts[i]);
+
             item.lending = Lending({
                 lenderAddress: payable(msg.sender),
                 lentAmount: uint8(_tp.lentAmounts[i]),
-                availableAmount: uint8(_tp.lentAmounts[i]),
                 maxRentDuration: _tp.maxRentDurations[i],
                 dailyRentPrice: _tp.dailyRentPrices[i],
                 nftPrice: _tp.nftPrices[i],
@@ -427,7 +432,6 @@ contract ReNFT is IReNft {
             item.renting.renterAddress = payable(msg.sender);
             item.renting.rentDuration = _tp.rentDurations[i];
             item.renting.rentedAt = uint32(block.timestamp);
-            item.lending.availableAmount = 0;
 
             emit Rented(
                 _tp.nfts[_tp.lastIx],
@@ -795,10 +799,6 @@ contract ReNFT is IReNft {
             _lending.lentAmount == uint8(_tp.lentAmounts[_i]),
             "incorrect lent amounts"
         );
-        require(
-            _lending.availableAmount == _lending.lentAmount,
-            "cant stop lend now"
-        );
     }
 
     function ensureIsClaimable(Renting memory _renting, uint256 _blockTimestamp)
@@ -806,6 +806,11 @@ contract ReNFT is IReNft {
         pure
     {
         require(isPastReturnDate(_renting, _blockTimestamp), "cant claim yet");
+    }
+
+    function ensureIsUint8Amount(uint256 _amount) private pure {
+        require(_amount > 0, "amount is zero");
+        require(_amount < 256, "amount overflow");
     }
 
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
