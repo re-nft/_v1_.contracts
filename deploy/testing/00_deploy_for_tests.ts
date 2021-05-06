@@ -6,17 +6,22 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
 
-  await deploy("TD1", {
+  await deploy("DAI", {
     from: deployer,
     log: true,
   });
 
-  await deploy("TD18", {
+  await deploy("USDC", {
     from: deployer,
     log: true,
   });
 
-  await deploy("MyERC721", {
+  await deploy("USDT", {
+    from: deployer,
+    log: true,
+  });
+
+  await deploy("E721", {
     from: deployer,
     log: true,
   });
@@ -26,7 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
-  await deploy("MyERC1155", {
+  await deploy("E1155", {
     from: deployer,
     log: true,
   });

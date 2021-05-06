@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
-contract MyERC721 is IERC721Metadata, ERC721Enumerable {
+contract E721 is IERC721Metadata, ERC721Enumerable {
     event NewFace(
         address indexed owner,
         uint256 indexed tokenId,
@@ -24,7 +24,7 @@ contract MyERC721 is IERC721Metadata, ERC721Enumerable {
         "https://api.bccg.digital/api/bccg/1"
     ];
 
-    constructor() ERC721("721", "721") {
+    constructor() ERC721("E721", "E721") {
         this;
     }
 

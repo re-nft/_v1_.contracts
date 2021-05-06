@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
+import "hardhat/console.sol";
+
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNFT.sol";
 
@@ -328,6 +330,10 @@ contract ReNFT is IReNft {
         address _to
     ) private {
         if (is721(_tp.nfts[_tp.lastIx])) {
+            console.log("attempting transfer of tokenIf %s", _tp.tokenIds[_tp.lastIx]);
+            console.log("msg sender is %s", msg.sender);
+            console.log("address of this is %s", address(this));
+            console.log("owner of that tokenId is %s", IERC721(_tp.nfts[_tp.lastIx]).ownerOf(_tp.tokenIds[_tp.lastIx]));
             IERC721(_tp.nfts[_tp.lastIx]).transferFrom(
                 _from,
                 _to,
@@ -354,6 +360,8 @@ contract ReNFT is IReNft {
         // or
         // for ERC721s
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
+            console.log("lastIx %s, currIx %s", _tp.lastIx, _tp.currIx);
+            // TODO: pmtIx > 1
             uint256 decimals = 18;
             uint8 paymentTokenIx = uint8(_tp.paymentTokens[i]);
             if (paymentTokenIx > 1) {
