@@ -382,124 +382,104 @@ describe("ReNFT", function () {
       });
     });
 
-    it("E1155, E721", async () => {
-      await ReNFT.lend(
-        [ERC1155.address, ERC721.address],
-        [1, 1],
-        [1, 1],
-        [1, 1],
-        [packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{1155,721}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1],
+        amounts: [1, 1],
+        maxRentDurations: [1, 1],
+        expectedLendingIds: [1, 2],
+        nftAddresses: [ERC1155.address, ERC721.address],
+      });
     });
 
-    it("E1155, E1155", async () => {
-      await ReNFT.lend(
-        [ERC1155.address, ERC1155.address],
-        [1, 2],
-        [1, 1],
-        [1, 1],
-        [packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{1155,1155}", async () => {
+      await lendBatch({
+        tokenIds: [1, 2],
+        amounts: [1, 1],
+        maxRentDurations: [1, 1],
+        expectedLendingIds: [1, 2],
+        nftAddresses: [ERC1155.address, ERC1155.address],
+      });
     });
 
-    it("E1155, E1155B", async () => {
-      await ReNFT.lend(
-        [ERC1155.address, E1155B.address],
-        [1, 1],
-        [1, 1],
-        [1, 1],
-        [packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{1155,1155B}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1],
+        amounts: [1, 1],
+        maxRentDurations: [1, 1],
+        expectedLendingIds: [1, 2],
+        nftAddresses: [ERC1155.address, E1155B.address],
+      });
     });
 
-    it("E721, E721, E1155", async () => {
-      await ReNFT.lend(
-        [ERC721.address, ERC721.address, ERC1155.address],
-        [1, 2, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{721,721,1155}", async () => {
+      await lendBatch({
+        tokenIds: [1, 2, 1],
+        amounts: [1, 1, 1],
+        maxRentDurations: [1, 1, 1],
+        expectedLendingIds: [1, 2, 3],
+        nftAddresses: [ERC721.address, ERC721.address, ERC1155.address],
+      });
     });
 
-    it("E721, E1155, E721", async () => {
-      await ReNFT.lend(
-        [ERC721.address, ERC1155.address, ERC721.address],
-        [1, 1, 2],
-        [1, 1, 1],
-        [1, 1, 1],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{721,1155,721}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1, 2],
+        amounts: [1, 1, 1],
+        maxRentDurations: [1, 1, 1],
+        expectedLendingIds: [1, 2, 3],
+        nftAddresses: [ERC721.address, ERC1155.address, ERC721.address],
+      });
     });
 
-    it("E721, E1155, E1155", async () => {
-      await ReNFT.lend(
-        [ERC721.address, ERC1155.address, ERC1155.address],
-        [1, 1, 2],
-        [1, 1, 1],
-        [1, 1, 1],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{721,1155,1155}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1, 2],
+        amounts: [1, 1, 1],
+        maxRentDurations: [1, 1, 1],
+        expectedLendingIds: [1, 2, 3],
+        nftAddresses: [ERC721.address, ERC1155.address, ERC1155.address],
+      });
     });
 
-    it("E721, E1155, E1155B", async () => {
-      await ReNFT.lend(
-        [ERC721.address, ERC1155.address, E1155B.address],
-        [1, 1, 1],
-        [1, 1, 1],
-        [1, 1, 1],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{721,1155,1155B}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1, 2],
+        amounts: [1, 1, 1],
+        maxRentDurations: [1, 1, 1],
+        expectedLendingIds: [1, 2, 3],
+        nftAddresses: [ERC721.address, ERC1155.address, E1155B.address],
+      });
     });
 
-    it("E721, E1155, E1155, E721", async () => {
-      await ReNFT.lend(
-        [ERC721.address, ERC1155.address, ERC1155.address, ERC721.address],
-        [1, 1, 2, 2],
-        [1, 1, 1, 1],
-        [1, 1, 1, 1],
-        [packPrice(1), packPrice(1), packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1), packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{721,1155,1155,721}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1, 2, 2],
+        amounts: [1, 1, 1, 1],
+        maxRentDurations: [1, 1, 1, 1],
+        expectedLendingIds: [1, 2, 3, 4],
+        nftAddresses: [ERC721.address, ERC1155.address, ERC1155.address, ERC721.address],
+      });
     });
 
-    it("E721, E1155, E1155B, E721", async () => {
-      await ReNFT.lend(
-        [ERC721.address, ERC1155.address, E1155B.address, ERC721.address],
-        [1, 1, 1, 2],
-        [1, 1, 1, 1],
-        [1, 1, 1, 1],
-        [packPrice(1), packPrice(1), packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1), packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{721,1155,1155B,721}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1, 1, 2],
+        amounts: [1, 1, 1, 1],
+        maxRentDurations: [1, 1, 1, 1],
+        expectedLendingIds: [1, 2, 3, 4],
+        nftAddresses: [ERC721.address, ERC1155.address, E1155B.address, ERC721.address],
+      });
     });
 
-    it("E1155, E721, E721", async () => {
-      await ReNFT.lend(
-        [ERC1155.address, ERC721.address, ERC721.address],
-        [1, 1, 2],
-        [1, 1, 1],
-        [1, 1, 1],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{1155,721,721}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1, 2],
+        amounts: [1, 1, 1],
+        maxRentDurations: [1, 1, 1],
+        expectedLendingIds: [1, 2, 3],
+        nftAddresses: [ERC1155.address, ERC721.address, ERC721.address],
+      });
     });
 
     it("reverts on unsupported token type", async () => {
