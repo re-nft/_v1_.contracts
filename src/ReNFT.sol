@@ -888,11 +888,6 @@ contract ReNFT is IReNft {
         require(isPastReturnDate(_renting, _blockTimestamp), "cant claim yet");
     }
 
-    function ensureIsUint8Amount(uint256 _amount) private pure {
-        require(_amount > 0, "amount is zero");
-        require(_amount < 256, "amount overflow");
-    }
-
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
     // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
