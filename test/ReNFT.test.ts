@@ -50,13 +50,10 @@ const setup = deployments.createFixture(async () => {
   await deployments.fixture(["Test", "Development"]);
   // beneficiary is the party that receives the rent fee cuts
   const { deployer, beneficiary, renter, lender } = await getNamedAccounts();
-
   const signers = await ethers.getSigners();
-
   const resolver = ((await ethers.getContract(
     "Resolver"
   )) as unknown) as Resolver;
-
   const dai = ((await ethers.getContract("DAI")) as unknown) as ERC20;
   const usdc = ((await ethers.getContract("USDC")) as unknown) as ERC20;
   const e721 = ((await ethers.getContract(
@@ -150,7 +147,7 @@ const setup = deployments.createFixture(async () => {
   // * const award = Ramda.repeat(e721.award(), 10); await Promise.all(award) doesn't either
   for (let i = 0; i < 10; i++) {
     await e721Lender.award();
-    await e721Lender.award();
+    await e721bLender.award();
     await e1155Lender.award();
     await e1155bLender.award();
   }
@@ -187,7 +184,7 @@ const setup = deployments.createFixture(async () => {
       dai: daiLender,
       usdc: usdcRenter,
       e721: e721Lender,
-      e721b: e721Lender,
+      e721b: e721bLender,
       e1155: e1155Lender,
       e1155b: e1155bLender,
       renft: renftLender,
@@ -367,16 +364,11 @@ describe("ReNFT", function () {
     });
 
     it("{721,721B}", async () => {
-      // ? why is 721b in renft contract here?
-      if ((await e721b.ownerOf(1)).toLowerCase() === renft.address) {
-        await e721b.setApprovalForAll(lender.address, true);
-        await e721b.transferFrom(renft.address, lender.address, 1);
-      }
       await lendBatch({
         tokenIds: [1, 1],
         amounts: [1, 1],
         maxRentDurations: [1, 1],
-        expectedLendingIds: [1, 1],
+        expectedLendingIds: [1, 2],
         nftAddresses: [e721.address, e721b.address],
       });
     });
@@ -386,7 +378,7 @@ describe("ReNFT", function () {
         tokenIds: [1, 1],
         amounts: [1, 1],
         maxRentDurations: [1, 1],
-        expectedLendingIds: [1, 1],
+        expectedLendingIds: [1, 2],
         nftAddresses: [e721b.address, e721.address],
       });
     });
