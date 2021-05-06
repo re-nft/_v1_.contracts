@@ -24,8 +24,8 @@ import {
 
 // default values
 const MAX_RENT_DURATION = 1; // 1 day
-const DAILY_RENT_PRICE = 2; // 2 full tokens or 2 ETH
-const NFT_PRICE = 3; // 3 full tokens or 3 ETH
+const DAILY_RENT_PRICE = 2;
+const NFT_PRICE = 3;
 const PAYMENT_TOKEN = 2; // default token is DAI (our TD18)
 
 const SECONDS_IN_A_DAY = 86400;
@@ -295,6 +295,7 @@ describe("ReNFT", function () {
         nftPrices,
         Array(tokenIds.length).fill(PAYMENT_TOKEN)
       );
+
       const receipt = await txn.wait();
       const e = getEvents(receipt.events ?? [], "Lent");
       expect(e.length).to.eq(tokenIds.length);
@@ -310,112 +311,75 @@ describe("ReNFT", function () {
       }
     };
 
-    it("lends one - ERC721", async function () {
-      const tokenIds = [1];
-      await lendBatch({ tokenIds });
+    it("721", async function () {
+      await lendBatch({ tokenIds: [1] });
     });
 
-    it("lends one - ERC1155", async function () {
-      const tokenIds = [1];
+    it("1155", async function () {
       await lendBatch({
-        tokenIds,
+        tokenIds: [1],
         nftAddresses: [ERC1155.address],
       });
     });
 
-    it("lends one - ERC1155 - multiple amounts", async function () {
-      const tokenIds = [1004];
+    it("1155:amounts=[2]", async function () {
       await lendBatch({
-        tokenIds,
+        tokenIds: [1004],
         amounts: [2],
         nftAddresses: [ERC1155.address],
       });
     });
 
-    it("lends two - one after another - ERC721", async function () {
-      const tokenIds = [1, 2];
-      await lendBatch({ tokenIds: [tokenIds[0]], expectedLendingIds: [1] });
-      await lendBatch({ tokenIds: [tokenIds[1]], expectedLendingIds: [2] });
+    it("721 -> 721", async function () {
+      await lendBatch({ tokenIds: [1], expectedLendingIds: [1] });
+      await lendBatch({ tokenIds: [2], expectedLendingIds: [2] });
     });
 
-    it("lends two - one after another - ERC1155", async function () {
-      const tokenIds = [1, 2];
+    it("1155 -> 1155", async function () {
       await lendBatch({
-        tokenIds: [tokenIds[0]],
+        tokenIds: [1],
         amounts: [1],
         expectedLendingIds: [1],
         nftAddresses: [ERC1155.address],
       });
       await lendBatch({
-        tokenIds: [tokenIds[1]],
+        tokenIds: [2],
         amounts: [1],
         expectedLendingIds: [2],
         nftAddresses: [ERC1155.address],
       });
     });
 
-    it("lends in a batch - ERC721", async function () {
-      const tokenIds = [1, 2];
-      await lendBatch({ tokenIds });
+    it("721:tokenIds=[1,2]", async function () {
+      await lendBatch({ tokenIds: [1, 2] });
     });
 
-    it("lends in a batch - ERC1155", async function () {
-      const tokenIds = [1, 2];
+    it("1155:tokenIds=[1,2]", async function () {
       await lendBatch({
-        tokenIds,
+        tokenIds: [1, 2],
         amounts: [1, 1],
         nftAddresses: [ERC1155.address, ERC1155.address],
       });
     });
 
-    it("E721, E721", async () => {
-      await ReNFT.lend(
-        [ERC721.address, ERC721.address],
-        [1, 2],
-        [1, 1],
-        [1, 1],
-        [packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
+    it("{721,721B}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1],
+        amounts: [1, 1],
+        maxRentDurations: [1, 1],
+        expectedLendingIds: [1, 2],
+        nftAddresses: [ERC721.address, E721B.address],
+      });
     });
 
-    it("E721, E721B", async () => {
-      await ReNFT.lend(
-        [ERC721.address, E721B.address],
-        [1, 1],
-        [1, 1],
-        [1, 1],
-        [packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
-    });
-
-    it("E721, E1155", async () => {
-      await ReNFT.lend(
-        [ERC721.address, ERC1155.address],
-        [1, 1],
-        [1, 1],
-        [1, 1],
-        [packPrice(1), packPrice(1)],
-        [packPrice(1), packPrice(1)],
-        [PAYMENT_TOKEN, PAYMENT_TOKEN]
-      );
-    });
-
-    it("E1155", async () => {
-      await ReNFT.lend(
-        [ERC1155.address],
-        [1],
-        [1],
-        [1],
-        [packPrice(1)],
-        [packPrice(1)],
-        [PAYMENT_TOKEN]
-      );
-
-      const nftBalance = await ERC1155.balanceOf(ReNFT.address, [1]);
+    it("{721,1155}", async () => {
+      await lendBatch({
+        tokenIds: [1, 1],
+        amounts: [1, 1],
+        maxRentDurations: [1, 1],
+        expectedLendingIds: [1, 2],
+        nftAddresses: [ERC721.address, ERC1155.address],
+      });
     });
 
     it("E1155, E721", async () => {
