@@ -603,7 +603,9 @@ contract ReNFT is IReNft {
                     )
                 ];
 
+            // to claim the collateral, you need to have something in lending
             ensureIsNotNull(item.lending);
+            // and renting
             ensureIsNotNull(item.renting);
             ensureIsClaimable(item.renting, block.timestamp);
 

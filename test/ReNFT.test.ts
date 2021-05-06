@@ -551,17 +551,22 @@ describe("ReNFT", function () {
     });
 
     it("unpacks valid number", async () => {
+      // this is 1.0001 ether
       const price = "0x00010001";
       const unpacked = await utils.unpackPrice(price, DP18);
       expect(unpacked).to.be.equal(ethers.utils.parseEther("1.0001"));
     });
 
+    // we do not allow zeros. If someone passes zero, then we change it
+    // to 0.0001 ether
     it("unpacks zero into 0.0001", async () => {
       const price = "0x00000000";
       const unpacked = await utils.unpackPrice(price, DP18);
       expect(unpacked).to.be.equal(ethers.utils.parseEther("0.0001"));
     });
 
+    // if someone passses max, then we convert to our max
+    // which is 9999.9999 ether
     it("unpacks max correctly", async () => {
       const price = "0xffffffff";
       const unpacked = await utils.unpackPrice(price, DP18);
@@ -574,6 +579,8 @@ describe("ReNFT", function () {
       expect(unpacked).to.be.equal(ethers.utils.parseEther("0.0001"));
     });
 
+    // this is for different scale tokens. some tokens have 18 dp
+    // some have 12 etc. e.g. USDC has 6 decimal places
     it("unpacks DP12 corrctly", async () => {
       const price = "0x00020003";
       const unpacked = await utils.unpackPrice(
