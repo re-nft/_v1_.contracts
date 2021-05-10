@@ -86,6 +86,10 @@ contract ReNFT is IReNft {
         address payable _beneficiary,
         address _admin
     ) {
+        require(_resolver != address(0), "zero address");
+        require(_beneficiary != address(0), "zero address");
+        require(_admin != address(0), "zero address");
+
         resolver = IResolver(_resolver);
         beneficiary = _beneficiary;
         admin = _admin;
@@ -206,11 +210,13 @@ contract ReNFT is IReNft {
         uint8 paymentTokenIx = uint8(_paymentToken);
 
         // ReNFT fee
-        if (paymentTokenIx > 1) {
+        if (paymentTokenIx > 0) {
             ERC20 paymentToken =
                 ERC20(resolver.getPaymentToken(paymentTokenIx));
             paymentToken.safeTransfer(beneficiary, fee);
         } else {
+            // this bit hands over control to fallback function in case when the beneficiary is non controlled
+            // contract, which is never.
             beneficiary.transfer(fee);
         }
     }
@@ -226,7 +232,7 @@ contract ReNFT is IReNft {
         address paymentToken = resolver.getPaymentToken(paymentTokenIx);
 
         // if not ether
-        if (paymentTokenIx > 1) {
+        if (paymentTokenIx > 0) {
             decimals = __decimals(ERC20(paymentToken));
         }
 
@@ -256,7 +262,7 @@ contract ReNFT is IReNft {
             takeFee(sendLenderAmt, _lendingRenting.lending.paymentToken);
         sendRenterAmt += nftPrice;
 
-        if (paymentTokenIx > 1) {
+        if (paymentTokenIx > 0) {
             ERC20(paymentToken).safeTransfer(
                 _lendingRenting.lending.lenderAddress,
                 sendLenderAmt - takenFee
@@ -284,7 +290,7 @@ contract ReNFT is IReNft {
         ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
 
         uint256 decimals = 18;
-        if (paymentTokenIx > 1) {
+        if (paymentTokenIx > 0) {
             decimals = __decimals(ERC20(paymentToken));
         }
 
@@ -305,7 +311,7 @@ contract ReNFT is IReNft {
             "maxRentPayment is incorrect"
         );
 
-        if (paymentTokenIx > 1) {
+        if (paymentTokenIx > 0) {
             paymentToken.safeTransfer(
                 _lendingRenting.lending.lenderAddress,
                 finalAmt - takenFee
@@ -351,7 +357,7 @@ contract ReNFT is IReNft {
             // TODO: pmtIx > 1
             uint256 decimals = 18;
             uint8 paymentTokenIx = uint8(_tp.paymentTokens[i]);
-            if (paymentTokenIx > 1) {
+            if (paymentTokenIx > 0) {
                 decimals = __decimals(
                     ERC20(resolver.getPaymentToken(paymentTokenIx))
                 );

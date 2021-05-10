@@ -656,7 +656,7 @@ describe("ReNFT", function () {
     };
 
     it("rents ok - one eth", async () => {
-      const eth = 1;
+      const eth = 0;
       await lendBatch({
         tokenIds: [1],
         paymentTokens: [eth],
@@ -692,7 +692,7 @@ describe("ReNFT", function () {
 
     it("does not rent when insufficient money sent - eth", async () => {
       const tokenIds = [1];
-      const eth = 1;
+      const eth = 0;
       await lendBatch({
         tokenIds,
         paymentTokens: [eth],
@@ -770,7 +770,7 @@ describe("ReNFT", function () {
 
     it("rents ok - one eth & one erc20", async () => {
       const tokenIds = [1, 2];
-      const paymentTokens = [1, 2];
+      const paymentTokens = [0, 1];
       await lendBatch({
         tokenIds,
         paymentTokens,
@@ -846,7 +846,7 @@ describe("ReNFT", function () {
 
     it("does not rent when insufficient money sent - one eth & one erc20 - eth", async () => {
       const tokenIds = [1, 2];
-      const paymentTokens = [1, 2];
+      const paymentTokens = [0, 1];
       await lendBatch({
         tokenIds,
         paymentTokens,
@@ -876,7 +876,7 @@ describe("ReNFT", function () {
 
     it("does not rent when insufficient money sent - one eth & one erc20 - erc20", async () => {
       const tokenIds = [1, 2];
-      const paymentTokens = [1, 2];
+      const paymentTokens = [0, 1];
       await lendBatch({
         tokenIds,
         paymentTokens,
@@ -929,7 +929,7 @@ describe("ReNFT", function () {
 
     it("rents ok - two eth", async () => {
       const tokenIds = [1, 2];
-      const eth = 1;
+      const eth = 0;
       await lendBatch({
         tokenIds,
         paymentTokens: [eth, eth],
@@ -1077,7 +1077,7 @@ describe("ReNFT", function () {
 
     it("does not rent - already rented", async () => {
       const tokenIds = [1];
-      const eth = 1;
+      const eth = 0;
       await lendBatch({
         tokenIds,
         paymentTokens: [eth],
@@ -1102,7 +1102,7 @@ describe("ReNFT", function () {
 
     it("does not rent - you are lender", async () => {
       const tokenIds = [1];
-      const eth = 1;
+      const eth = 0;
       const maxRentDurations = 3;
       const _dailyRentPrices = Array(tokenIds.length)
         .fill(DAILY_RENT_PRICE)
@@ -1628,7 +1628,7 @@ describe("ReNFT", function () {
 
     it("claims collateral ok - one eth one erc20", async () => {
       const tokenIds = [1, 2];
-      const paymentTokens = [1, 2];
+      const paymentTokens = [0, 1];
       const maxRentDurations = [10, 101];
       const drpEth = 3.4299;
       const colEth = 23.112;

@@ -2,7 +2,6 @@
 pragma solidity 0.8.0;
 
 interface IResolver {
-    // TODO: RENT token
     enum PaymentToken {
         ETH, // 0
         WETH, // 1

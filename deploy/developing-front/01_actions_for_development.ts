@@ -53,9 +53,28 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   for (let i = 0; i < 10; i++) await e721b.award();
 
   // * also send through 100 erc20 tokens to everyone
+  const weth = ((await ethers.getContract("WETH", deployer)) as any) as ERC20;
   const dai = ((await ethers.getContract("DAI", deployer)) as any) as ERC20;
   const usdc = ((await ethers.getContract("USDC", deployer)) as any) as ERC20;
+  const usdt = ((await ethers.getContract("USDT", deployer)) as any) as ERC20;
   const amtToSend = ethers.utils.parseEther("100000000");
+
+  // enum PaymentToken {
+  //     ETH, // 0
+  //     WETH, // 1
+  //     DAI, // 2
+  //     USDC, // 3
+  //     USDT, // 4
+  //     TUSD // 5
+  // }
+
+  await weth.transfer(lender, amtToSend);
+  await weth.transfer(beneficiary, amtToSend);
+  await weth.transfer(renter, amtToSend);
+
+  await usdt.transfer(lender, amtToSend);
+  await usdt.transfer(beneficiary, amtToSend);
+  await usdt.transfer(renter, amtToSend);
 
   await usdc.transfer(lender, amtToSend);
   await usdc.transfer(beneficiary, amtToSend);
@@ -65,7 +84,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await dai.transfer(beneficiary, amtToSend);
   await dai.transfer(renter, amtToSend);
 
-  // * set the resolver to resolve to the correct payment token
+  await resolver.setPaymentToken(1, weth.address);
   await resolver.setPaymentToken(2, dai.address);
   await resolver.setPaymentToken(3, usdc.address);
 };
