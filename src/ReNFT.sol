@@ -238,7 +238,6 @@ contract ReNFT is IReNft {
             rentPrice * _lendingRenting.renting.rentDuration;
         uint256 sendLenderAmt = (_secondsSinceRentStart * rentPrice) / 86400;
 
-        // more sanity checks
         require(renterPayment > 0, "renter payment is zero");
         require(sendLenderAmt > 0, "lender payment is zero");
         require(
@@ -247,12 +246,7 @@ contract ReNFT is IReNft {
         );
 
         uint256 sendRenterAmt = renterPayment - sendLenderAmt;
-
         require(renterPayment > sendRenterAmt, "underflow issues prevention");
-        require(
-            renterPayment == sendRenterAmt + sendLenderAmt,
-            "sanity check amounts failed"
-        );
 
         // the fee is always taken from the lender
         // the renter contributes the lump sum of all the days prepaid + collateral
