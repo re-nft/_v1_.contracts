@@ -1282,36 +1282,36 @@ describe("ReNFT", function () {
 
     it("returns ok - one weth one usdc", async () => {
       const rentDurations = [2, 4];
-      const drpEth = 1.6921; // acronym for dailry rental price
-      const colEth = 0.0001; // denotes collateral
-      const drpErc20 = 19.1199;
-      const colErc20 = 8.1929;
-      const dailyRentPriceEth = packPrice(drpEth);
-      const nftPriceEth = packPrice(colEth);
-      const dailyRentPriceErc20 = packPrice(drpErc20);
-      const nftPriceErc20 = packPrice(colErc20);
+      const drpWETH = 1.6921; // acronym for dailry rental price
+      const collateralWETH = 0.0001; // denotes collateral
+      const drpUSDC = 19.1199;
+      const collateralUSDC = 8.1929;
+      const dailyRentPriceEth = packPrice(drpWETH);
+      const nftPriceWETH = packPrice(collateralWETH);
+      const dailyRentPriceErc20 = packPrice(drpUSDC);
+      const nftPriceErc20 = packPrice(collateralUSDC);
       await lendBatch({
         amounts: [1, 1],
         tokenIds: [1, 2],
         paymentTokens: [PAYMENT_TOKEN_WETH, PAYMENT_TOKEN_USDC],
         maxRentDurations: [3, 200],
         dailyRentPrices: [dailyRentPriceEth, dailyRentPriceErc20],
-        nftPrices: [nftPriceEth, nftPriceErc20],
+        nftPrices: [nftPriceWETH, nftPriceErc20],
       });
       // todo: a class like events.args where you can access the members
       // via both the index and the name. In fact, just copy that class
       // into my personal utils file (npm package?)
       const pmtAmts = [
         ethers.utils.parseEther(
-          (rentDurations[0] * drpEth + colEth).toString()
+          (rentDurations[0] * drpWETH + collateralWETH).toString()
         ),
         ethers.utils.parseEther(
-          (rentDurations[1] * drpErc20 + colErc20).toString()
+          (rentDurations[1] * drpUSDC + collateralUSDC).toString()
         ),
       ];
       const pmtAmtsWoCol = [
-        ethers.utils.parseEther((rentDurations[0] * drpEth).toString()),
-        ethers.utils.parseEther((rentDurations[1] * drpErc20).toString()),
+        ethers.utils.parseEther((rentDurations[0] * drpWETH).toString()),
+        ethers.utils.parseEther((rentDurations[1] * drpUSDC).toString()),
       ];
 
       await renter.renft.rent(
@@ -1356,13 +1356,13 @@ describe("ReNFT", function () {
         .div(rentDurations[0] * SECONDS_IN_A_DAY);
       const sendRenterAmtEth = pmtAmtsWoCol[0]
         .sub(sendLenderAmtEth)
-        .add(ethers.utils.parseEther(colEth.toString()));
+        .add(ethers.utils.parseEther(collateralWETH.toString()));
       let sendLenderAmtErc20 = pmtAmtsWoCol[1]
         .mul(_rentDuration)
         .div(rentDurations[1] * SECONDS_IN_A_DAY);
       const sendRenterAmtErc20 = pmtAmtsWoCol[1]
         .sub(sendLenderAmtErc20)
-        .add(ethers.utils.parseEther(colErc20.toString()));
+        .add(ethers.utils.parseEther(collateralUSDC.toString()));
       const feeEth = takeFee(sendLenderAmtEth, rentFee);
       sendLenderAmtEth = sendLenderAmtEth.sub(feeEth);
       const feeErc20 = takeFee(sendLenderAmtErc20, rentFee);
