@@ -30,25 +30,6 @@ export const advanceTime = async (seconds: number): Promise<void> => {
   await ethers.provider.send("evm_mine", []);
 };
 
-// price is bytes4 in Solidity
-export const unpackPrice = (
-  price: BigNumberish,
-  scale: BigNumber
-): BigNumber => {
-  // price is from 1 to 4294967295. i.e. from 0x00000001 to 0xffffffff
-  const numHex = decimalToPaddedHexString(Number(price), PRICE_BITSIZE).slice(
-    2
-  );
-  let whole = parseInt(numHex.slice(0, 4), 16);
-  let decimal = parseInt(numHex.slice(4), 16);
-  if (whole > 9999) whole = 9999;
-  if (decimal > 9999) decimal = 9999;
-  const w = BigNumber.from(whole).mul(scale);
-  const d = BigNumber.from(decimal).mul(scale.div(10_000));
-  const _price = w.add(d);
-  return _price;
-};
-
 export const getEvents = (events: Event[], name: string): Event[] => {
   return events.filter((e) => e?.event?.toLowerCase() === name.toLowerCase());
 };
