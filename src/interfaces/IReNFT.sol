@@ -65,7 +65,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
         uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
-    ) external payable;
+    ) external;
 
     /**
      * @dev renters call this to return the rented NFT before the

@@ -149,7 +149,7 @@ contract ReNFT is IReNft {
         uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
-    ) external payable override {
+    ) external override {
         twoPointerLoop(
             handleRent,
             createRentTP(
