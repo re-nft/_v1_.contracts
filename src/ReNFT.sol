@@ -210,15 +210,8 @@ contract ReNFT is IReNft {
         uint8 paymentTokenIx = uint8(_paymentToken);
 
         // ReNFT fee
-        if (paymentTokenIx > 0) {
-            ERC20 paymentToken =
-                ERC20(resolver.getPaymentToken(paymentTokenIx));
-            paymentToken.safeTransfer(beneficiary, fee);
-        } else {
-            // this bit hands over control to fallback function in case when the beneficiary is non controlled
-            // contract, which is never.
-            beneficiary.transfer(fee);
-        }
+        ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
+        paymentToken.safeTransfer(beneficiary, fee);
     }
 
     function distributePayments(
@@ -230,11 +223,7 @@ contract ReNFT is IReNft {
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
         // uint8 to paymentToken address
         address paymentToken = resolver.getPaymentToken(paymentTokenIx);
-
-        // if not ether
-        if (paymentTokenIx > 0) {
-            decimals = __decimals(ERC20(paymentToken));
-        }
+        decimals = __decimals(ERC20(paymentToken));
 
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
@@ -262,25 +251,14 @@ contract ReNFT is IReNft {
             takeFee(sendLenderAmt, _lendingRenting.lending.paymentToken);
         sendRenterAmt += nftPrice;
 
-        if (paymentTokenIx > 0) {
-            ERC20(paymentToken).safeTransfer(
-                _lendingRenting.lending.lenderAddress,
-                sendLenderAmt - takenFee
-            );
-            ERC20(paymentToken).safeTransfer(
-                _lendingRenting.renting.renterAddress,
-                sendRenterAmt
-            );
-        } else {
-            // payment token is ether
-            _lendingRenting.lending.lenderAddress.transfer(
-                // send the lender their yield minus ReNFT's fee
-                sendLenderAmt - takenFee
-            );
-            // finally, send the renter the collateral + unused amounts
-            // thus, sendRenterAmt + sendLenderAmt = renterPayment
-            _lendingRenting.renting.renterAddress.transfer(sendRenterAmt);
-        }
+        ERC20(paymentToken).safeTransfer(
+            _lendingRenting.lending.lenderAddress,
+            sendLenderAmt - takenFee
+        );
+        ERC20(paymentToken).safeTransfer(
+            _lendingRenting.renting.renterAddress,
+            sendRenterAmt
+        );
     }
 
     function distributeClaimPayment(LendingRenting memory _lendingRenting)
@@ -290,9 +268,7 @@ contract ReNFT is IReNft {
         ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
 
         uint256 decimals = 18;
-        if (paymentTokenIx > 0) {
-            decimals = __decimals(ERC20(paymentToken));
-        }
+        decimals = __decimals(ERC20(paymentToken));
 
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
@@ -311,15 +287,10 @@ contract ReNFT is IReNft {
             "maxRentPayment is incorrect"
         );
 
-        if (paymentTokenIx > 0) {
-            paymentToken.safeTransfer(
-                _lendingRenting.lending.lenderAddress,
-                finalAmt - takenFee
-            );
-        } else {
-            // renter gets nothing
-            _lendingRenting.lending.lenderAddress.transfer(finalAmt - takenFee);
-        }
+        paymentToken.safeTransfer(
+            _lendingRenting.lending.lenderAddress,
+            finalAmt - takenFee
+        );
     }
 
     function safeTransfer(
@@ -356,11 +327,9 @@ contract ReNFT is IReNft {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             uint256 decimals = 18;
             uint8 paymentTokenIx = uint8(_tp.paymentTokens[i]);
-            if (paymentTokenIx > 0) {
-                decimals = __decimals(
-                    ERC20(resolver.getPaymentToken(paymentTokenIx))
-                );
-            }
+            decimals = __decimals(
+                ERC20(resolver.getPaymentToken(paymentTokenIx))
+            );
             ensureIsLendable(_tp, i, 10**decimals);
 
             LendingRenting storage item =
@@ -425,8 +394,6 @@ contract ReNFT is IReNft {
     }
 
     function handleRent(TwoPointer memory _tp) private {
-        // total eth pmt amount required to have been sent into this function
-        uint256 ethPmtRequired = 0;
 
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             LendingRenting storage item =
@@ -460,12 +427,7 @@ contract ReNFT is IReNft {
             uint256 decimals = 18;
 
             {
-                // if not sentinel and ether, then erc20, then pull the decimals
-                // only the admins of the contract are able to add payment tokens
-                // see towards the end of the contract
-                if (paymentTokenIx > 0) {
-                    decimals = __decimals(ERC20(paymentToken));
-                }
+                decimals = __decimals(ERC20(paymentToken));
                 uint256 scale = 10**decimals;
                 uint256 rentPrice =
                     _tp.rentDurations[i] *
@@ -481,22 +443,12 @@ contract ReNFT is IReNft {
                 uint256 upfrontPayment = rentPrice + nftPrice;
 
                 // if this is an erc20 transaction - send immediately
-                if (paymentTokenIx > 0) {
-                    // lock up the lump sum in escrow
-                    ERC20(paymentToken).safeTransferFrom(
-                        msg.sender,
-                        address(this),
-                        upfrontPayment
-                    );
-                    // if ether - accumulate and check that msg.value is at least that
-                } else {
-                    ethPmtRequired = ethPmtRequired + upfrontPayment;
-
-                    require(
-                        msg.value >= ethPmtRequired,
-                        "insufficient eth sent"
-                    );
-                }
+                // lock up the lump sum in escrow
+                ERC20(paymentToken).safeTransferFrom(
+                    msg.sender,
+                    address(this),
+                    upfrontPayment
+                );
             }
 
             item.renting.renterAddress = payable(msg.sender);

@@ -3,7 +3,7 @@ pragma solidity 0.8.0;
 
 interface IResolver {
     enum PaymentToken {
-        ETH, // 0
+        SENTINEL, // 0 <- marks non-existence, nil of the payment tokens
         WETH, // 1
         DAI, // 2
         USDC, // 3
