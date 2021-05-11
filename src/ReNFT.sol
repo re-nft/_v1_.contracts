@@ -208,7 +208,6 @@ contract ReNFT is IReNft {
         fee = _rent * rentFee;
         fee /= 10000;
         uint8 paymentTokenIx = uint8(_paymentToken);
-
         // ReNFT fee
         ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
         paymentToken.safeTransfer(beneficiary, fee);
@@ -225,23 +224,24 @@ contract ReNFT is IReNft {
         address paymentToken = resolver.getPaymentToken(paymentTokenIx);
         decimals = __decimals(ERC20(paymentToken));
 
+        // lender receives amounts proportional to the amount of time the NFT was used
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
         uint256 rentPrice =
             unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
-        uint256 renterPayment =
+        uint256 totalRenterPmtWoCollateral =
             rentPrice * _lendingRenting.renting.rentDuration;
         uint256 sendLenderAmt = (_secondsSinceRentStart * rentPrice) / 86400;
 
-        require(renterPayment > 0, "renter payment is zero");
+        require(totalRenterPmtWoCollateral > 0, "total payment wo collateral is zero");
         require(sendLenderAmt > 0, "lender payment is zero");
         require(
-            renterPayment >= sendLenderAmt,
+            totalRenterPmtWoCollateral >= sendLenderAmt,
             "lender receiving more than renter pmt"
         );
 
-        uint256 sendRenterAmt = renterPayment - sendLenderAmt;
-        require(renterPayment > sendRenterAmt, "underflow issues prevention");
+        uint256 sendRenterAmt = totalRenterPmtWoCollateral - sendLenderAmt;
+        require(sendRenterAmt < totalRenterPmtWoCollateral, "underflow issues prevention");
 
         // the fee is always taken from the lender
         // the renter contributes the lump sum of all the days prepaid + collateral
@@ -325,12 +325,7 @@ contract ReNFT is IReNft {
         // or
         // for ERC721s
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            uint256 decimals = 18;
-            uint8 paymentTokenIx = uint8(_tp.paymentTokens[i]);
-            decimals = __decimals(
-                ERC20(resolver.getPaymentToken(paymentTokenIx))
-            );
-            ensureIsLendable(_tp, i, 10**decimals);
+            ensureIsLendable(_tp, i);
 
             LendingRenting storage item =
                 lendingRenting[
@@ -701,23 +696,29 @@ contract ReNFT is IReNft {
         pure
         returns (uint256)
     {
-        require(_scale >= 10000, "invalid scale");
+        ensureIsUnpackablePrice(_price, _scale);
+
+        // whole := if _price is 0x00120034, then whole is uint16(0x0012)
+        // decimal := uin16(0x0034)
+        // we only support dp4 precision for decimals. i.e. you can only have
+        // numerals after the decimal place ABCD.wxyz. e.g. 1.8271
+        // 1.8271 represents amount in the default scale of the payment token
+        // i.e. if .decimals() of the ERC20 is 6, then 1.8271 * (10 ** 6)
         uint16 whole = uint16(bytes2(_price));
         uint16 decimal = uint16(bytes2(_price << 16));
         uint256 decimalScale = _scale / 10000;
+
         if (whole > 9999) {
             whole = 9999;
         }
-        uint256 w = whole * _scale;
         if (decimal > 9999) {
             decimal = 9999;
         }
+
+        uint256 w = whole * _scale;
         uint256 d = decimal * decimalScale;
         uint256 price = w + d;
-        require(price >= w, "invalid price");
-        if (price == 0) {
-            price = decimalScale;
-        }
+
         return price;
     }
 
@@ -784,8 +785,7 @@ contract ReNFT is IReNft {
 
     function ensureIsLendable(
         TwoPointer memory _tp,
-        uint256 _i,
-        uint256 _scale
+        uint256 _i
     ) private pure {
         // lending at least one token & the amount is less or equal than uint8 max 255
         require(_tp.lentAmounts[_i] > 0, "invalid lend amount");
@@ -793,11 +793,8 @@ contract ReNFT is IReNft {
         // max rent duration is at least a day. it is uint8 so no need to check for max
         require(_tp.maxRentDurations[_i] > 0, "must be at least one day lend");
         // ensure that the daily rental price and the collateral prices are not zero
-        require(
-            unpackPrice(_tp.dailyRentPrices[_i], _scale) > 0,
-            "cant be zero"
-        );
-        require(unpackPrice(_tp.nftPrices[_i], _scale) > 0, "cant be zero");
+        require(uint32(_tp.dailyRentPrices[_i]) > 0, "daily rent price is zero");
+        require(uint32(_tp.nftPrices[_i]) > 0, "nft price is zero");
     }
 
     function ensureIsRentable(
@@ -840,6 +837,11 @@ contract ReNFT is IReNft {
         pure
     {
         require(isPastReturnDate(_renting, _blockTimestamp), "cant claim yet");
+    }
+
+    function ensureIsUnpackablePrice(bytes4 _price, uint256 _scale) private pure {
+        require(uint32(_price) > 0, "invalid price");
+        require(_scale >= 10000, "invalid scale");
     }
 
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.

@@ -50,6 +50,15 @@ type NamedAccount = {
   e1155b: E1155B;
 };
 
+type lendBatchArgs = {
+  tokenIds: number[];
+  amounts?: number[];
+  maxRentDurations?: number[];
+  dailyRentPrices?: string[];
+  nftPrices?: string[];
+  expectedLendingIds?: number[];
+};
+
 const setup = deployments.createFixture(async () => {
   await deployments.fixture(["Test", "Development"]);
   // beneficiary is the party that receives the rent fee cuts
@@ -160,8 +169,6 @@ const setup = deployments.createFixture(async () => {
   await e1155bRenter.setApprovalForAll(renft.address, true);
   await e1155bLender.setApprovalForAll(renft.address, true);
 
-  // * Ramda.repeat(await e721.award(), 10) does not work like I expected
-  // * const award = Ramda.repeat(e721.award(), 10); await Promise.all(award) doesn't either
   for (let i = 0; i < 10; i++) {
     await e721Lender.award();
     await e721bLender.award();
@@ -211,15 +218,6 @@ const setup = deployments.createFixture(async () => {
     },
   };
 });
-
-type lendBatchArgs = {
-  tokenIds: number[];
-  amounts?: number[];
-  maxRentDurations?: number[];
-  dailyRentPrices?: string[];
-  nftPrices?: string[];
-  expectedLendingIds?: number[];
-};
 
 describe("ReNFT", function () {
   context("Lending", async function () {
@@ -292,6 +290,7 @@ describe("ReNFT", function () {
 
     const lendBatch = async ({
       tokenIds,
+      nftAddresses = Array(tokenIds.length).fill(e721.address),
       amounts = Array(tokenIds.length).fill(1),
       maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION),
       dailyRentPrices = Array(tokenIds.length)
@@ -301,7 +300,6 @@ describe("ReNFT", function () {
         .fill(NFT_PRICE)
         .map((x) => decimalToPaddedHexString(x, 32)),
       expectedLendingIds = tokenIds.map((_, ix) => ix + 1),
-      nftAddresses = Array(tokenIds.length).fill(e721.address),
     }: lendBatchArgs & {
       nftAddresses?: string[];
     }) => {
@@ -347,6 +345,7 @@ describe("ReNFT", function () {
 
     it("1155:amounts=[2]", async function () {
       await lendBatch({
+        // toeknId 1004 is a shield. see Test/E1155.sol
         tokenIds: [1004],
         amounts: [2],
         nftAddresses: [e1155.address],
@@ -515,12 +514,13 @@ describe("ReNFT", function () {
       });
     });
 
+    // todo
     it("reverts on unsupported token type", async () => {
       await expect(lendBatch({ nftAddresses: [usdc.address], tokenIds: [1] })).to
         .be.reverted;
     });
 
-    it("reverts if tries to lend again - E721", async function () {
+    it("reverts if tries to lend again - 721", async function () {
       const tokenIds = [1];
       await lendBatch({ tokenIds });
       await expect(lendBatch({ tokenIds })).to.be.revertedWith(
@@ -528,13 +528,14 @@ describe("ReNFT", function () {
       );
     });
 
-    it("reverts if tries to lend again - ERC1155", async function () {
+    it("reverts if tries to lend again - 1155", async function () {
       const tokenIds = [1];
       await lendBatch({
         tokenIds,
         amounts: [1],
         nftAddresses: [e1155.address],
       });
+      // re-lending the same NFT when you have no more amounts will fail
       await expect(
         lendBatch({
           tokenIds,
@@ -544,14 +545,14 @@ describe("ReNFT", function () {
       ).to.be.revertedWith("ERC1155: insufficient balance for transfer");
     });
 
-    it("disallows zero day lend - E721", async () => {
+    it("disallows zero day maxRentDuration - 721", async () => {
       const tokenIds = [1];
       await expect(
         lendBatch({ tokenIds, maxRentDurations: [0] })
       ).to.be.revertedWith("must be at least one day lend");
     });
 
-    it("disallows zero day lend - ERC1155", async () => {
+    it("disallows zero day maxRentDuration - 1155", async () => {
       const tokenIds = [1];
       await expect(
         lendBatch({
@@ -580,15 +581,15 @@ describe("ReNFT", function () {
     });
 
     // we do not allow zeros. If someone passes zero, then we change it
-    // to 0.0001 ether
-    it("unpacks zero into 0.0001", async () => {
+    // to 0.0001 default scale of the coin (10 ** decimals)
+    it("reverts on zero price", async () => {
       const price = "0x00000000";
-      const unpacked = await utils.unpackPrice(price, DP18);
-      expect(unpacked).to.be.equal(ethers.utils.parseEther("0.0001"));
+      const unpacked = utils.unpackPrice(price, DP18);
+      expect(unpacked).to.be.revertedWith("invalid price");
     });
 
     // if someone passses max, then we convert to our max
-    // which is 9999.9999 ether
+    // which is 9999.9999 default scale of the coin (10 ** decimals)
     it("unpacks max correctly", async () => {
       const price = "0xffffffff";
       const unpacked = await utils.unpackPrice(price, DP18);
@@ -611,6 +612,18 @@ describe("ReNFT", function () {
       );
       expect(unpacked).to.be.equal(ethers.utils.parseUnits("2.0003", "szabo"));
     });
+
+    it("reverts for DP3", async () => {
+      const price = "0x00000001";
+      const unpacked = utils.unpackPrice(price, "1000");
+      expect(unpacked).to.be.revertedWith("invalid scale");
+    });
+
+    it("unpacks DP4 correctly", async () => {
+      const price = "0x00010001";
+      const unpacked = await utils.unpackPrice(price, "10000");
+      expect(unpacked).to.be.equal(10001);
+    })
   });
 
   context("Renting", async function () {
@@ -816,10 +829,7 @@ describe("ReNFT", function () {
         tokenIds,
         [1, 1],
         lendingId,
-        rentDuration,
-        {
-          value: pmtAmounts[0],
-        }
+        rentDuration
       );
       const receipt = await tx.wait();
       const renterBalancePostERC20 = await getErc20Balance(
@@ -1787,7 +1797,7 @@ describe("ReNFT", function () {
     });
   });
 
-  context("For Glory", async () => {
+  context("Misc", async () => {
     it("makes whole 9999 when exceeds", async () => {
       const { lender, deployer, renter } = await setup();
       await lender.renft.lend(
