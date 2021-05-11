@@ -219,6 +219,16 @@ const setup = deployments.createFixture(async () => {
   };
 });
 
+const captureBalances = async (accs: (NamedAccount | ReNFT)[], coins: ERC20[]) => {
+  const balances = [];
+  for (let i = 0; i < accs.length; i++) {
+    for (let j = 0; j < coins.length; j++) {
+      balances.push(await coins[j].balanceOf(accs[i].address));
+    }
+  }
+  return balances;
+}
+
 describe("ReNFT", function () {
   context("Lending", async function () {
     let renft: ReNFT;
@@ -692,29 +702,31 @@ describe("ReNFT", function () {
       }
     };
 
-    it("rents ok - one weth", async () => {
+    it("rents ok - WETH", async () => {
       await lendBatch({
         tokenIds: [1],
         paymentTokens: [PAYMENT_TOKEN_WETH],
         maxRentDurations: [3],
       });
-      const dudeBalancePre = await getBalance(renter.address);
-      const renftBalancePre = await getBalance(ReNFT.address);
-      expect(renftBalancePre).to.be.equal(0);
-      const rentAmounts = BigNumber.from(2).mul(
+
+      const rentDurations = [2];
+      const balancesPre = await captureBalances([renter, ReNFT], [WETH]);
+
+      expect(balancesPre[1]).to.be.equal(0);
+
+      const rentAmounts = BigNumber.from(rentDurations[0]).mul(
         unpackPrice(DAILY_RENT_PRICE, DP18)
       );
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(rentAmounts);
-      const tx = await ReNFT.rent([E721.address], [1], [1], [1], [2], {
-        value: pmtAmount,
-      });
-      const dudeBalancePost = await getBalance(renter.address);
-      const renftBalancePost = await getBalance(ReNFT.address);
-      expect(renftBalancePost).to.be.equal(pmtAmount);
+
+      const tx = await ReNFT.rent([E721.address], [1], [1], [1], rentDurations);
+
+      const balancesPost = await captureBalances([renter, ReNFT], [WETH]);
+      expect(balancesPost[1]).to.be.equal(pmtAmount);
+      expect(balancesPost[0]).to.be.equal(balancesPre[0].sub(pmtAmount));
+
       const receipt = await tx.wait();
-      expect(
-        dudeBalancePre.sub(receipt.gasUsed.mul(tx.gasPrice)).sub(pmtAmount)
-      ).to.be.equal(dudeBalancePost);
+
       const rentedAt = [(await getLatestBlock()).timestamp];
       const events = receipt.events ?? [];
       validateRented({
@@ -726,66 +738,73 @@ describe("ReNFT", function () {
       });
     });
 
-    it("rents ok - one erc20", async () => {
+    it("rents ok - USDC (DP6)", async () => {
       const tokenIds = [1];
-      const rentDuration = [2];
+      const rentDurations = [2];
+      const maxRentDurations = [10];
+      const lentAmounts = [1];
+      const paymentTokens = [PAYMENT_TOKEN_USDC];
+
       await lendBatch({
         tokenIds,
-        paymentTokens: [PAYMENT_TOKEN_WETH],
-        maxRentDurations: [10],
+        paymentTokens,
+        maxRentDurations,
       });
+
       const nftAddress = [E721.address];
       const lendingId = [1];
-      const dudeBalancePre = await getErc20Balance(renter.weth, renter.address);
-      expect(dudeBalancePre).to.be.equal(ERC20_SEND_AMT.add(ERC20_INITIAL_AMT));
-      const renftBalancePre = await WETH.balanceOf(ReNFT.address);
-      expect(renftBalancePre).to.be.equal(0);
-      const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
-        BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
+      const scale = BigNumber.from((10 ** (await USDC.decimals())).toString());
+
+      const balancesPre = await captureBalances([renter, ReNFT], [USDC]);
+      const pmtAmount = unpackPrice(NFT_PRICE, scale).add(
+        BigNumber.from(rentDurations[0]).mul(unpackPrice(DAILY_RENT_PRICE, scale))
       );
+
       const tx = await ReNFT.rent(
         nftAddress,
         tokenIds,
-        [1],
+        lentAmounts,
         lendingId,
-        rentDuration
+        rentDurations
       );
+
       const receipt = await tx.wait();
-      const dudeBalancePost = await WETH.balanceOf(renter.address);
-      const renftBalancePost = await WETH.balanceOf(ReNFT.address);
-      expect(renftBalancePost).to.be.equal(pmtAmount);
-      expect(dudeBalancePre.sub(pmtAmount)).to.be.equal(dudeBalancePost);
+      const balancesPost = await captureBalances([renter, ReNFT], [USDC]);
+
+      expect(balancesPost[1]).to.be.equal(pmtAmount);
+      expect(balancesPre[0].sub(balancesPost[0])).to.be.equal(pmtAmount);
+
       const rentedAt = [(await getLatestBlock()).timestamp];
       const events = receipt.events ?? [];
       validateRented({
         lendingId,
         renterAddress: [renter.address],
-        rentDuration,
+        rentDuration: rentDurations,
         rentedAt,
         events,
       });
     });
 
-    it("does not rent when insufficient money sent - erc20", async () => {
+    it("does not rent when insufficient money sent - USDC", async () => {
       const tokenIds = [1];
-      const erc20 = 1;
       await lendBatch({
         tokenIds,
-        paymentTokens: [erc20],
+        paymentTokens: [PAYMENT_TOKEN_USDC],
         maxRentDurations: [3],
       });
       const nftAddress = [E721.address];
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [2];
-      const allRentersBalance = await renter.weth.balanceOf(renter.address);
-      await renter.weth.transfer(lender.address, allRentersBalance);
+      const allRentersBalance = await renter.usdc.balanceOf(renter.address);
+      await renter.usdc.transfer(lender.address, allRentersBalance);
+
       await expect(
         ReNFT.rent(nftAddress, tokenId, [1], lendingId, rentDuration)
       ).to.be.revertedWith("transfer amount exceeds balance");
     });
 
-    it("rents ok - one weth & one usdt", async () => {
+    it("rents ok - WETH & USDC", async () => {
       const tokenIds = [1, 2];
       const paymentTokens = [1, 3];
       await lendBatch({
@@ -797,33 +816,25 @@ describe("ReNFT", function () {
       const nftAddress = Array(2).fill(E721.address);
       const lendingId = [1, 2];
       const rentDuration = [1, 1];
-      const renterBalancePreERC20 = await getErc20Balance(
-        renter.weth,
-        renter.address
-      );
-      expect(renterBalancePreERC20).to.be.equal(
-        ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
-      );
 
-      const renftBalancePreERC20 = await DAI.balanceOf(ReNFT.address);
-      expect(renftBalancePreERC20).to.be.equal(0);
-
-      const dudeBalancePre = await getBalance(renter.address);
-      const renftBalancePre = await getBalance(ReNFT.address);
+      const WETH_SCALE = BigNumber.from((10 ** (await WETH.decimals())).toString());
+      const USDC_SCALE = BigNumber.from((10 ** (await USDC.decimals())).toString());
 
       const pmtAmounts = [
-        unpackPrice(NFT_PRICE, DP18).add(
+        unpackPrice(NFT_PRICE, WETH_SCALE).add(
           BigNumber.from(rentDuration[0]).mul(
-            unpackPrice(DAILY_RENT_PRICE, DP18)
+            unpackPrice(DAILY_RENT_PRICE, WETH_SCALE)
           )
         ),
-        unpackPrice(NFT_PRICE, DP18).add(
+        unpackPrice(NFT_PRICE, USDC_SCALE).add(
           BigNumber.from(rentDuration[1]).mul(
-            unpackPrice(DAILY_RENT_PRICE, DP18)
+            unpackPrice(DAILY_RENT_PRICE, USDC_SCALE)
           )
         ),
       ];
 
+      // renterWETH, renterUSDC, ReNFTWETH, ReNFTUSDC
+      const balancesPre = await captureBalances([renter, ReNFT], [WETH, USDC]);
       const tx = await ReNFT.rent(
         nftAddress,
         tokenIds,
@@ -831,27 +842,14 @@ describe("ReNFT", function () {
         lendingId,
         rentDuration
       );
+      const balancesPost = await captureBalances([renter, ReNFT], [WETH, USDC]);
       const receipt = await tx.wait();
-      const renterBalancePostERC20 = await getErc20Balance(
-        renter.weth,
-        renter.address
-      );
-      const renftBalancePostERC20 = await getErc20Balance(
-        renter.weth,
-        ReNFT.address
-      );
-      expect(renftBalancePostERC20).to.be.equal(pmtAmounts[1]);
-      expect(renterBalancePreERC20.sub(pmtAmounts[1])).to.be.equal(
-        renterBalancePostERC20
-      );
-      const renterBalancePost = await getBalance(renter.address);
-      const renftBalancePost = await getBalance(ReNFT.address);
-      expect(
-        dudeBalancePre
-          .sub(tx.gasPrice.mul(receipt.gasUsed))
-          .sub(renterBalancePost)
-      ).to.be.equal(pmtAmounts[0]);
-      expect(renftBalancePost.sub(renftBalancePre)).to.be.equal(pmtAmounts[0]);
+
+      expect(balancesPost[2]).to.be.equal(pmtAmounts[0]);
+      expect(balancesPost[3]).to.be.equal(pmtAmounts[1]);
+      expect(balancesPre[0].sub(balancesPost[0])).to.be.equal(pmtAmounts[0]);
+      expect(balancesPre[1].sub(balancesPost[1])).to.be.equal(pmtAmounts[1]);
+
       const rentedAt = Array(2).fill((await getLatestBlock()).timestamp);
       const events = receipt.events ?? [];
       validateRented({
@@ -863,7 +861,7 @@ describe("ReNFT", function () {
       });
     });
 
-    it("does not rent when insufficient money sent - one weth & one usdc - weth", async () => {
+    it("does not rent when insufficient money sent - WETH & USDC - WETH not sufficient", async () => {
       const tokenIds = [1, 2];
       const paymentTokens = [PAYMENT_TOKEN_WETH, PAYMENT_TOKEN_USDC];
       await lendBatch({
@@ -874,80 +872,21 @@ describe("ReNFT", function () {
       const nftAddress = Array(2).fill(E721.address);
       const lendingId = [1, 2];
       const rentDuration = [2, 5];
-      const renterBalancePreERC20 = await DAI.balanceOf(renter.address);
-      expect(renterBalancePreERC20).to.be.equal(
-        ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
-      );
-      const renftBalancePreERC20 = await DAI.balanceOf(ReNFT.address);
-      expect(renftBalancePreERC20).to.be.equal(0);
+
+      const allRentersBalance = await renter.weth.balanceOf(renter.address);
+      await renter.weth.transfer(lender.address, allRentersBalance);
+
       const tx = ReNFT.rent(
         nftAddress,
         tokenIds,
         [1],
         lendingId,
-        rentDuration,
-        {
-          value: 0,
-        }
+        rentDuration
       );
-      await expect(tx).to.be.reverted;
+      await expect(tx).to.be.revertedWith("transfer amount exceeds balance");
     });
 
-    it("does not rent when insufficient money sent - one weth & one usdc - usdc", async () => {
-      const tokenIds = [1, 2];
-      const paymentTokens = [PAYMENT_TOKEN_WETH, PAYMENT_TOKEN_USDC];
-      await lendBatch({
-        tokenIds,
-        paymentTokens,
-        maxRentDurations: [3, 1],
-      });
-      const nftAddress = [E721.address, E721.address];
-      const lendingId = [1, 2];
-      const rentDuration = [2, 1];
-      // ether balance
-      const renterBalancePre = await getBalance(renter.address);
-      const renftBalancePre = await getBalance(ReNFT.address);
-      const pmtAmounts = [
-        unpackPrice(NFT_PRICE, DP18).add(
-          BigNumber.from(rentDuration[0]).mul(
-            unpackPrice(DAILY_RENT_PRICE, DP18)
-          )
-        ),
-        unpackPrice(NFT_PRICE, DP18).add(
-          BigNumber.from(rentDuration[1]).mul(
-            unpackPrice(DAILY_RENT_PRICE, DP18)
-          )
-        ),
-      ];
-      const renterBalance = await renter.weth.balanceOf(renter.address);
-      const tx = await renter.weth.transfer(lender.address, renterBalance);
-      const receipt = await tx.wait();
-      const txGasCost = tx.gasPrice.mul(receipt.gasUsed);
-      // even though we are sending ether along, it will not be
-      // deposited because the second part of the transaction i.e. erc20
-      // will be reverted
-      await expect(
-        ReNFT.rent(nftAddress, tokenIds, [1, 1], lendingId, rentDuration, {
-          value: pmtAmounts[0],
-        })
-      ).to.be.revertedWith("transfer amount exceeds balance");
-      const dudeBalancePost = await getBalance(renter.address);
-      const renftBalancePost = await getBalance(ReNFT.address);
-      const latestBlock = await getLatestBlock();
-      const failedTxnHash = latestBlock.transactions[0];
-      const failedTxn = await ethers.provider.getTransaction(failedTxnHash);
-      const failedTxnReceipt = await ethers.provider.getTransactionReceipt(
-        failedTxnHash
-      );
-      expect(
-        renterBalancePre
-          .sub(failedTxn.gasPrice.mul(failedTxnReceipt.gasUsed))
-          .sub(txGasCost)
-      ).to.be.equal(dudeBalancePost);
-      expect(renftBalancePost.sub(renftBalancePre)).to.be.equal(0);
-    });
-
-    it("rents ok - two weth", async () => {
+    it("rents ok - WETH & WETH", async () => {
       const tokenIds = [1, 2];
       await lendBatch({
         tokenIds,
@@ -958,18 +897,20 @@ describe("ReNFT", function () {
       const tokenId = [1, 2];
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
-      const dudeBalancePre = await getBalance(renter.address);
-      const renftBalancePre = await getBalance(ReNFT.address);
-      expect(renftBalancePre).to.be.equal(0);
+
+      const WETH_SCALE = BigNumber.from((10 ** (await WETH.decimals())).toString());
+      // renterWETH, renterUSDC, ReNFTWETH, ReNFTUSDC
+      const balancesPre = await captureBalances([renter, ReNFT], [WETH]);
+
       const pmtAmounts = [
-        unpackPrice(NFT_PRICE, DP18).add(
+        unpackPrice(NFT_PRICE, WETH_SCALE).add(
           BigNumber.from(rentDuration[0]).mul(
-            unpackPrice(DAILY_RENT_PRICE, DP18)
+            unpackPrice(DAILY_RENT_PRICE, WETH_SCALE)
           )
         ),
-        unpackPrice(NFT_PRICE, DP18).add(
+        unpackPrice(NFT_PRICE, WETH_SCALE).add(
           BigNumber.from(rentDuration[1]).mul(
-            unpackPrice(DAILY_RENT_PRICE, DP18)
+            unpackPrice(DAILY_RENT_PRICE, WETH_SCALE)
           )
         ),
       ];
@@ -978,18 +919,14 @@ describe("ReNFT", function () {
         tokenId,
         [1, 1],
         lendingId,
-        rentDuration,
-        { value: pmtAmounts[0].add(pmtAmounts[1]) }
+        rentDuration
       );
-      const renterBalancePost = await getBalance(renter.address);
-      const renftBalancePost = await getBalance(ReNFT.address);
-      expect(renftBalancePost).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
+      const balancesPost = await captureBalances([renter, ReNFT], [WETH]);
       const receipt = await tx.wait();
-      expect(
-        dudeBalancePre
-          .sub(receipt.gasUsed.mul(tx.gasPrice))
-          .sub(pmtAmounts[0].add(pmtAmounts[1]))
-      ).to.be.equal(renterBalancePost);
+
+      expect(balancesPost[1]).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
+      expect(balancesPre[0].sub(balancesPost[0])).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
+
       const rentedAt = Array(2).fill((await getLatestBlock()).timestamp);
       const events = receipt.events ?? [];
       validateRented({
@@ -1001,7 +938,7 @@ describe("ReNFT", function () {
       });
     });
 
-    it("rents ok - two usdc", async () => {
+    it("rents ok - USDC & USDC", async () => {
       const tokenIds = [1, 2];
       await lendBatch({
         tokenIds,
@@ -1012,28 +949,23 @@ describe("ReNFT", function () {
       const tokenId = [1, 2];
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
-      let renterBalancePre = await renter.usdc.balanceOf(renter.address);
-      const renftBalancePre = await renter.usdc.balanceOf(ReNFT.address);
-      expect(renterBalancePre).to.be.equal(
-        ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
-      );
-      expect(renftBalancePre).to.be.equal(0);
-      renterBalancePre = await renter.usdc.balanceOf(renter.address);
-      expect(renterBalancePre).to.be.equal(
-        ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
-      );
+
+      const USDC_SCALE = BigNumber.from((10 ** (await USDC.decimals())).toString());
+      const balancesPre = await captureBalances([renter, ReNFT], [USDC]);
+
       const pmtAmounts = [
-        unpackPrice(NFT_PRICE, DP18).add(
+        unpackPrice(NFT_PRICE, USDC_SCALE).add(
           BigNumber.from(rentDuration[0]).mul(
-            unpackPrice(DAILY_RENT_PRICE, DP18)
+            unpackPrice(DAILY_RENT_PRICE, USDC_SCALE)
           )
         ),
-        unpackPrice(NFT_PRICE, DP18).add(
+        unpackPrice(NFT_PRICE, USDC_SCALE).add(
           BigNumber.from(rentDuration[1]).mul(
-            unpackPrice(DAILY_RENT_PRICE, DP18)
+            unpackPrice(DAILY_RENT_PRICE, USDC_SCALE)
           )
         ),
       ];
+
       const tx = await ReNFT.rent(
         nftAddress,
         tokenId,
@@ -1041,13 +973,12 @@ describe("ReNFT", function () {
         lendingId,
         rentDuration
       );
-      const dudeBalancePost = await renter.usdc.balanceOf(renter.address);
-      const renftBalancePost = await renter.usdc.balanceOf(ReNFT.address);
-      expect(renftBalancePost).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
+      const balancesPost = await captureBalances([renter, ReNFT], [USDC]);
       const receipt = await tx.wait();
-      expect(
-        renterBalancePre.sub(pmtAmounts[0].add(pmtAmounts[1]))
-      ).to.be.equal(dudeBalancePost);
+
+      expect(balancesPost[1]).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
+      expect(balancesPre[0].sub(balancesPost[0])).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
+
       const rentedAt = Array(2).fill((await getLatestBlock()).timestamp);
       const events = receipt.events ?? [];
       validateRented({
@@ -1151,14 +1082,18 @@ describe("ReNFT", function () {
   });
 
   context("Returning", async function () {
+    let ReNFT: ReNFT;
     let rentFee: BigNumber;
     let renter: NamedAccount;
     let lender: NamedAccount;
+    let USDC: ERC20;
 
     beforeEach(async () => {
       const o = await setup();
       renter = o.renter;
       lender = o.lender;
+      USDC = o.usdc;
+      ReNFT = o.renft;
       rentFee = await renter.renft.rentFee();
     });
 
@@ -1226,22 +1161,29 @@ describe("ReNFT", function () {
       }
     };
 
-    it("returns ok - one usdc", async () => {
+    it("returns ok - USDC", async () => {
       const rentDuration = 1;
       const drp = 1.6921;
       const col = 0.0001;
       const dailyRentPrice = packPrice(drp);
       const nftPrice = packPrice(col);
+
       await lendBatch({
         tokenIds: [1],
-        paymentTokens: [PAYMENT_TOKEN_WETH],
+        paymentTokens: [PAYMENT_TOKEN_USDC],
         maxRentDurations: [1],
         dailyRentPrices: [dailyRentPrice],
         nftPrices: [nftPrice],
       });
-      const pmtAmtWoCollateral = ethers.utils.parseEther(
-        (rentDuration * drp).toString()
-      );
+
+      const { beneficiary } = await getNamedAccounts();
+
+      const pmtAmtWoCollateral = BigNumber.from(((rentDuration * drp) * (10 ** (await USDC.decimals()))).toString())
+      const pmtAmtCollateral = unpackPrice(nftPrice, BigNumber.from((10 ** (await USDC.decimals())).toString()))
+
+      const balanceBeneficiaryPre = await USDC.balanceOf(beneficiary);
+      const balancesPre = await captureBalances([renter, lender, ReNFT], [USDC]);
+
       await renter.renft.rent(
         [renter.e721.address],
         [1],
@@ -1251,10 +1193,9 @@ describe("ReNFT", function () {
       );
       let latestBlock = await getLatestBlock();
       const rentedAt = latestBlock.timestamp;
-      const lenderBalancePre = await renter.weth.balanceOf(lender.address);
       const warpTime = 10_000;
       await advanceTime(warpTime);
-      const renterBalancePre = await renter.weth.balanceOf(renter.address);
+
       const tx = await renter.renft.returnIt(
         [renter.e721.address],
         [1],
@@ -1264,17 +1205,29 @@ describe("ReNFT", function () {
       latestBlock = await getLatestBlock();
       const returnedAt = latestBlock.timestamp;
       const _rentDuration = returnedAt - rentedAt;
-      const lenderBalancePost = await renter.weth.balanceOf(lender.address);
-      const renterBalancePost = await renter.weth.balanceOf(renter.address);
+
+      const balanceBeneficiaryPost = await USDC.balanceOf(beneficiary);
+      const balancesPost = await captureBalances([renter, lender, ReNFT], [USDC]);
+
       let sendLenderAmt = pmtAmtWoCollateral
         .mul(_rentDuration)
         .div(rentDuration * SECONDS_IN_A_DAY);
+
       const sendRenterAmt = pmtAmtWoCollateral
         .sub(sendLenderAmt)
-        .add(ethers.utils.parseEther(col.toString()));
+        .add(pmtAmtCollateral);
+
       const fee = takeFee(sendLenderAmt, rentFee);
+
       sendLenderAmt = sendLenderAmt.sub(fee);
+
+      expect(balanceBeneficiaryPost.sub(balanceBeneficiaryPre)).to.be.equal(fee);
+      expect(balancesPre[0].sub(balancesPost[0])).to.be.equal(sendRenterAmt);
+      // expect(balancesPost[1].sub(balancesPre[1])).to.be.equal(sendLenderAmt.add(pmtAmtCollateral));
+      // expect(balancesPre[2].sub(balancesPost[2])).to.be.equal(BigNumber.from('0'));
+
       const receipt = await tx.wait();
+
       validateReturned({
         events: receipt.events ?? [],
         nftAddress: [renter.e721.address],
@@ -1283,14 +1236,9 @@ describe("ReNFT", function () {
         renterAddress: [renter.address],
         returnedAt: [(await getLatestBlock()).timestamp],
       });
-      expect(lenderBalancePost.sub(lenderBalancePre)).to.be.equal(
-        sendLenderAmt
-      );
-      const renterBalanceDiff = renterBalancePost.sub(renterBalancePre);
-      expect(renterBalanceDiff).to.be.equal(sendRenterAmt);
     });
 
-    it("returns ok - one weth one usdc", async () => {
+    it("returns ok - WETH & USDC", async () => {
       const rentDurations = [2, 4];
       const drpWETH = 1.6921; // acronym for dailry rental price
       const collateralWETH = 0.0001; // denotes collateral
@@ -1300,6 +1248,7 @@ describe("ReNFT", function () {
       const nftPriceWETH = packPrice(collateralWETH);
       const dailyRentPriceErc20 = packPrice(drpUSDC);
       const nftPriceErc20 = packPrice(collateralUSDC);
+
       await lendBatch({
         amounts: [1, 1],
         tokenIds: [1, 2],
@@ -1308,16 +1257,14 @@ describe("ReNFT", function () {
         dailyRentPrices: [dailyRentPriceEth, dailyRentPriceErc20],
         nftPrices: [nftPriceWETH, nftPriceErc20],
       });
-      // todo: a class like events.args where you can access the members
-      // via both the index and the name. In fact, just copy that class
-      // into my personal utils file (npm package?)
+
       const pmtAmts = [
         ethers.utils.parseEther(
           (rentDurations[0] * drpWETH + collateralWETH).toString()
         ),
-        ethers.utils.parseEther(
-          (rentDurations[1] * drpUSDC + collateralUSDC).toString()
-        ),
+
+          BigNumber.from(((rentDurations[1] * drpUSDC + collateralUSDC) * (10 ** await USDC.decimals())).toString())
+        ,
       ];
       const pmtAmtsWoCol = [
         ethers.utils.parseEther((rentDurations[0] * drpWETH).toString()),
