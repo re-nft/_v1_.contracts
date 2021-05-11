@@ -1067,6 +1067,7 @@ describe("ReNFT", function () {
     let renter: NamedAccount;
     let lender: NamedAccount;
     let USDC: ERC20;
+    let WETH: ERC20;
     let Utils: Utils;
 
     beforeEach(async () => {
@@ -1075,6 +1076,7 @@ describe("ReNFT", function () {
       lender = o.lender;
       Utils = o.utils;
       USDC = o.usdc;
+      WETH = o.weth;
       ReNFT = o.renft;
       rentFee = await renter.renft.rentFee();
     });
@@ -1238,31 +1240,30 @@ describe("ReNFT", function () {
       const collateralWETH = 0.0001; // denotes collateral
       const drpUSDC = 19.1199;
       const collateralUSDC = 8.1929;
-      const dailyRentPriceEth = packPrice(drpWETH);
+      const dailyRentPriceWETH = packPrice(drpWETH);
       const nftPriceWETH = packPrice(collateralWETH);
-      const dailyRentPriceErc20 = packPrice(drpUSDC);
-      const nftPriceErc20 = packPrice(collateralUSDC);
+      const dailyRentPriceUSDC = packPrice(drpUSDC);
+      const nftPriceUSDC = packPrice(collateralUSDC);
+
+      const WETH_SCALE = (10 ** await WETH.decimals()).toString();
+      const USDC_SCALE = (10 ** await USDC.decimals()).toString();
 
       await lendBatch({
         amounts: [1, 1],
         tokenIds: [1, 2],
         paymentTokens: [PAYMENT_TOKEN_WETH, PAYMENT_TOKEN_USDC],
         maxRentDurations: [3, 200],
-        dailyRentPrices: [dailyRentPriceEth, dailyRentPriceErc20],
-        nftPrices: [nftPriceWETH, nftPriceErc20],
+        dailyRentPrices: [dailyRentPriceWETH, dailyRentPriceUSDC],
+        nftPrices: [nftPriceWETH, nftPriceUSDC],
       });
 
-      const pmtAmts = [
-        ethers.utils.parseEther(
-          (rentDurations[0] * drpWETH + collateralWETH).toString()
-        ),
-
-          BigNumber.from(((rentDurations[1] * drpUSDC + collateralUSDC) * (10 ** await USDC.decimals())).toString())
-        ,
-      ];
       const pmtAmtsWoCol = [
-        ethers.utils.parseEther((rentDurations[0] * drpWETH).toString()),
-        ethers.utils.parseEther((rentDurations[1] * drpUSDC).toString()),
+        await Utils.unpackPrice(nftPriceWETH, WETH_SCALE),
+        await Utils.unpackPrice(nftPriceUSDC, USDC_SCALE),
+      ];
+      const pmtAmts = [
+        (await Utils.unpackPrice(dailyRentPriceWETH, WETH_SCALE)).add(pmtAmtsWoCol[0].mul(rentDurations[0])),
+        (await Utils.unpackPrice(dailyRentPriceUSDC, USDC_SCALE)).add(pmtAmtsWoCol[1].mul(rentDurations[1])),
       ];
 
       await renter.renft.rent(
@@ -1270,10 +1271,7 @@ describe("ReNFT", function () {
         [1, 2],
         [1, 1],
         [1, 2],
-        rentDurations,
-        {
-          value: pmtAmts[0],
-        }
+        rentDurations
       );
 
       let latestBlock = await getLatestBlock();
@@ -1341,16 +1339,18 @@ describe("ReNFT", function () {
       const renterDiffErc20 = renterBalancePostErc20.sub(renterBalancePreErc20);
       expect(sendRenterAmtErc20).to.be.equal(renterDiffErc20);
     });
+
     it("reverts if one of the returned NFTs is past the rent date", async () => {
       const rentDurations = [1, 4];
-      const drpEth = 1.9999; // acronym for dailry rental price
-      const colEth = 0.1001; // denotes collateral
-      const drpErc20 = 0.9199;
-      const colErc20 = 8.1929;
-      const dailyRentPriceEth = packPrice(drpEth);
-      const nftPriceEth = packPrice(colEth);
-      const dailyRentPriceErc20 = packPrice(drpErc20);
-      const nftPriceErc20 = packPrice(colErc20);
+      const drpWETH = 1.9999; // acronym for dailry rental price
+      const colWETH = 0.1001; // denotes collateral
+      const drpUSDC = 0.9199;
+      const colUSDC = 8.1929;
+      const dailyRentPriceEth = packPrice(drpWETH);
+      const nftPriceEth = packPrice(colWETH);
+      const dailyRentPriceErc20 = packPrice(drpUSDC);
+      const nftPriceErc20 = packPrice(colUSDC);
+
       await lendBatch({
         tokenIds: [1, 2],
         paymentTokens: [1, 2],
@@ -1358,15 +1358,13 @@ describe("ReNFT", function () {
         dailyRentPrices: [dailyRentPriceEth, dailyRentPriceErc20],
         nftPrices: [nftPriceEth, nftPriceErc20],
       });
-      // todo: a class like events.args where you can access the members
-      // via both the index and the name. In fact, just copy that class
-      // into my personal utils file (npm package?)
+
       const pmtAmts = [
         ethers.utils.parseEther(
-          (rentDurations[0] * drpEth + colEth).toString()
+          (rentDurations[0] * drpWETH + colWETH).toString()
         ),
         ethers.utils.parseEther(
-          (rentDurations[1] * drpErc20 + colErc20).toString()
+          (rentDurations[1] * drpUSDC + colUSDC).toString()
         ),
       ];
 
@@ -1466,6 +1464,7 @@ describe("ReNFT", function () {
       const colErc20 = 1.2135;
       const dailyRentPrices = [packPrice(drpEth), packPrice(drpErc20)];
       const nftPrices = [packPrice(colEth), packPrice(colErc20)];
+
       await lendBatch({
         tokenIds,
         paymentTokens,
@@ -1473,27 +1472,22 @@ describe("ReNFT", function () {
         dailyRentPrices,
         nftPrices,
       });
+
       const _nft = Array(2).fill(renter.e721.address);
       const _tokenId = [1, 2];
       const _id = [1, 2];
       const _rentDuration = [1, 4];
+
       await renter.renft.rent(_nft, _tokenId, [1, 1], _id, _rentDuration);
       await advanceTime(_rentDuration[1] * SECONDS_IN_A_DAY);
-      const balancePreWETH = await lender.weth.balanceOf(lender.address);
-      const beneficiaryBalancePreWETH = await getBalance(beneficiary);
-      const balancePreUSDC = await lender.usdc.balanceOf(lender.address);
-      const beneficiaryBalancePreUSDC = await lender.usdc.balanceOf(
-        beneficiary
-      );
+
       const tx = await lender.renft.claimCollateral(
         _nft,
         _tokenId,
         [1, 1],
         _id
       );
-      const balancePostWETH = await lender.weth.balanceOf(lender.address);
-      const balancePostUSDC = await lender.usdc.balanceOf(lender.address);
-      const renftBalancePostWETH = await lender.weth.balanceOf(lender.renft.address);
+
       const receipt = await tx.wait();
       const events = getEvents(receipt.events ?? [], "CollateralClaimed");
       validateClaimed({
