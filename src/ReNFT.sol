@@ -354,7 +354,6 @@ contract ReNFT is IReNft {
         // or
         // for ERC721s
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            // TODO: pmtIx > 1
             uint256 decimals = 18;
             uint8 paymentTokenIx = uint8(_tp.paymentTokens[i]);
             if (paymentTokenIx > 0) {
@@ -455,16 +454,16 @@ contract ReNFT is IReNft {
             ensureIsRentable(item.lending, _tp, i, msg.sender);
 
             // from enum to uint8
-            uint8 paymentTokenIndex = uint8(item.lending.paymentToken);
+            uint8 paymentTokenIx = uint8(item.lending.paymentToken);
             // from uint8 to address
-            address paymentToken = resolver.getPaymentToken(paymentTokenIndex);
+            address paymentToken = resolver.getPaymentToken(paymentTokenIx);
             uint256 decimals = 18;
 
             {
                 // if not sentinel and ether, then erc20, then pull the decimals
                 // only the admins of the contract are able to add payment tokens
                 // see towards the end of the contract
-                if (paymentTokenIndex > 1) {
+                if (paymentTokenIx > 0) {
                     decimals = __decimals(ERC20(paymentToken));
                 }
                 uint256 scale = 10**decimals;
@@ -482,14 +481,14 @@ contract ReNFT is IReNft {
                 uint256 upfrontPayment = rentPrice + nftPrice;
 
                 // if this is an erc20 transaction - send immediately
-                if (paymentTokenIndex > 1) {
+                if (paymentTokenIx > 0) {
                     // lock up the lump sum in escrow
                     ERC20(paymentToken).safeTransferFrom(
                         msg.sender,
                         address(this),
                         upfrontPayment
                     );
-                    // if ether - accumulate and send in one fell swoop at the end of the loop
+                    // if ether - accumulate and check that msg.value is at least that
                 } else {
                     ethPmtRequired = ethPmtRequired + upfrontPayment;
 

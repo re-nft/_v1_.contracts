@@ -28,7 +28,7 @@ import {
 const MAX_RENT_DURATION = 1; // 1 day
 const DAILY_RENT_PRICE = 2;
 const NFT_PRICE = 3;
-const PAYMENT_TOKEN = 2; // default token is DAI
+const PAYMENT_TOKEN = 1; // default token is WETH
 
 const SECONDS_IN_A_DAY = 86400;
 const DP18 = ethers.utils.parseEther("1");
@@ -38,6 +38,7 @@ const ERC20_INITIAL_AMT = ERC20_SEND_AMT;
 type NamedAccount = {
   address: string;
   renft: ReNFT;
+  weth: ERC20;
   dai: ERC20;
   usdc: ERC20;
   e721: E721;
@@ -54,6 +55,7 @@ const setup = deployments.createFixture(async () => {
   const resolver = ((await ethers.getContract(
     "Resolver"
   )) as unknown) as Resolver;
+  const weth = ((await ethers.getContract("WETH")) as unknown) as ERC20;
   const dai = ((await ethers.getContract("DAI")) as unknown) as ERC20;
   const usdc = ((await ethers.getContract("USDC")) as unknown) as ERC20;
   const e721 = ((await ethers.getContract(
@@ -67,6 +69,8 @@ const setup = deployments.createFixture(async () => {
   const utils = ((await ethers.getContract("Utils")) as unknown) as Utils;
   const renft = ((await ethers.getContract("ReNFT")) as unknown) as ReNFT;
 
+  await weth.transfer(renter, ERC20_SEND_AMT);
+  await weth.transfer(lender, ERC20_SEND_AMT);
   await dai.transfer(renter, ERC20_SEND_AMT);
   await dai.transfer(lender, ERC20_SEND_AMT);
   await usdc.transfer(renter, ERC20_SEND_AMT);
@@ -80,6 +84,14 @@ const setup = deployments.createFixture(async () => {
     "ReNFT",
     lender
   )) as unknown) as ReNFT;
+  const wethRenter = ((await ethers.getContract(
+    "WETH",
+    renter
+  )) as unknown) as ERC20;
+  const wethLender = ((await ethers.getContract(
+    "WETH",
+    lender
+  )) as unknown) as ERC20;
   const daiRenter = ((await ethers.getContract(
     "DAI",
     renter
@@ -129,6 +141,8 @@ const setup = deployments.createFixture(async () => {
     lender
   )) as unknown) as E1155;
 
+  await wethRenter.approve(renft.address, ethers.constants.MaxUint256);
+  await wethLender.approve(renft.address, ethers.constants.MaxUint256);
   await daiRenter.approve(renft.address, ethers.constants.MaxUint256);
   await daiLender.approve(renft.address, ethers.constants.MaxUint256);
   await usdcRenter.approve(renft.address, ethers.constants.MaxUint256);
@@ -159,6 +173,7 @@ const setup = deployments.createFixture(async () => {
   return {
     resolver,
     renft,
+    weth,
     dai,
     usdc,
     e721,
@@ -171,6 +186,7 @@ const setup = deployments.createFixture(async () => {
     beneficiary,
     renter: {
       address: renter,
+      weth: wethRenter,
       dai: daiRenter,
       usdc: usdcRenter,
       e721: e721Renter,
@@ -181,6 +197,7 @@ const setup = deployments.createFixture(async () => {
     },
     lender: {
       address: lender,
+      weth: wethLender,
       dai: daiLender,
       usdc: usdcRenter,
       e721: e721Lender,
@@ -205,6 +222,7 @@ describe("ReNFT", function () {
   context("Lending", async function () {
     let renft: ReNFT;
     let usdc: ERC20;
+    let weth: ERC20;
     let dai: ERC20;
     let e721: E721;
     let e721b: E721B;
@@ -216,6 +234,7 @@ describe("ReNFT", function () {
       const o = await setup();
       renft = o.lender.renft;
       usdc = o.lender.usdc;
+      weth = o.lender.weth;
       dai = o.lender.dai;
       e721 = o.lender.e721;
       e721b = o.lender.e721b;
@@ -594,6 +613,7 @@ describe("ReNFT", function () {
   context("Renting", async function () {
     let ReNFT: ReNFT;
     let E721: E721;
+    let WETH: ERC20;
     let DAI: ERC20;
     let USDC: ERC20;
 
@@ -608,6 +628,7 @@ describe("ReNFT", function () {
       E721 = renter.e721;
       DAI = renter.dai;
       USDC = renter.usdc;
+      WETH = renter.weth;
     });
 
     const lendBatch = async ({
@@ -719,9 +740,9 @@ describe("ReNFT", function () {
       });
       const nftAddress = [E721.address];
       const lendingId = [1];
-      const dudeBalancePre = await getErc20Balance(renter.dai, renter.address);
+      const dudeBalancePre = await getErc20Balance(renter.weth, renter.address);
       expect(dudeBalancePre).to.be.equal(ERC20_SEND_AMT.add(ERC20_INITIAL_AMT));
-      const renftBalancePre = await DAI.balanceOf(ReNFT.address);
+      const renftBalancePre = await WETH.balanceOf(ReNFT.address);
       expect(renftBalancePre).to.be.equal(0);
       const pmtAmount = unpackPrice(NFT_PRICE, DP18).add(
         BigNumber.from(rentDuration[0]).mul(unpackPrice(DAILY_RENT_PRICE, DP18))
@@ -734,8 +755,8 @@ describe("ReNFT", function () {
         rentDuration
       );
       const receipt = await tx.wait();
-      const dudeBalancePost = await DAI.balanceOf(renter.address);
-      const renftBalancePost = await DAI.balanceOf(ReNFT.address);
+      const dudeBalancePost = await WETH.balanceOf(renter.address);
+      const renftBalancePost = await WETH.balanceOf(ReNFT.address);
       expect(renftBalancePost).to.be.equal(pmtAmount);
       expect(dudeBalancePre.sub(pmtAmount)).to.be.equal(dudeBalancePost);
       const rentedAt = [(await getLatestBlock()).timestamp];
@@ -751,7 +772,7 @@ describe("ReNFT", function () {
 
     it("does not rent when insufficient money sent - erc20", async () => {
       const tokenIds = [1];
-      const erc20 = 2;
+      const erc20 = 1;
       await lendBatch({
         tokenIds,
         paymentTokens: [erc20],
@@ -761,8 +782,8 @@ describe("ReNFT", function () {
       const tokenId = [1];
       const lendingId = [1];
       const rentDuration = [2];
-      const allRentersBalance = await renter.dai.balanceOf(renter.address);
-      await renter.dai.transfer(lender.address, allRentersBalance);
+      const allRentersBalance = await renter.weth.balanceOf(renter.address);
+      await renter.weth.transfer(lender.address, allRentersBalance);
       await expect(
         ReNFT.rent(nftAddress, tokenId, [1], lendingId, rentDuration)
       ).to.be.revertedWith("transfer amount exceeds balance");
@@ -776,20 +797,24 @@ describe("ReNFT", function () {
         paymentTokens,
         maxRentDurations: [10, 5],
       });
+
       const nftAddress = Array(2).fill(E721.address);
       const lendingId = [1, 2];
       const rentDuration = [1, 1];
       const renterBalancePreERC20 = await getErc20Balance(
-        renter.dai,
+        renter.weth,
         renter.address
       );
       expect(renterBalancePreERC20).to.be.equal(
         ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
       );
+
       const renftBalancePreERC20 = await DAI.balanceOf(ReNFT.address);
       expect(renftBalancePreERC20).to.be.equal(0);
+
       const dudeBalancePre = await getBalance(renter.address);
       const renftBalancePre = await getBalance(ReNFT.address);
+
       const pmtAmounts = [
         unpackPrice(NFT_PRICE, DP18).add(
           BigNumber.from(rentDuration[0]).mul(
@@ -802,6 +827,7 @@ describe("ReNFT", function () {
           )
         ),
       ];
+
       const tx = await ReNFT.rent(
         nftAddress,
         tokenIds,
@@ -814,11 +840,11 @@ describe("ReNFT", function () {
       );
       const receipt = await tx.wait();
       const renterBalancePostERC20 = await getErc20Balance(
-        renter.dai,
+        renter.weth,
         renter.address
       );
       const renftBalancePostERC20 = await getErc20Balance(
-        renter.dai,
+        renter.weth,
         ReNFT.address
       );
       expect(renftBalancePostERC20).to.be.equal(pmtAmounts[1]);
@@ -885,6 +911,7 @@ describe("ReNFT", function () {
       const nftAddress = [E721.address, E721.address];
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
+      // ether balance
       const renterBalancePre = await getBalance(renter.address);
       const renftBalancePre = await getBalance(ReNFT.address);
       const pmtAmounts = [
@@ -899,8 +926,8 @@ describe("ReNFT", function () {
           )
         ),
       ];
-      const renterBalance = await renter.dai.balanceOf(renter.address);
-      const tx = await renter.dai.transfer(lender.address, renterBalance);
+      const renterBalance = await renter.weth.balanceOf(renter.address);
+      const tx = await renter.weth.transfer(lender.address, renterBalance);
       const receipt = await tx.wait();
       const txGasCost = tx.gasPrice.mul(receipt.gasUsed);
       // even though we are sending ether along, it will not be
@@ -984,7 +1011,7 @@ describe("ReNFT", function () {
 
     it("rents ok - two erc20", async () => {
       const tokenIds = [1, 2];
-      const erc20 = 2;
+      const erc20 = 1;
       await lendBatch({
         tokenIds,
         paymentTokens: [erc20, erc20],
@@ -994,13 +1021,13 @@ describe("ReNFT", function () {
       const tokenId = [1, 2];
       const lendingId = [1, 2];
       const rentDuration = [2, 1];
-      let renterBalancePre = await renter.dai.balanceOf(renter.address);
-      const renftBalancePre = await renter.dai.balanceOf(ReNFT.address);
+      let renterBalancePre = await renter.weth.balanceOf(renter.address);
+      const renftBalancePre = await renter.weth.balanceOf(ReNFT.address);
       expect(renterBalancePre).to.be.equal(
         ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
       );
       expect(renftBalancePre).to.be.equal(0);
-      renterBalancePre = await renter.dai.balanceOf(renter.address);
+      renterBalancePre = await renter.weth.balanceOf(renter.address);
       expect(renterBalancePre).to.be.equal(
         ERC20_SEND_AMT.add(ERC20_INITIAL_AMT)
       );
@@ -1023,8 +1050,8 @@ describe("ReNFT", function () {
         lendingId,
         rentDuration
       );
-      const dudeBalancePost = await renter.dai.balanceOf(renter.address);
-      const renftBalancePost = await renter.dai.balanceOf(ReNFT.address);
+      const dudeBalancePost = await renter.weth.balanceOf(renter.address);
+      const renftBalancePost = await renter.weth.balanceOf(ReNFT.address);
       expect(renftBalancePost).to.be.equal(pmtAmounts[0].add(pmtAmounts[1]));
       const receipt = await tx.wait();
       expect(
@@ -1218,7 +1245,7 @@ describe("ReNFT", function () {
       const nftPrice = packPrice(col);
       await lendBatch({
         tokenIds: [1],
-        paymentTokens: [1],
+        paymentTokens: [0],
         maxRentDurations: [1],
         dailyRentPrices: [dailyRentPrice],
         nftPrices: [nftPrice],
@@ -1292,7 +1319,7 @@ describe("ReNFT", function () {
       const nftPrice = packPrice(col);
       await lendBatch({
         tokenIds: [1],
-        paymentTokens: [2],
+        paymentTokens: [1],
         maxRentDurations: [1],
         dailyRentPrices: [dailyRentPrice],
         nftPrices: [nftPrice],
@@ -1309,10 +1336,10 @@ describe("ReNFT", function () {
       );
       let latestBlock = await getLatestBlock();
       const rentedAt = latestBlock.timestamp;
-      const lenderBalancePre = await renter.dai.balanceOf(lender.address);
+      const lenderBalancePre = await renter.weth.balanceOf(lender.address);
       const warpTime = 10_000;
       await advanceTime(warpTime);
-      const renterBalancePre = await renter.dai.balanceOf(renter.address);
+      const renterBalancePre = await renter.weth.balanceOf(renter.address);
       const tx = await renter.renft.returnIt(
         [renter.e721.address],
         [1],
@@ -1322,8 +1349,8 @@ describe("ReNFT", function () {
       latestBlock = await getLatestBlock();
       const returnedAt = latestBlock.timestamp;
       const _rentDuration = returnedAt - rentedAt;
-      const lenderBalancePost = await renter.dai.balanceOf(lender.address);
-      const renterBalancePost = await renter.dai.balanceOf(renter.address);
+      const lenderBalancePost = await renter.weth.balanceOf(lender.address);
+      const renterBalancePost = await renter.weth.balanceOf(renter.address);
       let sendLenderAmt = pmtAmtWoCollateral
         .mul(_rentDuration)
         .div(rentDuration * SECONDS_IN_A_DAY);
@@ -1361,7 +1388,7 @@ describe("ReNFT", function () {
       await lendBatch({
         amounts: [1, 1],
         tokenIds: [1, 2],
-        paymentTokens: [1, 2],
+        paymentTokens: [0, 1],
         maxRentDurations: [3, 200],
         dailyRentPrices: [dailyRentPriceEth, dailyRentPriceErc20],
         nftPrices: [nftPriceEth, nftPriceErc20],
@@ -1398,8 +1425,8 @@ describe("ReNFT", function () {
       await advanceTime(SECONDS_IN_A_DAY + 1969);
       const lenderBalancePreEth = await getBalance(lender.address);
       const renterBalancePreEth = await getBalance(renter.address);
-      const lenderBalancePreErc20 = await renter.dai.balanceOf(lender.address);
-      const renterBalancePreErc20 = await renter.dai.balanceOf(renter.address);
+      const lenderBalancePreErc20 = await renter.weth.balanceOf(lender.address);
+      const renterBalancePreErc20 = await renter.weth.balanceOf(renter.address);
 
       const tx = await renter.renft.returnIt(
         [renter.e721.address, renter.e721.address],
@@ -1413,10 +1440,10 @@ describe("ReNFT", function () {
       const _rentDuration = returnedAt - rentedAt;
       const lenderBalancePostEth = await getBalance(lender.address);
       const renterBalancePostEth = await getBalance(renter.address);
-      const lenderBalancePostErc20 = await renter.dai.balanceOf(
+      const lenderBalancePostErc20 = await renter.weth.balanceOf(
         lender.address
       );
-      const renterBalancePostErc20 = await renter.dai.balanceOf(
+      const renterBalancePostErc20 = await renter.weth.balanceOf(
         renter.address
       );
       let sendLenderAmtEth = pmtAmtsWoCol[0]
@@ -1575,7 +1602,7 @@ describe("ReNFT", function () {
 
     it("claims collateral ok - one eth", async () => {
       const tokenIds = [1];
-      const paymentTokens = [1];
+      const paymentTokens = [0];
       const maxRentDurations = [10];
       const drp = 3.4299;
       const col = 23.112;
@@ -1655,8 +1682,8 @@ describe("ReNFT", function () {
       await advanceTime(_rentDuration[1] * SECONDS_IN_A_DAY);
       const balancePre = await getBalance(lender.address);
       const beneficiaryBalancePre = await getBalance(beneficiary);
-      const balancePreErc20 = await lender.dai.balanceOf(lender.address);
-      const beneficiaryBalancePreErc20 = await lender.dai.balanceOf(
+      const balancePreErc20 = await lender.weth.balanceOf(lender.address);
+      const beneficiaryBalancePreErc20 = await lender.weth.balanceOf(
         beneficiary
       );
       const tx = await lender.renft.claimCollateral(
@@ -1665,7 +1692,7 @@ describe("ReNFT", function () {
         [1, 1],
         _id
       );
-      const balancePostErc20 = await lender.dai.balanceOf(lender.address);
+      const balancePostErc20 = await lender.weth.balanceOf(lender.address);
       const balancePost = await getBalance(lender.address);
       const renftBalancePost = await getBalance(lender.renft.address);
       const receipt = await tx.wait();
@@ -1699,15 +1726,15 @@ describe("ReNFT", function () {
       expect(diff).to.be.equal(
         ethers.utils.parseEther(colErc20.toString()).add(fullRentPaymentErc20)
       );
-      const beneficiaryBalanceErc20 = await lender.dai.balanceOf(beneficiary);
+      const beneficiaryBalanceErc20 = await lender.weth.balanceOf(beneficiary);
       expect(
         beneficiaryBalanceErc20.sub(beneficiaryBalancePreErc20)
       ).to.be.equal(feeErc20);
     });
 
-    it("claims colalteral ok - one erc20", async () => {
+    it("claims collalteral ok - one erc20", async () => {
       const tokenIds = [1];
-      const paymentTokens = [2];
+      const paymentTokens = [1];
       const maxRentDurations = [7];
       const drp = 6.4299;
       const col = 63.1912;
@@ -1726,11 +1753,11 @@ describe("ReNFT", function () {
       const _rentDuration = [1];
       await renter.renft.rent(_nft, _tokenId, [1], _id, _rentDuration);
       await advanceTime(SECONDS_IN_A_DAY + 100);
-      const balancePre = await lender.dai.balanceOf(lender.address);
-      const beneficiaryBalancePre = await lender.dai.balanceOf(beneficiary);
+      const balancePre = await lender.weth.balanceOf(lender.address);
+      const beneficiaryBalancePre = await lender.weth.balanceOf(beneficiary);
       const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], _id);
-      const balancePost = await lender.dai.balanceOf(lender.address);
-      const renftBalancePost = await lender.dai.balanceOf(
+      const balancePost = await lender.weth.balanceOf(lender.address);
+      const renftBalancePost = await lender.weth.balanceOf(
         lender.renft.address
       );
       const receipt = await tx.wait();
@@ -1750,13 +1777,13 @@ describe("ReNFT", function () {
         ethers.utils.parseEther(col.toString()).add(fullRentPayment)
       );
       expect(renftBalancePost).to.be.equal(0);
-      const beneficiaryBalance = await lender.dai.balanceOf(beneficiary);
+      const beneficiaryBalance = await lender.weth.balanceOf(beneficiary);
       expect(beneficiaryBalance.sub(beneficiaryBalancePre)).to.be.equal(fee);
     });
 
     it("does not claim collateral if not time", async () => {
       const tokenIds = [1];
-      const paymentTokens = [2];
+      const paymentTokens = [1];
       const maxRentDurations = [7];
       const drp = 6.4299;
       const col = 63.1912;
