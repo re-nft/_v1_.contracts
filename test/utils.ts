@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber } from "ethers";
 import { Event } from "@ethersproject/contracts/lib";
 import { Block } from "@ethersproject/abstract-provider";
 import { ERC20 } from "../frontend/src/hardhat/typechain/ERC20";
@@ -37,10 +37,11 @@ export const getEvents = (events: Event[], name: string): Event[] => {
 // given the target price, give back the hex equivalent
 export const packPrice = (price: number): string => {
   if (price > 9999.9999) throw new Error("too high");
-  if (price < 0.0001) throw new Error("too low");
+
   const stringVersion = price.toString();
   const parts = stringVersion.split(".");
   let res: string;
+
   if (parts.length == 2) {
     const whole = parts[0];
     let decimal = parts[1];

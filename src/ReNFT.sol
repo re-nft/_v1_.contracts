@@ -249,11 +249,13 @@ contract ReNFT is IReNft {
         // the fee is taken propotionally to the time the asset was rented
         uint256 takenFee =
             takeFee(sendLenderAmt, _lendingRenting.lending.paymentToken);
+
+        sendLenderAmt -= takenFee;
         sendRenterAmt += nftPrice;
 
         ERC20(paymentToken).safeTransfer(
             _lendingRenting.lending.lenderAddress,
-            sendLenderAmt - takenFee
+            sendLenderAmt
         );
         ERC20(paymentToken).safeTransfer(
             _lendingRenting.renting.renterAddress,

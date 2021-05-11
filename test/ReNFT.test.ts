@@ -1147,15 +1147,20 @@ describe("ReNFT", function () {
       const rentDuration = 1;
       const drp = 1.6921;
       const col = 0.0001;
+      // packs correctly.
       const dailyRentPrice = packPrice(drp);
       const nftPrice = packPrice(col);
 
+      expect(dailyRentPrice).to.be.equal("0x00011B09");
+      expect(nftPrice).to.be.equal("0x00000001");
+
       const USDC_SCALE = 10 ** (await USDC.decimals());
-      const unpackedDrp = await Utils.unpackPrice(
-        dailyRentPrice,
-        USDC_SCALE.toString()
-      );
-      console.log("unpacked drp", unpackedDrp);
+
+      const unpackedNftPrice = await Utils.unpackPrice(nftPrice, USDC_SCALE);
+      const unpackedDailyRentPrice = await Utils.unpackPrice(dailyRentPrice, USDC_SCALE);
+
+      expect(unpackedNftPrice).to.be.equal(100); // 0.0001 * 1_000_000 <- col * (10 ** USDC_SCALE)
+      expect(unpackedDailyRentPrice).to.be.equal(1692100) // 1.6921 * 1_000_000
 
       await lendBatch({
         tokenIds: [1],
@@ -1167,11 +1172,10 @@ describe("ReNFT", function () {
 
       const { beneficiary } = await getNamedAccounts();
 
-      const pmtAmtWoCollateral = BigNumber.from(((rentDuration * drp) * USDC_SCALE).toString())
-      const pmtAmtCollateral = await Utils.unpackPrice(nftPrice, BigNumber.from(USDC_SCALE.toString()))
-
       const balanceBeneficiaryPre = await USDC.balanceOf(beneficiary);
       const balancesPre = await captureBalances([renter, lender, ReNFT], [USDC]);
+
+      expect(await USDC.balanceOf(ReNFT.address)).to.be.equal(BigNumber.from("0"));
 
       let tx = await renter.renft.rent(
         [renter.e721.address],
@@ -1181,12 +1185,13 @@ describe("ReNFT", function () {
         [rentDuration]
       );
 
+      expect(unpackedNftPrice.add(unpackedDailyRentPrice))
+        .to.be.equal(await USDC.balanceOf(ReNFT.address));
+
       let receipt = await tx.wait();
       let es = getEvents(receipt.events ?? [], "Rented");
-
       // @ts-ignore
       const { rentedAt } = es[0].args;
-
       const warpTime = 10_000;
       await advanceTime(warpTime);
 
@@ -1199,33 +1204,23 @@ describe("ReNFT", function () {
 
       receipt = await tx.wait();
       es = getEvents(receipt.events ?? [], "Returned");
-
       // @ts-ignore
       const { returnedAt } = es[0].args;
-
       const actualRentDuration = returnedAt - rentedAt;
 
       const balanceBeneficiaryPost = await USDC.balanceOf(beneficiary);
       const balancesPost = await captureBalances([renter, lender, ReNFT], [USDC]);
 
-      let sendLenderAmt = pmtAmtWoCollateral
-        .mul(actualRentDuration)
-        .div(rentDuration * SECONDS_IN_A_DAY)
+      const rentPmt = unpackedDailyRentPrice.mul(rentDuration);
+      const rentProRata = (rentPmt.mul(actualRentDuration)).div(rentDuration * 86_400);
+      let lenderReceives = BigNumber.from(rentProRata);
+      const beneficiaryFee = takeFee(lenderReceives, rentFee);
+      lenderReceives = lenderReceives.sub(beneficiaryFee);
 
-      const fee = takeFee(sendLenderAmt, rentFee);
-      sendLenderAmt = sendLenderAmt.sub(fee);
-
-      const sendRenterAmt = pmtAmtWoCollateral
-        .sub(sendLenderAmt)
-        .add(pmtAmtCollateral);
-
-      expect(balanceBeneficiaryPost.sub(balanceBeneficiaryPre)).to.be.equal(fee);
-      // expect(balancesPost[0].sub(balancesPre[0])).to.be.equal(-sendRenterAmt);
-      // expect(balancesPost[1].sub(balancesPre[1])).to.be.equal(sendLenderAmt.add(pmtAmtCollateral));
-      // expect(balancesPre[2].sub(balancesPost[2])).to.be.equal(BigNumber.from('0'));
-
-
-
+      expect(balanceBeneficiaryPost.sub(balanceBeneficiaryPre)).to.be.equal(beneficiaryFee);
+      expect(balancesPost[1].sub(balancesPre[1])).to.be.equal(lenderReceives);
+      expect(balancesPost[0].sub(balancesPre[0])).to.be.equal(-rentProRata);
+      expect(balancesPost[2].sub(balancesPost[2])).to.be.equal(BigNumber.from("0"));
 
       validateReturned({
         events: receipt.events ?? [],
