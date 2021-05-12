@@ -233,7 +233,10 @@ contract ReNFT is IReNft {
             rentPrice * _lendingRenting.renting.rentDuration;
         uint256 sendLenderAmt = (_secondsSinceRentStart * rentPrice) / 86400;
 
-        require(totalRenterPmtWoCollateral > 0, "total payment wo collateral is zero");
+        require(
+            totalRenterPmtWoCollateral > 0,
+            "total payment wo collateral is zero"
+        );
         require(sendLenderAmt > 0, "lender payment is zero");
         require(
             totalRenterPmtWoCollateral >= sendLenderAmt,
@@ -241,7 +244,10 @@ contract ReNFT is IReNft {
         );
 
         uint256 sendRenterAmt = totalRenterPmtWoCollateral - sendLenderAmt;
-        require(sendRenterAmt < totalRenterPmtWoCollateral, "underflow issues prevention");
+        require(
+            sendRenterAmt < totalRenterPmtWoCollateral,
+            "underflow issues prevention"
+        );
 
         // the fee is always taken from the lender
         // the renter contributes the lump sum of all the days prepaid + collateral
@@ -391,7 +397,6 @@ contract ReNFT is IReNft {
     }
 
     function handleRent(TwoPointer memory _tp) private {
-
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             LendingRenting storage item =
                 lendingRenting[
@@ -785,17 +790,17 @@ contract ReNFT is IReNft {
         require(_renting.rentedAt != 0, "never rented");
     }
 
-    function ensureIsLendable(
-        TwoPointer memory _tp,
-        uint256 _i
-    ) private pure {
+    function ensureIsLendable(TwoPointer memory _tp, uint256 _i) private pure {
         // lending at least one token & the amount is less or equal than uint8 max 255
         require(_tp.lentAmounts[_i] > 0, "invalid lend amount");
         require(_tp.lentAmounts[_i] <= type(uint8).max, "cannot exceed uint8");
         // max rent duration is at least a day. it is uint8 so no need to check for max
         require(_tp.maxRentDurations[_i] > 0, "must be at least one day lend");
         // ensure that the daily rental price and the collateral prices are not zero
-        require(uint32(_tp.dailyRentPrices[_i]) > 0, "daily rent price is zero");
+        require(
+            uint32(_tp.dailyRentPrices[_i]) > 0,
+            "daily rent price is zero"
+        );
         require(uint32(_tp.nftPrices[_i]) > 0, "nft price is zero");
     }
 
@@ -841,7 +846,10 @@ contract ReNFT is IReNft {
         require(isPastReturnDate(_renting, _blockTimestamp), "cant claim yet");
     }
 
-    function ensureIsUnpackablePrice(bytes4 _price, uint256 _scale) private pure {
+    function ensureIsUnpackablePrice(bytes4 _price, uint256 _scale)
+        private
+        pure
+    {
         require(uint32(_price) > 0, "invalid price");
         require(_scale >= 10000, "invalid scale");
     }

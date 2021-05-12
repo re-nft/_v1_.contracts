@@ -35,7 +35,10 @@ contract Utils {
         return price;
     }
 
-    function ensureIsUnpackablePrice(bytes4 _price, uint256 _scale) private pure {
+    function ensureIsUnpackablePrice(bytes4 _price, uint256 _scale)
+        private
+        pure
+    {
         require(uint32(_price) > 0, "invalid price");
         require(_scale >= 10000, "invalid scale");
     }
