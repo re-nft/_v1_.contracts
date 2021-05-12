@@ -1360,11 +1360,17 @@ describe("ReNFT", function () {
     let lender: NamedAccount;
     let beneficiary: string;
     let rentFee: BigNumber;
+    let WETH: ERC20;
+    let USDC: ERC20;
+    let Utils: Utils;
 
     beforeEach(async () => {
       const o = await setup();
       renter = o.renter;
       lender = o.lender;
+      WETH = o.weth;
+      USDC = o.usdc;
+      Utils = o.utils;
       beneficiary = o.beneficiary;
       rentFee = await renter.renft.rentFee();
     });
@@ -1417,16 +1423,24 @@ describe("ReNFT", function () {
       }
     };
 
-    it("claims collateral ok - one weth one usdc", async () => {
+    it("claims collateral ok - WETH & USDC", async () => {
       const tokenIds = [1, 2];
       const paymentTokens = [PAYMENT_TOKEN_WETH, PAYMENT_TOKEN_USDC];
       const maxRentDurations = [10, 101];
-      const drpEth = 3.4299;
-      const colEth = 23.112;
-      const drpErc20 = 9.5982;
-      const colErc20 = 1.2135;
-      const dailyRentPrices = [packPrice(drpEth), packPrice(drpErc20)];
-      const nftPrices = [packPrice(colEth), packPrice(colErc20)];
+      const drpWETH = 3.4299;
+      const colWETH = 23.112;
+      const drpUSDC = 9.5982;
+      const colUSDC = 1.2135;
+      const dailyRentPrices = [packPrice(drpWETH), packPrice(drpUSDC)];
+      const nftPrices = [packPrice(colWETH), packPrice(colUSDC)];
+
+      const WETH_SCALE = (10 ** await WETH.decimals()).toString();
+      const USDC_SCALE = (10 ** await USDC.decimals()).toString();
+
+      const unpackedDrpWETH = await Utils.unpackPrice(dailyRentPrices[0], WETH_SCALE);
+      const unpackedDrpUSDC = await Utils.unpackPrice(dailyRentPrices[1], USDC_SCALE);
+      const unpackedColWETH = await Utils.unpackPrice(nftPrices[0], WETH_SCALE);
+      const unpackedColUSDC = await Utils.unpackPrice(nftPrices[1], USDC_SCALE);
 
       await lendBatch({
         tokenIds,
@@ -1444,6 +1458,10 @@ describe("ReNFT", function () {
       await renter.renft.rent(_nft, _tokenId, [1, 1], _id, _rentDuration);
       await advanceTime(_rentDuration[1] * SECONDS_IN_A_DAY);
 
+      const beneficiaryWETHPre = await WETH.balanceOf(beneficiary);
+      const beneficiaryUSDCPre = await USDC.balanceOf(beneficiary);
+      const balancesPre = await captureBalances([lender], [WETH, USDC])
+
       const tx = await lender.renft.claimCollateral(
         _nft,
         _tokenId,
@@ -1451,8 +1469,13 @@ describe("ReNFT", function () {
         _id
       );
 
+      const beneficiaryWETHPost = await WETH.balanceOf(beneficiary);
+      const beneficiaryUSDCPost = await USDC.balanceOf(beneficiary);
+      const balancesPost = await captureBalances([lender], [WETH, USDC]);
+
       const receipt = await tx.wait();
       const events = getEvents(receipt.events ?? [], "CollateralClaimed");
+
       validateClaimed({
         nftAddress: Array(2).fill(lender.e721.address),
         tokenId: tokenIds,
@@ -1460,23 +1483,20 @@ describe("ReNFT", function () {
         claimedAt: Array(2).fill((await getLatestBlock()).timestamp),
         events,
       });
-      // ! todo
-      // let fullRentPayment = ethers.utils.parseEther(drpEth.toString());
-      // const fee = takeFee(fullRentPayment, rentFee);
-      // fullRentPayment = fullRentPayment.sub(fee);
-      // let fullRentPaymentUSDC = BigNumber.from(_rentDuration[1]).mul(
-      //   ethers.utils.parseEther(drpErc20.toString())
-      // );
-      // const feeUDSC = takeFee(fullRentPaymentErc20, rentFee);
-      // fullRentPaymentErc20 = fullRentPaymentErc20.sub(feeErc20);
-      // diff = balancePostUSDC.sub(balancePreErc20);
-      // expect(diff).to.be.equal(
-      //   ethers.utils.parseEther(colErc20.toString()).add(fullRentPaymentUSDC)
-      // );
-      // const beneficiaryBalanceErc20 = await lender.weth.balanceOf(beneficiary);
-      // expect(
-      //   beneficiaryBalanceErc20.sub(beneficiaryBalancePreErc20)
-      // ).to.be.equal(feeErc20);
+
+      const feeWETH = takeFee(unpackedDrpWETH.mul(_rentDuration[0]), rentFee);
+      const feeUSDC = takeFee(unpackedDrpUSDC.mul(_rentDuration[1]), rentFee);
+
+      // correct fee implies that the lender amount is correct
+      expect(beneficiaryWETHPost.sub(beneficiaryWETHPre)).to.be.equal(feeWETH);
+      expect(beneficiaryUSDCPost.sub(beneficiaryUSDCPre)).to.be.equal(feeUSDC);
+
+      const lenderWETH = (unpackedDrpWETH.mul(_rentDuration[0])).sub(feeWETH);
+      const lenderUSDC = (unpackedDrpUSDC.mul(_rentDuration[1])).sub(feeUSDC);
+
+      // also check that the lender received the collateral
+      expect(balancesPost[0].sub(balancesPre[0])).to.be.equal(lenderWETH.add(unpackedColWETH));
+      expect(balancesPost[1].sub(balancesPre[1])).to.to.equal(lenderUSDC.add(unpackedColUSDC));
     });
 
     it("claims collalteral ok - WETH", async () => {
@@ -1499,7 +1519,7 @@ describe("ReNFT", function () {
       const _id = [1];
       const _rentDuration = [1];
       await renter.renft.rent(_nft, _tokenId, [1], _id, _rentDuration);
-      await advanceTime(SECONDS_IN_A_DAY + 100);
+      await advanceTime(SECONDS_IN_A_DAY);
       const balancePre = await lender.weth.balanceOf(lender.address);
       const beneficiaryBalancePre = await lender.weth.balanceOf(beneficiary);
       const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], _id);
@@ -1548,7 +1568,7 @@ describe("ReNFT", function () {
       const _id = [1];
       const _rentDuration = [1];
       await renter.renft.rent(_nft, _tokenId, [1], _id, _rentDuration);
-      await advanceTime(SECONDS_IN_A_DAY - 30);
+      await advanceTime(SECONDS_IN_A_DAY - 1);
       await expect(
         lender.renft.claimCollateral(_nft, _tokenId, [1], _id)
       ).to.be.revertedWith("cant claim yet");
@@ -1632,26 +1652,6 @@ describe("ReNFT", function () {
         paymentToken
       );
     });
-
-    it("reverts when a mad lend sends an NFT directly", async () => {
-      false;
-    });
-
-    it("reverts when a mad lad sends us ERC20", async () => {
-      false;
-    });
-
-    it("reverts when a mad lad sends us ether", async () => {
-      false;
-    });
-
-    it("reverts when a mad lad sends us ERC20 and ether", async () => {
-      false;
-    });
-
-    // it('A lends, B rents, B lends, C rents, C defaults', async () => {});
-
-    // it('relends 10 times ok', async () => {});
   });
 
   context("Admin", async () => {
