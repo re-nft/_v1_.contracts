@@ -15,6 +15,6 @@
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "not-rely-on-time": "off",
     "reason-string": ["warn", { "maxLength": 64 }],
-    "compiler-version": ["error","^0.8.3"]
+    "compiler-version": ["error","^0.8.0"]
   }
 }

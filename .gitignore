@@ -19,3 +19,5 @@ deployments/localhost
 frontend/
 
 yarn-error.log
+.DS_Store
+bin/

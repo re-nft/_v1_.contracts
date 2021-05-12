@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.3;
+pragma solidity 0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./IResolver.sol";
 
-// TODO: add dev param comments after you change the spec a bit
 interface IReNft is IERC721Receiver, IERC1155Receiver {
     /// @dev quick test showed that LentBatch with arrays
     /// @dev would cost more than the non-array version
@@ -18,9 +17,10 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event Lent(
         address indexed nftAddress,
         uint256 indexed tokenId,
+        uint8 lentAmount,
         uint256 lendingId,
         address indexed lenderAddress,
-        uint16 maxRentDuration,
+        uint8 maxRentDuration,
         bytes4 dailyRentPrice,
         bytes4 nftPrice,
         bool isERC721,
@@ -28,36 +28,17 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     );
 
     event Rented(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
         uint256 lendingId,
         address indexed renterAddress,
-        uint16 rentDuration,
-        bool isERC721,
+        uint8 rentDuration,
         uint32 rentedAt
     );
 
-    event Returned(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        address renterAddress,
-        uint32 returnedAt
-    );
+    event Returned(uint256 indexed lendingId, uint32 returnedAt);
 
-    event CollateralClaimed(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        uint32 claimedAt
-    );
+    event CollateralClaimed(uint256 indexed lendingId, uint32 claimedAt);
 
-    event LendingStopped(
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 indexed lendingId,
-        uint32 stoppedAt
-    );
+    event LendingStopped(uint256 indexed lendingId, uint32 stoppedAt);
 
     /**
      * @dev lend will send your NFT to ReNft contract, it acts as an escrow
@@ -66,7 +47,8 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function lend(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint16[] memory _maxRentDuration,
+        uint256[] memory _lendAmounts,
+        uint8[] memory _maxRentDuration,
         bytes4[] memory _dailyRentPrice,
         bytes4[] memory _nftPrice,
         IResolver.PaymentToken[] memory _paymentToken
@@ -80,9 +62,10 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function rent(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint256[] memory _id,
-        uint16[] memory _rentDuration
-    ) external payable;
+        uint256[] memory _lentAmounts,
+        uint256[] memory _lendingIds,
+        uint8[] memory _rentDurations
+    ) external;
 
     /**
      * @dev renters call this to return the rented NFT before the
@@ -92,16 +75,18 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function returnIt(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint256[] memory _id
+        uint256[] memory _lentAmounts,
+        uint256[] memory _lendingIds
     ) external;
 
     /**
      * @dev claim collateral on rentals that are past their due date
      */
     function claimCollateral(
-        address[] memory _nft,
-        uint256[] memory _tokenId,
-        uint256[] memory _id
+        address[] memory _nfts,
+        uint256[] memory _tokenIds,
+        uint256[] memory _lentAmounts,
+        uint256[] memory _lendingIds
     ) external;
 
     /**
@@ -111,6 +96,7 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     function stopLending(
         address[] memory _nft,
         uint256[] memory _tokenId,
-        uint256[] memory _id
+        uint256[] memory _lentAmounts,
+        uint256[] memory _lendingIds
     ) external;
 }
