@@ -1319,13 +1319,6 @@ describe("ReNFT", function () {
       const beneficiaryFeeWETH = takeFee(lenderReceivesWETH, rentFee);
       lenderReceivesWETH = lenderReceivesWETH.sub(beneficiaryFeeWETH);
 
-      // console.log("~ pmtAmtsWoCol", pmtAmtsWoCol[0].toString());
-      // console.log("~ rentPmtWETH", rentPmtWETH.toString());
-      // console.log("~ rentProRataWETH", rentProRataWETH.toString());
-      // console.log("~ beneficiaryFeeWETH", beneficiaryFeeWETH.toString());
-      // console.log("~ lenderReceivesWETH", lenderReceivesWETH.toString());
-      // console.log("~");
-
       expect(
         balanceBeneficiaryWETHPost.sub(balanceBeneficiaryWETHPre)
       ).to.be.equal(beneficiaryFeeWETH);
