@@ -11,7 +11,7 @@ contract E1155 is ERC1155 {
     uint256 public constant SWORD = 1003;
     uint256 public constant SHIELD = 1004;
 
-    constructor() ERC1155("https://api.bccg.digital/api/bccg/") {
+    constructor() ERC1155("https://api.bccg.digital/api/bccg/{id}.json") {
         _mint(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, GOLD, 1, "");
         _mint(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, SILVER, 10, "");
         _mint(0x70997970C51812dc3A010C7d01b50e0d17dc79C8, THORS_HAMMER, 20, "");
