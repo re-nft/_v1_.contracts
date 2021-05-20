@@ -51,40 +51,53 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const usdc = <ERC20>await ethers.getContract("USDC", deployer);
   const usdt = <ERC20>await ethers.getContract("USDT", deployer);
 
-  await resolver.setPaymentToken(1, weth.address);
-  await resolver.setPaymentToken(2, dai.address);
-  await resolver.setPaymentToken(3, usdc.address);
+  // await resolver.setPaymentToken(1, weth.address);
+  // await resolver.setPaymentToken(2, dai.address);
+  // await resolver.setPaymentToken(3, usdc.address);
 
   console.log("resolver set payment tokens");
 
   const amtToSend = ethers.utils.parseEther("100");
 
-  await weth.transfer(lender, amtToSend);
+  // have to wait on kovan
+  let txn = await weth.transfer(lender, amtToSend);
+  await txn.wait()
   console.log("lender received weth");
-  await weth.transfer(beneficiary, amtToSend);
+  txn = await weth.transfer(beneficiary, amtToSend);
+  await txn.wait();
   console.log("beneficiary received weth");
-  await weth.transfer(renter, amtToSend);
+  txn = await weth.transfer(renter, amtToSend);
+  await txn.wait();
   console.log("renter received weth");
 
-  await usdt.transfer(lender, amtToSend);
+  txn = await usdt.transfer(lender, amtToSend);
+  await txn.wait();
   console.log("lender received usdt");
-  await usdt.transfer(beneficiary, amtToSend);
+  txn = await usdt.transfer(beneficiary, amtToSend);
+  await txn.wait();
   console.log("beneficiary received usdt");
-  await usdt.transfer(renter, amtToSend);
+  txn = await usdt.transfer(renter, amtToSend);
+  await txn.wait();
   console.log("renter received usdt");
 
-  await usdc.transfer(lender, amtToSend);
+  txn = await usdc.transfer(lender, amtToSend);
+  await txn.wait();
   console.log("lender received usdc");
-  await usdc.transfer(beneficiary, amtToSend);
+  txn = await usdc.transfer(beneficiary, amtToSend);
+  await txn.wait();
   console.log("beneficiary received usdc");
-  await usdc.transfer(renter, amtToSend);
+  txn = await usdc.transfer(renter, amtToSend);
+  await txn.wait();
   console.log("renter received usdc");
 
-  await dai.transfer(lender, amtToSend);
+  txn = await dai.transfer(lender, amtToSend);
+  await txn.wait();
   console.log("lender received dai");
-  await dai.transfer(beneficiary, amtToSend);
+  txn = await dai.transfer(beneficiary, amtToSend);
+  await txn.wait();
   console.log("beneficiary received dai");
-  await dai.transfer(renter, amtToSend);
+  txn = await dai.transfer(renter, amtToSend);
+  await txn.wait();
   console.log("renter received dai");
 };
 

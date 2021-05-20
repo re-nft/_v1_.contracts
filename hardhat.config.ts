@@ -35,18 +35,23 @@ const config: HardhatUserConfig = {
     kovan: {
       url: node_url("kovan"),
       accounts: accounts(),
+      gas: 6_000_000,
     },
     rinkeby: {
       url: node_url("rinkeby"),
       accounts: accounts(),
+      gas: 6_000_000,
     },
     ropsten: {
       url: node_url("ropsten"),
       accounts: accounts(),
+      gas: 6_000_000,
     },
     goerli: {
       url: node_url("goerli"),
       accounts: accounts(),
+      gas: 6_000_000,
+      gasPrice: 50000000000,
     },
     hardhat: {
       accounts: accounts(),

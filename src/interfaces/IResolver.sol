@@ -8,7 +8,8 @@ interface IResolver {
         DAI, // 2
         USDC, // 3
         USDT, // 4
-        TUSD // 5
+        TUSD, // 5
+        RENT // 6
     }
 
     /**
