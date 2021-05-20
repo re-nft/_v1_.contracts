@@ -12,6 +12,8 @@ import { E721B } from "../../frontend/src/hardhat/typechain/E721B";
 //@ts-ignore
 import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
 
+// TODO: this fails somewhere when deploying to testnets
+
 /**
  * Gives everyone a bit of ERC20 test tokens & mints all erc721s
  * to lender named account, & erc1155s to lender and other top 2
