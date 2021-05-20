@@ -11,6 +11,7 @@ import { E721 } from "../../frontend/src/hardhat/typechain/E721";
 import { E721B } from "../../frontend/src/hardhat/typechain/E721B";
 //@ts-ignore
 import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
+import { Contract } from "typechain";
 
 // TODO: this fails somewhere when deploying to testnets
 
@@ -31,10 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [deployer],
   });
 
-  const resolver = (await ethers.getContract(
-    "Resolver",
-    deployer
-  )) as any as Resolver;
+  const resolver = <Resolver>await ethers.getContract("Resolver", deployer);
 
   await deploy("ReNFT", {
     from: deployer,
@@ -42,27 +40,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [resolver.address, beneficiary, deployer],
   });
 
-  const e721 = (await ethers.getContract("E721", lender)) as any as E721;
-  const e721b = (await ethers.getContract("E721B", lender)) as any as E721B;
+  const e721 = <E721>await ethers.getContract("E721", lender);
+  const e721b = <E721B>await ethers.getContract("E721B", lender);
 
-  for (let i = 0; i < 10; i++) await e721.award();
-  for (let i = 0; i < 10; i++) await e721b.award();
+  Promise.all([Array(10).fill(e721.award()), Array(10).fill(e721b.award())]);
 
   // * also send through 100 erc20 tokens to everyone
-  const weth = (await ethers.getContract("WETH", deployer)) as any as ERC20;
-  const dai = (await ethers.getContract("DAI", deployer)) as any as ERC20;
-  const usdc = (await ethers.getContract("USDC", deployer)) as any as ERC20;
-  const usdt = (await ethers.getContract("USDT", deployer)) as any as ERC20;
-  const amtToSend = ethers.utils.parseEther("100000000");
+  const weth = <ERC20>await ethers.getContract("WETH", deployer);
+  const dai = <ERC20>await ethers.getContract("DAI", deployer);
+  const usdc = <ERC20>await ethers.getContract("USDC", deployer);
+  const usdt = <ERC20>await ethers.getContract("USDT", deployer);
 
-  // enum PaymentToken {
-  //     ETH, // 0
-  //     WETH, // 1
-  //     DAI, // 2
-  //     USDC, // 3
-  //     USDT, // 4
-  //     TUSD // 5
-  // }
+  const amtToSend = ethers.utils.parseEther("10000");
 
   await weth.transfer(lender, amtToSend);
   await weth.transfer(beneficiary, amtToSend);
