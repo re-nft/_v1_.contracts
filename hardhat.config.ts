@@ -32,6 +32,22 @@ const config: HardhatUserConfig = {
     renter: 3,
   },
   networks: {
+    kovan: {
+      url: node_url("kovan"),
+      accounts: accounts(),
+    },
+    rinkeby: {
+      url: node_url("rinkeby"),
+      accounts: accounts(),
+    },
+    ropsten: {
+      url: node_url("ropsten"),
+      accounts: accounts(),
+    },
+    goerli: {
+      url: node_url("goerli"),
+      accounts: accounts(),
+    },
     hardhat: {
       accounts: accounts(),
     },
