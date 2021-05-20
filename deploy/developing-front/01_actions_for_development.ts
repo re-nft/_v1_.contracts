@@ -51,27 +51,41 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const usdc = <ERC20>await ethers.getContract("USDC", deployer);
   const usdt = <ERC20>await ethers.getContract("USDT", deployer);
 
-  const amtToSend = ethers.utils.parseEther("10000");
-
-  await weth.transfer(lender, amtToSend);
-  await weth.transfer(beneficiary, amtToSend);
-  await weth.transfer(renter, amtToSend);
-
-  await usdt.transfer(lender, amtToSend);
-  await usdt.transfer(beneficiary, amtToSend);
-  await usdt.transfer(renter, amtToSend);
-
-  await usdc.transfer(lender, amtToSend);
-  await usdc.transfer(beneficiary, amtToSend);
-  await usdc.transfer(renter, amtToSend);
-
-  await dai.transfer(lender, amtToSend);
-  await dai.transfer(beneficiary, amtToSend);
-  await dai.transfer(renter, amtToSend);
-
   await resolver.setPaymentToken(1, weth.address);
   await resolver.setPaymentToken(2, dai.address);
   await resolver.setPaymentToken(3, usdc.address);
+
+  console.log("resolver set payment tokens");
+
+  const amtToSend = ethers.utils.parseEther("100");
+
+  await weth.transfer(lender, amtToSend);
+  console.log("lender received weth");
+  await weth.transfer(beneficiary, amtToSend);
+  console.log("beneficiary received weth");
+  await weth.transfer(renter, amtToSend);
+  console.log("renter received weth");
+
+  await usdt.transfer(lender, amtToSend);
+  console.log("lender received usdt");
+  await usdt.transfer(beneficiary, amtToSend);
+  console.log("beneficiary received usdt");
+  await usdt.transfer(renter, amtToSend);
+  console.log("renter received usdt");
+
+  await usdc.transfer(lender, amtToSend);
+  console.log("lender received usdc");
+  await usdc.transfer(beneficiary, amtToSend);
+  console.log("beneficiary received usdc");
+  await usdc.transfer(renter, amtToSend);
+  console.log("renter received usdc");
+
+  await dai.transfer(lender, amtToSend);
+  console.log("lender received dai");
+  await dai.transfer(beneficiary, amtToSend);
+  console.log("beneficiary received dai");
+  await dai.transfer(renter, amtToSend);
+  console.log("renter received dai");
 };
 
 export default func;
