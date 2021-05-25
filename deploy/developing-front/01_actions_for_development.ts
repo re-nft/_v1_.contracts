@@ -51,9 +51,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const usdc = <ERC20>await ethers.getContract("USDC", deployer);
   const usdt = <ERC20>await ethers.getContract("USDT", deployer);
 
-  // await resolver.setPaymentToken(1, weth.address);
-  // await resolver.setPaymentToken(2, dai.address);
-  // await resolver.setPaymentToken(3, usdc.address);
+  await resolver.setPaymentToken(1, weth.address);
+  await resolver.setPaymentToken(2, dai.address);
+  await resolver.setPaymentToken(3, usdc.address);
 
   console.log("resolver set payment tokens");
 
