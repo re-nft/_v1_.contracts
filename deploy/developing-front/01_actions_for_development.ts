@@ -32,6 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [deployer],
   });
 
+  //@ts-ignore
   const resolver = <Resolver>await ethers.getContract("Resolver", deployer);
 
   await deploy("ReNFT", {
@@ -40,15 +41,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     args: [resolver.address, beneficiary, deployer],
   });
 
+  //@ts-ignore
   const e721 = <E721>await ethers.getContract("E721", lender);
+  //@ts-ignore
   const e721b = <E721B>await ethers.getContract("E721B", lender);
 
   Promise.all([Array(10).fill(e721.award()), Array(10).fill(e721b.award())]);
 
   // * also send through 100 erc20 tokens to everyone
+  //@ts-ignore
   const weth = <ERC20>await ethers.getContract("WETH", deployer);
+  //@ts-ignore
   const dai = <ERC20>await ethers.getContract("DAI", deployer);
+  //@ts-ignore
   const usdc = <ERC20>await ethers.getContract("USDC", deployer);
+  //@ts-ignore
   const usdt = <ERC20>await ethers.getContract("USDT", deployer);
 
   await resolver.setPaymentToken(1, weth.address);

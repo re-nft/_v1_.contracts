@@ -29,6 +29,7 @@
   ],
   "dependencies": {
     "@ethereum-waffle/chai": "3.2.2",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "2.1.1",
     "@openzeppelin/contracts": "4.0.0-rc.0",
     "@symfoni/hardhat-react": "0.3.0",
@@ -42,8 +43,9 @@
     "dotenv": "8.2.0",
     "eslint": "7.18.0",
     "eslint-config-prettier": "7.2.0",
-    "hardhat": "2.0.8",
-    "hardhat-deploy": "0.7.0-beta.44",
+    "hardhat": "^2.3.0",
+    "hardhat-deploy": "0.7.9",
+    "hardhat-deploy-ethers": "^0.3.0-beta.7",
     "hardhat-gas-reporter": "1.0.4",
     "hardhat-typechain": "0.3.5",
     "mocha": "8.3.2",
@@ -53,8 +55,13 @@
     "typechain": "4.0.3",
     "typescript": "4.1.5"
   },
+  "resolutions": {
+    "abstract-leveldown": "6.2.1",
+    "merkle-patricia-tree": "4.2.0",
+    "readable-stream": "3.6.0"
+  },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
+    "ethers": "^5.0.0",
     "prettier": "2.2.1",
     "prettier-plugin-solidity": "1.0.0-beta.10",
     "solidity-coverage": "0.7.16"
