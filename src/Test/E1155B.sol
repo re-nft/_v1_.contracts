@@ -28,4 +28,10 @@ contract E1155B is ERC1155 {
         _mint(msg.sender, tokenId, 1, "");
         return tokenId;
     }
+
+    // to stay consistent with erc20s
+    function faucet() public {
+        tokenId++;
+        _mint(msg.sender, tokenId, 2, "");
+    }
 }

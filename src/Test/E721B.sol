@@ -65,4 +65,10 @@ contract E721B is Ownable, ERC721Enumerable {
         _mint(msg.sender, counter);
         return counter;
     }
+
+    // to stay consistent with erc20s
+    function faucet() public {
+        counter++;
+        _mint(msg.sender, counter);
+    }
 }
