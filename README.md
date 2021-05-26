@@ -56,18 +56,3 @@
 1. Note that `test:gas` will not work since node needs to run as a daemon. You need to open a terminal, open two tabs, in one run the node, and in another one run the test. Now you will have gas estimates.
 
 2. Note that gas reporter will appear to be working with `test:quick`, but it should not! It will not work. It will only work if you run separately a node, and separetely a test with `localhost` network to ping the node.
-
-### TODO
-
----
-
-- avoid generating the typechain artifacts twice
-- solidity coverage does not work correctly, so I removed it for now
-- husky pre-commit & pre-push
-- gas reporting does nsot work
-- define boundary cases, define normal domain, add the docs like in 0xsequence
-- draw.io visuals for the contract
-- assesss smock.it for future versions
-- on the front, give people the estimate for the txn cost
-- atomic.blue look at mempool to estimate gas, see if they are willing to share that code. Tell people the cost of the round-trip
-- of lending. For better UX, manage people's private keys (huge trust step) but this will allow collateral-free renting lending. Also, nuCypher helps you do this safely. Also, `SUDO` opcode (Andre's tweet) can help us solve this issue
