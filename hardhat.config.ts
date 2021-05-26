@@ -62,6 +62,7 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       url: node_url("mainnet"),
+      // to have a private key, just pass it in an array like so: ["0xprivKey"]
       accounts: accounts("mainnet"),
     },
   },
