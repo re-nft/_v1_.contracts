@@ -29,7 +29,6 @@
   ],
   "dependencies": {
     "@ethereum-waffle/chai": "3.2.2",
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "2.1.1",
     "@openzeppelin/contracts": "4.0.0-rc.0",
     "@symfoni/hardhat-react": "0.3.0",

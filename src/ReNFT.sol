@@ -217,12 +217,11 @@ contract ReNFT is IReNft {
         LendingRenting storage _lendingRenting,
         uint256 _secondsSinceRentStart
     ) private {
-        uint256 decimals = 18;
         // enum to uint8
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
         // uint8 to paymentToken address
         address paymentToken = resolver.getPaymentToken(paymentTokenIx);
-        decimals = __decimals(ERC20(paymentToken));
+        uint256 decimals = ERC20(paymentToken).decimals();
 
         // lender receives amounts proportional to the amount of time the NFT was used
         uint256 scale = 10**decimals;
@@ -275,9 +274,7 @@ contract ReNFT is IReNft {
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
         ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
 
-        uint256 decimals = 18;
-        decimals = __decimals(ERC20(paymentToken));
-
+        uint256 decimals = ERC20(paymentToken).decimals();
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
         uint256 rentPrice =
@@ -426,10 +423,9 @@ contract ReNFT is IReNft {
             uint8 paymentTokenIx = uint8(item.lending.paymentToken);
             // from uint8 to address
             address paymentToken = resolver.getPaymentToken(paymentTokenIx);
-            uint256 decimals = 18;
+            uint256 decimals = ERC20(paymentToken).decimals();
 
             {
-                decimals = __decimals(ERC20(paymentToken));
                 uint256 scale = 10**decimals;
                 uint256 rentPrice =
                     _tp.rentDurations[i] *
@@ -751,10 +747,6 @@ contract ReNFT is IReNft {
         }
     }
 
-    function __decimals(ERC20 _tokenAddress) private view returns (uint256) {
-        return _tokenAddress.decimals();
-    }
-
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
     // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
@@ -862,6 +854,7 @@ contract ReNFT is IReNft {
         pure
         returns (bool)
     {
+        require(_now > _renting.rentedAt, "_now  lt _renting.rentedAt");
         return _now - _renting.rentedAt > _renting.rentDuration * 86400;
     }
 
