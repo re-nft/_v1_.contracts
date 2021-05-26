@@ -314,8 +314,8 @@ contract ReNFT is IReNft {
             IERC1155(_tp.nfts[_tp.lastIx]).safeBatchTransferFrom(
                 _from,
                 _to,
-                sliceTokenIds(_tp),
-                sliceLentAmounts(_tp),
+                sliceArr(_tp.tokenIds, _tp.lastIx, _tp.currIx),
+                sliceArr(_tp.lentAmounts, _tp.lastIx, _tp.currIx),
                 ""
             );
         } else {
@@ -726,25 +726,14 @@ contract ReNFT is IReNft {
         return price;
     }
 
-    function sliceTokenIds(TwoPointer memory _tp)
-        private
-        pure
-        returns (uint256[] memory r)
-    {
-        r = new uint256[](_tp.tokenIds.length);
-        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            r[i - _tp.lastIx] = _tp.tokenIds[i];
-        }
-    }
-
-    function sliceLentAmounts(TwoPointer memory _tp)
-        private
-        pure
-        returns (uint256[] memory r)
-    {
-        r = new uint256[](_tp.lentAmounts.length);
-        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            r[i - _tp.lastIx] = _tp.lentAmounts[i];
+    function sliceArr(
+        uint256[] memory _arr,
+        uint256 _fromIx,
+        uint256 _toIx
+    ) private pure returns (uint256[] memory r) {
+        r = new uint256[](_arr.length);
+        for (uint256 i = _fromIx; i < _toIx; i++) {
+            r[i - _fromIx] = _arr[i];
         }
     }
 
