@@ -39,8 +39,6 @@ contract ReNFT is IReNft {
 
     // in bps. so 500 => 0.5%
     uint256 public rentFee = 500;
-    bytes4 private constant ERC20_DECIMALS_SELECTOR =
-        bytes4(keccak256(bytes("decimals()")));
 
     // single storage slot: address - 160 bits, 168, 200, 232, 240, 248
     struct Lending {
@@ -778,6 +776,10 @@ contract ReNFT is IReNft {
         // lending at least one token & the amount is less or equal than uint8 max 255
         require(_tp.lentAmounts[_i] > 0, "invalid lend amount");
         require(_tp.lentAmounts[_i] <= type(uint8).max, "cannot exceed uint8");
+        require(
+            _tp.maxRentDurations[_i] <= type(uint8).max,
+            "cannot exceed uint8"
+        );
         // max rent duration is at least a day. it is uint8 so no need to check for max
         require(_tp.maxRentDurations[_i] > 0, "must be at least one day lend");
         // ensure that the daily rental price and the collateral prices are not zero
