@@ -86,9 +86,9 @@ contract ReNFT is IReNft {
         address payable _beneficiary,
         address _admin
     ) {
-        require(_resolver != address(0), "zero address");
-        require(_beneficiary != address(0), "zero address");
-        require(_admin != address(0), "zero address");
+        ensureIsNotZeroAddr(_resolver);
+        ensureIsNotZeroAddr(_beneficiary);
+        ensureIsNotZeroAddr(_admin);
 
         resolver = IResolver(_resolver);
         beneficiary = _beneficiary;
@@ -99,6 +99,7 @@ contract ReNFT is IReNft {
         function(TwoPointer memory) f,
         TwoPointer memory _tp
     ) private {
+        require(_tp.nfts.length > 0, "invalid nfts len");
         if (_tp.nfts.length < 2) {
             f(_tp);
             return;
@@ -750,34 +751,36 @@ contract ReNFT is IReNft {
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
     // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
+    function ensureIsNotZeroAddr(address _addr) private pure {
+        require(_addr != address(0), "addr is a zero address");
+    }
+
+    function ensureIsZeroAddr(address _addr) private pure {
+        require(_addr == address(0), "addr is not a zero address");
+    }
+
     function ensureIsNull(Lending memory _lending) private pure {
-        require(_lending.lenderAddress == address(0), "lender is zero address");
+        ensureIsZeroAddr(_lending.lenderAddress);
         require(_lending.maxRentDuration == 0, "max rent duration is zero");
         require(_lending.dailyRentPrice == 0, "daily rent price is zero");
         require(_lending.nftPrice == 0, "nft price is zero");
     }
 
     function ensureIsNotNull(Lending memory _lending) private pure {
-        require(_lending.lenderAddress != address(0), "lender is zero address");
+        ensureIsNotZeroAddr(_lending.lenderAddress);
         require(_lending.maxRentDuration != 0, "max rent duration is zero");
         require(_lending.dailyRentPrice != 0, "daily rent price is zero");
         require(_lending.nftPrice != 0, "nft price is zero");
     }
 
     function ensureIsNull(Renting memory _renting) private pure {
-        require(
-            _renting.renterAddress == address(0),
-            "renter address is not a zero address"
-        );
+        ensureIsZeroAddr(_renting.renterAddress);
         require(_renting.rentDuration == 0, "rent duration is not zero");
         require(_renting.rentedAt == 0, "was rented before");
     }
 
     function ensureIsNotNull(Renting memory _renting) private pure {
-        require(
-            _renting.renterAddress != address(0),
-            "renter address is a zero address"
-        );
+        ensureIsNotZeroAddr(_renting.renterAddress);
         require(_renting.rentDuration != 0, "rent duration is zero");
         require(_renting.rentedAt != 0, "never rented");
     }
