@@ -797,6 +797,7 @@ contract ReNFT is IReNft {
         address _msgSender
     ) private pure {
         require(_msgSender != _lending.lenderAddress, "cant rent own nft");
+        require(_tp.rentDurations[_i] <= type(uint8).max, "cannot exceed uint8");
         require(_tp.rentDurations[_i] > 0, "should rent for at least a day");
         require(
             _tp.rentDurations[_i] <= _lending.maxRentDuration,
