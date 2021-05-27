@@ -21,14 +21,12 @@
 //   const { lender, deployer, beneficiary, renter } = await getNamedAccounts();
 //   const { deploy } = deployments;
 
-//   const signer = await ethers.getSigner(deployer);
-//   const gasPrice = await signer.getGasPrice();
+//   // const signer = await ethers.getSigner(deployer);
 
 //   await deploy("Resolver", {
 //     from: deployer,
 //     log: true,
-//     args: [deployer],
-//     gasPrice
+//     args: [deployer]
 //   });
 
 //   const resolver = <Resolver>await ethers.getContract("Resolver", deployer);
@@ -36,14 +34,13 @@
 //   await deploy("ReNFT", {
 //     from: deployer,
 //     log: true,
-//     args: [resolver.address, beneficiary, deployer],
-//     gasPrice
+//     args: [resolver.address, beneficiary, deployer]
 //   });
 
 //   const e721 = <E721>await ethers.getContract("E721", lender);
 //   const e721b = <E721B>await ethers.getContract("E721B", lender);
 
-//   Promise.all([Array(10).fill(e721.award({ gasPrice })), Array(10).fill(e721b.award({ gasPrice }))]);
+//   Promise.all([Array(10).fill(e721.award()), Array(10).fill(e721b.award())]);
 
 //   // * also send through 100 erc20 tokens to everyone
 //   const weth = <ERC20>await ethers.getContract("WETH", deployer);
@@ -52,64 +49,64 @@
 //   const usdt = <ERC20>await ethers.getContract("USDT", deployer);
 //   const tusd = <ERC20>await ethers.getContract("TUSD", deployer);
 
-//   await resolver.setPaymentToken(1, weth.address, { gasPrice });
-//   await resolver.setPaymentToken(2, dai.address, { gasPrice });
-//   await resolver.setPaymentToken(3, usdc.address, { gasPrice });
-//   await resolver.setPaymentToken(4, usdt.address, { gasPrice });
-//   await resolver.setPaymentToken(5, tusd.address, { gasPrice });
+//   await resolver.setPaymentToken(1, weth.address);
+//   await resolver.setPaymentToken(2, dai.address);
+//   await resolver.setPaymentToken(3, usdc.address);
+//   await resolver.setPaymentToken(4, usdt.address);
+//   await resolver.setPaymentToken(5, tusd.address);
 
 //   console.log("💠 resolver set payment tokens 💠");
 
 //   const amtToSend = ethers.utils.parseEther("100");
 
 //   // have to wait on kovan
-//   let txn = await weth.transfer(lender, amtToSend, { gasPrice });
+//   let txn = await weth.transfer(lender, amtToSend);
 //   await txn.wait()
 //   console.log("💰 lender received weth");
-//   txn = await weth.transfer(beneficiary, amtToSend, { gasPrice });
+//   txn = await weth.transfer(beneficiary, amtToSend);
 //   await txn.wait();
 //   console.log("💰 beneficiary received weth");
-//   txn = await weth.transfer(renter, amtToSend, { gasPrice });
+//   txn = await weth.transfer(renter, amtToSend);
 //   await txn.wait();
 //   console.log("💰 renter received weth");
 
-//   txn = await usdt.transfer(lender, amtToSend, { gasPrice });
+//   txn = await usdt.transfer(lender, amtToSend);
 //   await txn.wait();
 //   console.log("💰 lender received usdt");
-//   txn = await usdt.transfer(beneficiary, amtToSend, { gasPrice });
+//   txn = await usdt.transfer(beneficiary, amtToSend);
 //   await txn.wait();
 //   console.log("💰 beneficiary received usdt");
-//   txn = await usdt.transfer(renter, amtToSend, { gasPrice });
+//   txn = await usdt.transfer(renter, amtToSend);
 //   await txn.wait();
 //   console.log("💰 renter received usdt");
 
-//   txn = await usdc.transfer(lender, amtToSend, { gasPrice });
+//   txn = await usdc.transfer(lender, amtToSend);
 //   await txn.wait();
 //   console.log("💰 lender received usdc");
-//   txn = await usdc.transfer(beneficiary, amtToSend, { gasPrice });
+//   txn = await usdc.transfer(beneficiary, amtToSend);
 //   await txn.wait();
 //   console.log("💰 beneficiary received usdc");
-//   txn = await usdc.transfer(renter, amtToSend, { gasPrice });
+//   txn = await usdc.transfer(renter, amtToSend);
 //   await txn.wait();
 //   console.log("💰 renter received usdc");
 
-//   txn = await dai.transfer(lender, amtToSend, { gasPrice });
+//   txn = await dai.transfer(lender, amtToSend);
 //   await txn.wait();
 //   console.log("💰 lender received dai");
-//   txn = await dai.transfer(beneficiary, amtToSend, { gasPrice });
+//   txn = await dai.transfer(beneficiary, amtToSend);
 //   await txn.wait();
 //   console.log("💰 beneficiary received dai");
-//   txn = await dai.transfer(renter, amtToSend, { gasPrice });
+//   txn = await dai.transfer(renter, amtToSend);
 //   await txn.wait();
 //   console.log("💰 renter received dai");
 
-//   txn = await tusd.transfer(lender, amtToSend, { gasPrice });
+//   txn = await tusd.transfer(lender, amtToSend);
 //   await txn.wait()
 //   console.log("💰 lender received weth");
-//   txn = await tusd.transfer(beneficiary, amtToSend, { gasPrice });
+//   txn = await tusd.transfer(beneficiary, amtToSend);
 //   await txn.wait();
 //   console.log("💰 beneficiary received weth");
-//   txn = await tusd.transfer(renter, amtToSend, { gasPrice });
+//   txn = await tusd.transfer(renter, amtToSend);
 //   await txn.wait();
 //   console.log("💰 renter received weth");
 // };

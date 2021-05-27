@@ -61,9 +61,9 @@ const config: HardhatUserConfig = {
       accounts: accounts(),
     },
     mainnet: {
-      url: node_url("mainnet"),
+      url: "https://eth-mainnet.alchemyapi.io/v2/<apiKey>",
       // to have a private key, just pass it in an array like so: ["0xprivKey"]
-      accounts: accounts("mainnet"),
+      accounts: ["<privKey>"],
     },
   },
   paths: {
