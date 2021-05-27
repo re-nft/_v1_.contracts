@@ -37,8 +37,8 @@ contract ReNFT is IReNft {
     address payable private beneficiary;
     uint256 private lendingId = 1;
 
-    // in bps. so 500 => 0.5%
-    uint256 public rentFee = 500;
+    // in bps. so 1000 => 1%
+    uint256 public rentFee = 1000;
 
     // single storage slot: address - 160 bits, 168, 200, 232, 240, 248
     struct Lending {
@@ -145,55 +145,45 @@ contract ReNFT is IReNft {
     function rent(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
     ) external override {
         twoPointerLoop(
             handleRent,
-            createRentTP(
-                _nfts,
-                _tokenIds,
-                _lentAmounts,
-                _lendingIds,
-                _rentDurations
-            )
+            createRentTP(_nfts, _tokenIds, _lendingIds, _rentDurations)
         );
     }
 
     function returnIt(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds
     ) external override {
         twoPointerLoop(
             handleReturn,
-            createActionTP(_nfts, _tokenIds, _lentAmounts, _lendingIds)
+            createActionTP(_nfts, _tokenIds, _lendingIds)
         );
     }
 
     function stopLending(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds
     ) external override {
         twoPointerLoop(
             handleStopLending,
-            createActionTP(_nfts, _tokenIds, _lentAmounts, _lendingIds)
+            createActionTP(_nfts, _tokenIds, _lendingIds)
         );
     }
 
     function claimCollateral(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds
     ) external override {
         twoPointerLoop(
             handleClaimCollateral,
-            createActionTP(_nfts, _tokenIds, _lentAmounts, _lendingIds)
+            createActionTP(_nfts, _tokenIds, _lendingIds)
         );
     }
 
@@ -339,7 +329,6 @@ contract ReNFT is IReNft {
                             // so can access at the same memory location all the time
                             _tp.nfts[_tp.lastIx],
                             _tp.tokenIds[i],
-                            _tp.lentAmounts[i],
                             // makes the whole thing unique, in case someone else turns
                             // up with the same nft and tokenId
                             lendingId
@@ -360,12 +349,13 @@ contract ReNFT is IReNft {
             // the erc1155 batch transfer accepts an array of uint256. So to avoid casting, we
             // accept uint256, but check that it is uint8 in  ensureIsLendable
 
+            bool nftIs721 = is721(_tp.nfts[i]);
             // about dailyRentPrice
             // both the dailyRentPrices and nftPrices have been checked for valid non-zero amounts
             // in the ensureIsLendable
             item.lending = Lending({
                 lenderAddress: payable(msg.sender),
-                lentAmount: uint8(_tp.lentAmounts[i]),
+                lentAmount: nftIs721 ? 1 : uint8(_tp.lentAmounts[i]),
                 maxRentDuration: _tp.maxRentDurations[i],
                 dailyRentPrice: _tp.dailyRentPrices[i],
                 nftPrice: _tp.nftPrices[i],
@@ -375,13 +365,13 @@ contract ReNFT is IReNft {
             emit Lent(
                 _tp.nfts[_tp.lastIx],
                 _tp.tokenIds[i],
-                uint8(_tp.lentAmounts[i]),
+                nftIs721 ? 1 : uint8(_tp.lentAmounts[i]),
                 lendingId,
                 msg.sender,
                 _tp.maxRentDurations[i],
                 _tp.dailyRentPrices[i],
                 _tp.nftPrices[i],
-                is721(_tp.nfts[i]),
+                nftIs721,
                 _tp.paymentTokens[i]
             );
 
@@ -402,8 +392,6 @@ contract ReNFT is IReNft {
                             // so can access at the same memory location all the time
                             _tp.nfts[_tp.lastIx],
                             _tp.tokenIds[i],
-                            // lent amounts are required to pull the correct hash of the item
-                            _tp.lentAmounts[i],
                             _tp.lendingIds[i]
                         )
                     )
@@ -430,7 +418,7 @@ contract ReNFT is IReNft {
                     _tp.rentDurations[i] *
                         unpackPrice(item.lending.dailyRentPrice, scale);
                 uint256 nftPrice =
-                    _tp.lentAmounts[i] *
+                    item.lending.lentAmount *
                         unpackPrice(item.lending.nftPrice, scale);
 
                 // extra sanity checks, even though we have checked for zeros before
@@ -474,7 +462,6 @@ contract ReNFT is IReNft {
                             // so can access at the same memory location all the time
                             _tp.nfts[_tp.lastIx],
                             _tp.tokenIds[i],
-                            _tp.lentAmounts[i],
                             _tp.lendingIds[i]
                         )
                     )
@@ -512,7 +499,6 @@ contract ReNFT is IReNft {
                             // so can access at the same memory location all the time
                             _tp.nfts[_tp.lastIx],
                             _tp.tokenIds[i],
-                            _tp.lentAmounts[i],
                             _tp.lendingIds[i]
                         )
                     )
@@ -545,7 +531,6 @@ contract ReNFT is IReNft {
                         abi.encodePacked(
                             _tp.nfts[_tp.lastIx],
                             _tp.tokenIds[i],
-                            _tp.lentAmounts[i],
                             _tp.lendingIds[i]
                         )
                     )
@@ -653,7 +638,6 @@ contract ReNFT is IReNft {
     function createRentTP(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
     ) private pure returns (TwoPointer memory tp) {
@@ -662,7 +646,7 @@ contract ReNFT is IReNft {
             currIx: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
-            lentAmounts: _lentAmounts,
+            lentAmounts: new uint256[](0),
             lendingIds: _lendingIds,
             rentDurations: _rentDurations,
             maxRentDurations: new uint8[](0),
@@ -675,7 +659,6 @@ contract ReNFT is IReNft {
     function createActionTP(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lentAmounts,
         uint256[] memory _lendingIds
     ) private pure returns (TwoPointer memory tp) {
         tp = TwoPointer({
@@ -683,7 +666,7 @@ contract ReNFT is IReNft {
             currIx: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
-            lentAmounts: _lentAmounts,
+            lentAmounts: new uint256[](0),
             lendingIds: _lendingIds,
             rentDurations: new uint8[](0),
             maxRentDurations: new uint8[](0),
@@ -797,7 +780,10 @@ contract ReNFT is IReNft {
         address _msgSender
     ) private pure {
         require(_msgSender != _lending.lenderAddress, "cant rent own nft");
-        require(_tp.rentDurations[_i] <= type(uint8).max, "cannot exceed uint8");
+        require(
+            _tp.rentDurations[_i] <= type(uint8).max,
+            "cannot exceed uint8"
+        );
         require(_tp.rentDurations[_i] > 0, "should rent for at least a day");
         require(
             _tp.rentDurations[_i] <= _lending.maxRentDuration,
