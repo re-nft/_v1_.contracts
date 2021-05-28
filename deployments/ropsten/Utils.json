@@ -1,0 +1,68 @@
+{
+  "address": "0x80A675EF545ea9Ab1c6D8FB87106AF802b654b59",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "_price",
+          "type": "bytes4"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_scale",
+          "type": "uint256"
+        }
+      ],
+      "name": "unpackPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x7f74a331543908379e7ad76ced4a18a7dd9055054f319d5bfff895fda548678f",
+  "receipt": {
+    "to": null,
+    "from": "0x4F8645e873Af2355afD7E971736D6056c1758aBF",
+    "contractAddress": "0x80A675EF545ea9Ab1c6D8FB87106AF802b654b59",
+    "transactionIndex": 13,
+    "gasUsed": "186499",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x7855cc49421f9ae536735b4aa86d968fcdd687a45d9e92f01fd2025e3db44683",
+    "transactionHash": "0x7f74a331543908379e7ad76ced4a18a7dd9055054f319d5bfff895fda548678f",
+    "logs": [],
+    "blockNumber": 10326815,
+    "cumulativeGasUsed": "4220057",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "solcInputHash": "95f9e6fe90b3b34c1ed52b8e4f353bf3",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.0+commit.c7dfd78e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"_price\",\"type\":\"bytes4\"},{\"internalType\":\"uint256\",\"name\":\"_scale\",\"type\":\"uint256\"}],\"name\":\"unpackPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"unpackPrice(bytes4,uint256)\":{\"details\":\"for tests only. this must be exact replica of the one in ReNft.sol\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/Test/Utils.sol\":\"Utils\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/Test/Utils.sol\":{\"content\":\"//SPDX-License-Identifier: MIT\\npragma solidity 0.8.0;\\n\\ncontract Utils {\\n    /// @dev for tests only. this must be exact replica of the one in\\n    /// ReNft.sol\\n    function unpackPrice(bytes4 _price, uint256 _scale)\\n        public\\n        pure\\n        returns (uint256)\\n    {\\n        ensureIsUnpackablePrice(_price, _scale);\\n\\n        // whole := if _price is 0x00120034, then whole is uint16(0x0012)\\n        // decimal := uin16(0x0034)\\n        // we only support dp4 precision for decimals. i.e. you can only have\\n        // numerals after the decimal place ABCD.wxyz. e.g. 1.8271\\n        // 1.8271 represents amount in the default scale of the payment token\\n        // i.e. if .decimals() of the ERC20 is 6, then 1.8271 * (10 ** 6)\\n        uint16 whole = uint16(bytes2(_price));\\n        uint16 decimal = uint16(bytes2(_price << 16));\\n        uint256 decimalScale = _scale / 10000;\\n\\n        if (whole > 9999) {\\n            whole = 9999;\\n        }\\n        if (decimal > 9999) {\\n            decimal = 9999;\\n        }\\n\\n        uint256 w = whole * _scale;\\n        uint256 d = decimal * decimalScale;\\n        uint256 price = w + d;\\n\\n        return price;\\n    }\\n\\n    function ensureIsUnpackablePrice(bytes4 _price, uint256 _scale)\\n        private\\n        pure\\n    {\\n        require(uint32(_price) > 0, \\\"invalid price\\\");\\n        require(_scale >= 10000, \\\"invalid scale\\\");\\n    }\\n}\\n\",\"keccak256\":\"0x3417eddd10aea7155ae282e8219816719a9fee7898cd492b4a09ab473a1c07f4\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610269806100206000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c80637ff0f20e14610030575b600080fd5b61004361003e366004610138565b610059565b60405161005091906101bd565b60405180910390f35b600061006583836100e8565b60f083901c61ffff60e085901c166000610081612710866101de565b905061270f8361ffff1611156100975761270f92505b61270f8261ffff1611156100ab5761270f91505b60006100bb8661ffff86166101fe565b905060006100cd8361ffff86166101fe565b905060006100db82846101c6565b9998505050505050505050565b60e082901c6101125760405162461bcd60e51b815260040161010990610196565b60405180910390fd5b6127108110156101345760405162461bcd60e51b81526004016101099061016f565b5050565b6000806040838503121561014a578182fd5b82356001600160e01b031981168114610161578283fd5b946020939093013593505050565b6020808252600d908201526c696e76616c6964207363616c6560981b604082015260600190565b6020808252600d908201526c696e76616c696420707269636560981b604082015260600190565b90815260200190565b600082198211156101d9576101d961021d565b500190565b6000826101f957634e487b7160e01b81526012600452602481fd5b500490565b60008160001904831182151516156102185761021861021d565b500290565b634e487b7160e01b600052601160045260246000fdfea26469706673582212204db0a5a6cd5693243a27c7441f95528c10a038880baa4cfd2b850d805647f4ce64736f6c63430008000033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c80637ff0f20e14610030575b600080fd5b61004361003e366004610138565b610059565b60405161005091906101bd565b60405180910390f35b600061006583836100e8565b60f083901c61ffff60e085901c166000610081612710866101de565b905061270f8361ffff1611156100975761270f92505b61270f8261ffff1611156100ab5761270f91505b60006100bb8661ffff86166101fe565b905060006100cd8361ffff86166101fe565b905060006100db82846101c6565b9998505050505050505050565b60e082901c6101125760405162461bcd60e51b815260040161010990610196565b60405180910390fd5b6127108110156101345760405162461bcd60e51b81526004016101099061016f565b5050565b6000806040838503121561014a578182fd5b82356001600160e01b031981168114610161578283fd5b946020939093013593505050565b6020808252600d908201526c696e76616c6964207363616c6560981b604082015260600190565b6020808252600d908201526c696e76616c696420707269636560981b604082015260600190565b90815260200190565b600082198211156101d9576101d961021d565b500190565b6000826101f957634e487b7160e01b81526012600452602481fd5b500490565b60008160001904831182151516156102185761021861021d565b500290565b634e487b7160e01b600052601160045260246000fdfea26469706673582212204db0a5a6cd5693243a27c7441f95528c10a038880baa4cfd2b850d805647f4ce64736f6c63430008000033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "unpackPrice(bytes4,uint256)": {
+        "details": "for tests only. this must be exact replica of the one in ReNft.sol"
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

@@ -1,30 +1,18 @@
-/* eslint-disable */
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-// ! ignores required because frontend is auto-generated
-// ! and your typescript will not compile on the first run
-
 import { ERC20 } from "../../frontend/src/hardhat/typechain/ERC20";
 import { E721 } from "../../frontend/src/hardhat/typechain/E721";
 import { E721B } from "../../frontend/src/hardhat/typechain/E721B";
 import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
 
 
-// TODO: this fails somewhere when deploying to testnets
-
-/**
- * Gives everyone a bit of ERC20 test tokens & mints all erc721s
- * to lender named account, & erc1155s to lender and other top 2
- * accounts
- * @param hre
- */
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { getNamedAccounts, ethers, deployments } = hre;
+  const { getNamedAccounts, ethers, deployments, network } = hre;
   const { lender, deployer, beneficiary, renter } = await getNamedAccounts();
   const { deploy } = deployments;
 
   const signer = await ethers.getSigner(deployer);
-  const gasPrice = await signer.getGasPrice() ?? ethers.utils.parseUnits("50", "gwei");
+  const gasPrice = (await signer.getGasPrice()).add(ethers.utils.parseUnits("10", "gwei")) ?? ethers.utils.parseUnits("50", "gwei");
   const opts = { gasPrice }
 
   await deploy("Resolver", {
@@ -43,9 +31,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     gasPrice
   });
 
-  // !!!! If this isn't localhost chain, change "lender" to "deployer"
-  const e721 = <E721>await ethers.getContract("E721", lender);
-  const e721b = <E721B>await ethers.getContract("E721B", lender);
+  const nftReceiver = (network.name == "localhost" || network.name == "hardhat") ? lender : deployer;
+  const e721 = <E721>await ethers.getContract("E721", nftReceiver);
+  const e721b = <E721B>await ethers.getContract("E721B", nftReceiver);
 
   await (await e721.award(opts)).wait();
   await (await e721.award(opts)).wait();
@@ -78,11 +66,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const usdt = <ERC20>await ethers.getContract("USDT", deployer);
   const tusd = <ERC20>await ethers.getContract("TUSD", deployer);
 
-  await (await resolver.setPaymentToken(1, weth.address)).wait();
-  await (await resolver.setPaymentToken(2, dai.address)).wait();
-  await (await resolver.setPaymentToken(3, usdc.address)).wait();
-  await (await resolver.setPaymentToken(4, usdt.address)).wait();
-  await (await resolver.setPaymentToken(5, tusd.address)).wait();
+  await (await resolver.setPaymentToken(1, weth.address, opts)).wait();
+  await (await resolver.setPaymentToken(2, dai.address, opts)).wait();
+  await (await resolver.setPaymentToken(3, usdc.address, opts)).wait();
+  await (await resolver.setPaymentToken(4, usdt.address, opts)).wait();
+  await (await resolver.setPaymentToken(5, tusd.address, opts)).wait();
 
   console.log(" 💠  resolver set payment tokens 💠 ");
 
