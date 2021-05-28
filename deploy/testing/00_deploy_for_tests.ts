@@ -7,7 +7,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { lender, deployer, beneficiary } = await getNamedAccounts();
 
   const signer = await ethers.getSigner(deployer);
-  const gasPrice = await signer.getGasPrice();
+  const gasPrice = await signer.getGasPrice() ?? ethers.utils.parseUnits("50", "gwei");
 
   await deploy("WETH", {
     from: deployer,
