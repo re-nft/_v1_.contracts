@@ -145,45 +145,55 @@ contract ReNFT is IReNft {
     function rent(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
+        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
     ) external override {
         twoPointerLoop(
             handleRent,
-            createRentTP(_nfts, _tokenIds, _lendingIds, _rentDurations)
+            createRentTP(
+                _nfts,
+                _tokenIds,
+                _lendAmounts,
+                _lendingIds,
+                _rentDurations
+            )
         );
     }
 
     function returnIt(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
+        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override {
         twoPointerLoop(
             handleReturn,
-            createActionTP(_nfts, _tokenIds, _lendingIds)
+            createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
         );
     }
 
     function stopLending(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
+        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override {
         twoPointerLoop(
             handleStopLending,
-            createActionTP(_nfts, _tokenIds, _lendingIds)
+            createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
         );
     }
 
     function claimCollateral(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
+        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override {
         twoPointerLoop(
             handleClaimCollateral,
-            createActionTP(_nfts, _tokenIds, _lendingIds)
+            createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
         );
     }
 
@@ -638,6 +648,7 @@ contract ReNFT is IReNft {
     function createRentTP(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
+        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
     ) private pure returns (TwoPointer memory tp) {
@@ -646,7 +657,7 @@ contract ReNFT is IReNft {
             currIx: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
-            lentAmounts: new uint256[](0),
+            lentAmounts: _lendAmounts,
             lendingIds: _lendingIds,
             rentDurations: _rentDurations,
             maxRentDurations: new uint8[](0),
@@ -659,6 +670,7 @@ contract ReNFT is IReNft {
     function createActionTP(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
+        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) private pure returns (TwoPointer memory tp) {
         tp = TwoPointer({
@@ -666,7 +678,7 @@ contract ReNFT is IReNft {
             currIx: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
-            lentAmounts: new uint256[](0),
+            lentAmounts: _lendAmounts,
             lendingIds: _lendingIds,
             rentDurations: new uint8[](0),
             maxRentDurations: new uint8[](0),
