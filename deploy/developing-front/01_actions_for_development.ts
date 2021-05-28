@@ -44,8 +44,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   });
 
   // !!!! If this isn't localhost chain, change "lender" to "deployer"
-  const e721 = <E721>await ethers.getContract("E721", deployer);
-  const e721b = <E721B>await ethers.getContract("E721B", deployer);
+  const e721 = <E721>await ethers.getContract("E721", lender);
+  const e721b = <E721B>await ethers.getContract("E721B", lender);
 
   await (await e721.award(opts)).wait();
   await (await e721.award(opts)).wait();
