@@ -1,117 +1,117 @@
-// /* eslint-disable */
-// import { HardhatRuntimeEnvironment } from "hardhat/types";
-// import { DeployFunction } from "hardhat-deploy/types";
-// // ! ignores required because frontend is auto-generated
-// // ! and your typescript will not compile on the first run
-// import { ERC20 } from "../../frontend/src/hardhat/typechain/ERC20";
-// import { E721 } from "../../frontend/src/hardhat/typechain/E721";
-// import { E721B } from "../../frontend/src/hardhat/typechain/E721B";
-// import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
+/* eslint-disable */
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { DeployFunction } from "hardhat-deploy/types";
+// ! ignores required because frontend is auto-generated
+// ! and your typescript will not compile on the first run
 
-// // TODO: this fails somewhere when deploying to testnets
+import { ERC20 } from "../../frontend/src/hardhat/typechain/ERC20";
+import { E721 } from "../../frontend/src/hardhat/typechain/E721";
+import { E721B } from "../../frontend/src/hardhat/typechain/E721B";
+import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
 
-// /**
-//  * Gives everyone a bit of ERC20 test tokens & mints all erc721s
-//  * to lender named account, & erc1155s to lender and other top 2
-//  * accounts
-//  * @param hre
-//  */
-// const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-//   const { getNamedAccounts, ethers, deployments } = hre;
-//   const { lender, deployer, beneficiary, renter } = await getNamedAccounts();
-//   const { deploy } = deployments;
 
-//   // const signer = await ethers.getSigner(deployer);
+// TODO: this fails somewhere when deploying to testnets
 
-//   await deploy("Resolver", {
-//     from: deployer,
-//     log: true,
-//     args: [deployer]
-//   });
+/**
+ * Gives everyone a bit of ERC20 test tokens & mints all erc721s
+ * to lender named account, & erc1155s to lender and other top 2
+ * accounts
+ * @param hre
+ */
+const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  const { getNamedAccounts, ethers, deployments } = hre;
+  const { lender, deployer, beneficiary, renter } = await getNamedAccounts();
+  const { deploy } = deployments;
 
-//   const resolver = <Resolver>await ethers.getContract("Resolver", deployer);
+  const signer = await ethers.getSigner(deployer);
+  const gasPrice = await signer.getGasPrice() ?? ethers.utils.parseUnits("50", "gwei");
+  const opts = { gasPrice }
 
-//   await deploy("ReNFT", {
-//     from: deployer,
-//     log: true,
-//     args: [resolver.address, beneficiary, deployer]
-//   });
+  await deploy("Resolver", {
+    from: deployer,
+    log: true,
+    args: [deployer],
+    gasPrice
+  });
 
-//   const e721 = <E721>await ethers.getContract("E721", lender);
-//   const e721b = <E721B>await ethers.getContract("E721B", lender);
+  const resolver = <Resolver>await ethers.getContract("Resolver", deployer);
 
-//   Promise.all([Array(10).fill(e721.award()), Array(10).fill(e721b.award())]);
+  await deploy("ReNFT", {
+    from: deployer,
+    log: true,
+    args: [resolver.address, beneficiary, deployer],
+    gasPrice
+  });
 
-//   // * also send through 100 erc20 tokens to everyone
-//   const weth = <ERC20>await ethers.getContract("WETH", deployer);
-//   const dai = <ERC20>await ethers.getContract("DAI", deployer);
-//   const usdc = <ERC20>await ethers.getContract("USDC", deployer);
-//   const usdt = <ERC20>await ethers.getContract("USDT", deployer);
-//   const tusd = <ERC20>await ethers.getContract("TUSD", deployer);
+  // !!!! If this isn't localhost chain, change "lender" to "deployer"
+  const e721 = <E721>await ethers.getContract("E721", deployer);
+  const e721b = <E721B>await ethers.getContract("E721B", deployer);
 
-//   await resolver.setPaymentToken(1, weth.address);
-//   await resolver.setPaymentToken(2, dai.address);
-//   await resolver.setPaymentToken(3, usdc.address);
-//   await resolver.setPaymentToken(4, usdt.address);
-//   await resolver.setPaymentToken(5, tusd.address);
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
+  await (await e721.award(opts)).wait();
 
-//   console.log("💠 resolver set payment tokens 💠");
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
+  await (await e721b.award(opts)).wait();
 
-//   const amtToSend = ethers.utils.parseEther("100");
+  console.log(" 🎨  nfts awarded 🎨 ")
 
-//   // have to wait on kovan
-//   let txn = await weth.transfer(lender, amtToSend);
-//   await txn.wait()
-//   console.log("💰 lender received weth");
-//   txn = await weth.transfer(beneficiary, amtToSend);
-//   await txn.wait();
-//   console.log("💰 beneficiary received weth");
-//   txn = await weth.transfer(renter, amtToSend);
-//   await txn.wait();
-//   console.log("💰 renter received weth");
+  // * also send through 100 erc20 tokens to everyone
+  const weth = <ERC20>await ethers.getContract("WETH", deployer);
+  const dai = <ERC20>await ethers.getContract("DAI", deployer);
+  const usdc = <ERC20>await ethers.getContract("USDC", deployer);
+  const usdt = <ERC20>await ethers.getContract("USDT", deployer);
+  const tusd = <ERC20>await ethers.getContract("TUSD", deployer);
 
-//   txn = await usdt.transfer(lender, amtToSend);
-//   await txn.wait();
-//   console.log("💰 lender received usdt");
-//   txn = await usdt.transfer(beneficiary, amtToSend);
-//   await txn.wait();
-//   console.log("💰 beneficiary received usdt");
-//   txn = await usdt.transfer(renter, amtToSend);
-//   await txn.wait();
-//   console.log("💰 renter received usdt");
+  await (await resolver.setPaymentToken(1, weth.address)).wait();
+  await (await resolver.setPaymentToken(2, dai.address)).wait();
+  await (await resolver.setPaymentToken(3, usdc.address)).wait();
+  await (await resolver.setPaymentToken(4, usdt.address)).wait();
+  await (await resolver.setPaymentToken(5, tusd.address)).wait();
 
-//   txn = await usdc.transfer(lender, amtToSend);
-//   await txn.wait();
-//   console.log("💰 lender received usdc");
-//   txn = await usdc.transfer(beneficiary, amtToSend);
-//   await txn.wait();
-//   console.log("💰 beneficiary received usdc");
-//   txn = await usdc.transfer(renter, amtToSend);
-//   await txn.wait();
-//   console.log("💰 renter received usdc");
+  console.log(" 💠  resolver set payment tokens 💠 ");
 
-//   txn = await dai.transfer(lender, amtToSend);
-//   await txn.wait();
-//   console.log("💰 lender received dai");
-//   txn = await dai.transfer(beneficiary, amtToSend);
-//   await txn.wait();
-//   console.log("💰 beneficiary received dai");
-//   txn = await dai.transfer(renter, amtToSend);
-//   await txn.wait();
-//   console.log("💰 renter received dai");
+  const amtToSend = ethers.utils.parseEther("10000");
 
-//   txn = await tusd.transfer(lender, amtToSend);
-//   await txn.wait()
-//   console.log("💰 lender received weth");
-//   txn = await tusd.transfer(beneficiary, amtToSend);
-//   await txn.wait();
-//   console.log("💰 beneficiary received weth");
-//   txn = await tusd.transfer(renter, amtToSend);
-//   await txn.wait();
-//   console.log("💰 renter received weth");
-// };
+  await (await weth.transfer(lender, amtToSend, opts)).wait();
+  await (await weth.transfer(beneficiary, amtToSend, opts)).wait();
+  await (await weth.transfer(renter, amtToSend, opts)).wait();
 
-// export default func;
+  await (await usdt.transfer(lender, amtToSend, opts)).wait();
+  await (await usdt.transfer(beneficiary, amtToSend, opts)).wait();
+  await (await usdt.transfer(renter, amtToSend, opts)).wait();
 
-// func.tags = ["Development"];
-// func.dependencies = ["Test"];
+  await (await usdc.transfer(lender, amtToSend, opts)).wait();
+  await (await usdc.transfer(beneficiary, amtToSend, opts)).wait();
+  await (await usdc.transfer(renter, amtToSend, opts)).wait();
+
+  await (await dai.transfer(lender, amtToSend, opts)).wait();
+  await (await dai.transfer(beneficiary, amtToSend, opts)).wait();
+  await (await dai.transfer(renter, amtToSend, opts)).wait();
+
+  await (await tusd.transfer(lender, amtToSend, opts)).wait();
+  await (await tusd.transfer(beneficiary, amtToSend, opts)).wait();
+  await (await tusd.transfer(renter, amtToSend, opts)).wait();
+
+  console.log(" 💵  payment tokens distributed 💵 ")
+};
+
+export default func;
+
+func.tags = ["Development"];
+func.dependencies = ["Test"];

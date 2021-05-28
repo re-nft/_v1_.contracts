@@ -60,11 +60,11 @@ const config: HardhatUserConfig = {
       url: "http://localhost:8545",
       accounts: accounts(),
     },
-    mainnet: {
-      url: "https://eth-mainnet.alchemyapi.io/v2/<apiKey>",
-      // to have a private key, just pass it in an array like so: ["0xprivKey"]
-      accounts: ["<privKey>"],
-    },
+    // mainnet: {
+    //   url: "https://eth-mainnet.alchemyapi.io/v2/<apiKey>",
+    //   // to have a private key, just pass it in an array like so: ["0xprivKey"]
+    //   accounts: ["<privKey>"],
+    // },
   },
   paths: {
     sources: "src",
