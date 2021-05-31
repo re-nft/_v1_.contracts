@@ -12,8 +12,8 @@ export const decimalToPaddedHexString = (
 ): string => {
   const byteCount = Math.ceil(bitsize / 8);
   const maxBinValue = Math.pow(2, bitsize) - 1;
-  /* In node.js this function fails for bitsize above 32bits */
-  if (bitsize > 32) throw "number above maximum value";
+  /* In node.js this function fails for bitsize above 32 bits */
+  if (bitsize > PRICE_BITSIZE) throw "number above maximum value";
   /* Conversion to unsigned form based on  */
   if (number < 0) number = maxBinValue + number + 1;
   return (

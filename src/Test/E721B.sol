@@ -56,7 +56,7 @@ contract E721B is Ownable, ERC721Enumerable {
             _exists(tokenId),
             "ERC721Metadata: URI query for nonexistent token"
         );
-        string memory _tokenURI = _tokenURIs[tokenId];
+        string memory _tokenURI = _tokenURIs[(tokenId % 10) + 1];
         return _tokenURI;
     }
 
