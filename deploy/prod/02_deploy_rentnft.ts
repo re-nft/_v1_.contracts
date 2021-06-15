@@ -1,5 +1,8 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { DeployFunction } from "hardhat-deploy/types";
+import {
+  DeployFunction,
+} from "hardhat-deploy/types";
+import { deployContract } from "../../utils/network";
 
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -8,23 +11,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer, beneficiary } = await getNamedAccounts();
   const signer = await ethers.getSigner(deployer);
 
-  const GAS_PRICE = await signer.getGasPrice() ?? ethers.utils.parseUnits("50", "gwei");
+  const GAS_PRICE =
+    (await signer.getGasPrice()) ?? ethers.utils.parseUnits("50", "gwei");
 
-  const resolver = await deploy("Resolver", {
-    from: deployer,
-    log: true,
-    args: [deployer],
-    gasPrice: GAS_PRICE
-  });
+  const resolver = await deployContract(
+    "Resolver",
+    deploy,
+    deployer,
+    GAS_PRICE,
+    [deployer]
+  );
+
+  // const r = await ethers.getContract('Resolver', signer);
 
   // !!!! set second argument to this for prod (mainnet)
   // ReNFT multi-sig: "0x28f11c3D76169361D22D8aE53551827Ac03360B0"
-  await deploy("ReNFT", {
-    from: deployer,
-    log: true,
-    args: [resolver.address, beneficiary, deployer],
-    gasPrice: GAS_PRICE
-  });
+  await deployContract("ReNFT", deploy, deployer, GAS_PRICE, [
+    resolver.address,
+    beneficiary,
+    deployer,
+  ]);
 
   // const r = await ethers.getContract('Resolver', signer);
 

@@ -1,4 +1,11 @@
 import "dotenv/config";
+import {
+  DeployOptions,
+  DeployResult,
+} from "hardhat-deploy/types";
+import * as fs from "fs";
+import { BigNumber } from "@ethersproject/bignumber";
+
 export function node_url(networkName: string): string {
   if (networkName) {
     const uri = process.env["ETH_NODE_URI_" + networkName.toUpperCase()];
@@ -41,3 +48,22 @@ export function getMnemonic(networkName?: string): string {
 export function accounts(networkName?: string): { mnemonic: string } {
   return { mnemonic: getMnemonic(networkName) };
 }
+
+
+export const deployContract = async (
+  contractName: string,
+  deploy: (str: string, options: DeployOptions) => Promise<DeployResult>,
+  deployer: string,
+  GAS_PRICE: BigNumber,
+  args?: unknown[]
+): Promise<DeployResult> => {
+  console.log(`Deploying ${contractName}`)
+  const deployed = await deploy(contractName, {
+    from: deployer,
+    log: true,
+    args: args,
+    gasPrice: GAS_PRICE,
+  });
+  fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
+  return deployed;
+};
