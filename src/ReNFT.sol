@@ -68,7 +68,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     // 32 bytes key to 64 bytes struct
     mapping(bytes32 => LendingRenting) private lendingRenting;
 
-    struct TwoPointer {
+    struct CallData {
         uint256 lastIx;
         uint256 currIx;
         address[] nfts;
@@ -96,10 +96,9 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         admin = _admin;
     }
 
-    function twoPointerLoop(
-        function(TwoPointer memory) f,
-        TwoPointer memory _tp
-    ) private {
+    function bundleCall(function(CallData memory) f, CallData memory _tp)
+        private
+    {
         require(_tp.nfts.length > 0, "invalid nfts len");
         if (_tp.nfts.length < 2) {
             f(_tp);
@@ -131,7 +130,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         bytes4[] memory _nftPrices,
         IResolver.PaymentToken[] memory _paymentTokens
     ) external override {
-        twoPointerLoop(
+        bundleCall(
             handleLend,
             createLendTP(
                 _nfts,
@@ -152,7 +151,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
     ) external override {
-        twoPointerLoop(
+        bundleCall(
             handleRent,
             createRentTP(
                 _nfts,
@@ -170,7 +169,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override {
-        twoPointerLoop(
+        bundleCall(
             handleReturn,
             createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
         );
@@ -182,7 +181,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override {
-        twoPointerLoop(
+        bundleCall(
             handleStopLending,
             createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
         );
@@ -194,7 +193,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override {
-        twoPointerLoop(
+        bundleCall(
             handleClaimCollateral,
             createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
         );
@@ -309,7 +308,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     }
 
     function safeTransfer(
-        TwoPointer memory _tp,
+        CallData memory _tp,
         address _from,
         address _to
     ) private {
@@ -335,7 +334,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
     // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
-    function handleLend(TwoPointer memory _tp) private {
+    function handleLend(CallData memory _tp) private {
         // for individual tokenIds within the same 1155
         // or
         // for ERC721s
@@ -402,7 +401,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         safeTransfer(_tp, msg.sender, address(this));
     }
 
-    function handleRent(TwoPointer memory _tp) private {
+    function handleRent(CallData memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             LendingRenting storage item = lendingRenting[
                 keccak256(
@@ -469,7 +468,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         safeTransfer(_tp, address(this), msg.sender);
     }
 
-    function handleReturn(TwoPointer memory _tp) private {
+    function handleReturn(CallData memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             LendingRenting storage item = lendingRenting[
                 keccak256(
@@ -505,7 +504,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         safeTransfer(_tp, msg.sender, address(this));
     }
 
-    function handleStopLending(TwoPointer memory _tp) private {
+    function handleStopLending(CallData memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             LendingRenting storage item = lendingRenting[
                 keccak256(
@@ -538,7 +537,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
      * 1. availableAmount = 0
      * 2. isPastReturnDate
      */
-    function handleClaimCollateral(TwoPointer memory _tp) private {
+    function handleClaimCollateral(CallData memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             LendingRenting storage item = lendingRenting[
                 keccak256(
@@ -587,8 +586,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         bytes4[] memory _dailyRentPrices,
         bytes4[] memory _nftPrices,
         IResolver.PaymentToken[] memory _paymentTokens
-    ) private pure returns (TwoPointer memory tp) {
-        tp = TwoPointer({
+    ) private pure returns (CallData memory tp) {
+        tp = CallData({
             lastIx: 0,
             currIx: 1,
             nfts: _nfts,
@@ -609,8 +608,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
-    ) private pure returns (TwoPointer memory tp) {
-        tp = TwoPointer({
+    ) private pure returns (CallData memory tp) {
+        tp = CallData({
             lastIx: 0,
             currIx: 1,
             nfts: _nfts,
@@ -630,8 +629,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256[] memory _tokenIds,
         uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
-    ) private pure returns (TwoPointer memory tp) {
-        tp = TwoPointer({
+    ) private pure returns (CallData memory tp) {
+        tp = CallData({
             lastIx: 0,
             currIx: 1,
             nfts: _nfts,
@@ -725,7 +724,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         require(_renting.rentedAt != 0, "never rented");
     }
 
-    function ensureIsLendable(TwoPointer memory _tp, uint256 _i) private pure {
+    function ensureIsLendable(CallData memory _tp, uint256 _i) private pure {
         // lending at least one token & the amount is less or equal than uint8 max 255
         require(_tp.lentAmounts[_i] > 0, "invalid lend amount");
         require(_tp.lentAmounts[_i] <= type(uint8).max, "cannot exceed uint8");
@@ -745,7 +744,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
     function ensureIsRentable(
         Lending memory _lending,
-        TwoPointer memory _tp,
+        CallData memory _tp,
         uint256 _i,
         address _msgSender
     ) private pure {
