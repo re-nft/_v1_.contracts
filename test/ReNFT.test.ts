@@ -1664,7 +1664,7 @@ describe("ReNFT", function () {
       const _id = [1];
       const _rentDuration = [1];
       await renter.renft.rent(_nft, _tokenId, [1], _id, _rentDuration);
-      await advanceTime(SECONDS_IN_A_DAY - 1);
+      await advanceTime(SECONDS_IN_A_DAY - 10);
       await expect(
         lender.renft.claimCollateral(_nft, _tokenId, [1], _id)
       ).to.be.revertedWith("cant claim yet");
