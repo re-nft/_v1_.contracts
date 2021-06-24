@@ -5,7 +5,6 @@
 - [🤏🏻 ReNft contract spec](#🤏🏻-renft-contract-spec)
   - [🤏🏻👨🏻‍💻 Events](#🤏🏻👨🏻‍💻-events)
   - [🤏🏻👩🏽‍✈️ Functions](#🤏🏻👩🏽‍✈️-functions)
-- [❤ Dev like a ReNFTer](#❤-dev-like-a-renfter)
 
 ---
 
