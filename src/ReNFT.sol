@@ -225,10 +225,12 @@ contract ReNFT is IReNft {
         // lender receives amounts proportional to the amount of time the NFT was used
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
-        uint256 rentPrice =
-            unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
-        uint256 totalRenterPmtWoCollateral =
-            rentPrice * _lendingRenting.renting.rentDuration;
+        uint256 rentPrice = unpackPrice(
+            _lendingRenting.lending.dailyRentPrice,
+            scale
+        );
+        uint256 totalRenterPmtWoCollateral = rentPrice *
+            _lendingRenting.renting.rentDuration;
         uint256 sendLenderAmt = (_secondsSinceRentStart * rentPrice) / 86400;
 
         require(
@@ -251,8 +253,10 @@ contract ReNFT is IReNft {
         // the renter contributes the lump sum of all the days prepaid + collateral
         // lender is generating yield from their NFT
         // the fee is taken propotionally to the time the asset was rented
-        uint256 takenFee =
-            takeFee(sendLenderAmt, _lendingRenting.lending.paymentToken);
+        uint256 takenFee = takeFee(
+            sendLenderAmt,
+            _lendingRenting.lending.paymentToken
+        );
 
         sendLenderAmt -= takenFee;
         sendRenterAmt += nftPrice;
@@ -276,13 +280,17 @@ contract ReNFT is IReNft {
         uint256 decimals = ERC20(paymentToken).decimals();
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
-        uint256 rentPrice =
-            unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
-        uint256 maxRentPayment =
-            rentPrice * _lendingRenting.renting.rentDuration;
+        uint256 rentPrice = unpackPrice(
+            _lendingRenting.lending.dailyRentPrice,
+            scale
+        );
+        uint256 maxRentPayment = rentPrice *
+            _lendingRenting.renting.rentDuration;
         // ReNFT's fee
-        uint256 takenFee =
-            takeFee(maxRentPayment, IResolver.PaymentToken(paymentTokenIx));
+        uint256 takenFee = takeFee(
+            maxRentPayment,
+            IResolver.PaymentToken(paymentTokenIx)
+        );
         uint256 finalAmt = maxRentPayment + nftPrice;
 
         require(maxRentPayment > 0, "maxRentPayment is zero");
@@ -331,20 +339,19 @@ contract ReNFT is IReNft {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
             ensureIsLendable(_tp, i);
 
-            LendingRenting storage item =
-                lendingRenting[
-                    keccak256(
-                        abi.encodePacked(
-                            // no need to use i, since the nft will repeat
-                            // so can access at the same memory location all the time
-                            _tp.nfts[_tp.lastIx],
-                            _tp.tokenIds[i],
-                            // makes the whole thing unique, in case someone else turns
-                            // up with the same nft and tokenId
-                            lendingId
-                        )
+            LendingRenting storage item = lendingRenting[
+                keccak256(
+                    abi.encodePacked(
+                        // no need to use i, since the nft will repeat
+                        // so can access at the same memory location all the time
+                        _tp.nfts[_tp.lastIx],
+                        _tp.tokenIds[i],
+                        // makes the whole thing unique, in case someone else turns
+                        // up with the same nft and tokenId
+                        lendingId
                     )
-                ];
+                )
+            ];
 
             // should never happen
             ensureIsNull(item.lending);
@@ -394,18 +401,17 @@ contract ReNFT is IReNft {
 
     function handleRent(TwoPointer memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            LendingRenting storage item =
-                lendingRenting[
-                    keccak256(
-                        abi.encodePacked(
-                            // no need to use i, since the nft will repeat
-                            // so can access at the same memory location all the time
-                            _tp.nfts[_tp.lastIx],
-                            _tp.tokenIds[i],
-                            _tp.lendingIds[i]
-                        )
+            LendingRenting storage item = lendingRenting[
+                keccak256(
+                    abi.encodePacked(
+                        // no need to use i, since the nft will repeat
+                        // so can access at the same memory location all the time
+                        _tp.nfts[_tp.lastIx],
+                        _tp.tokenIds[i],
+                        _tp.lendingIds[i]
                     )
-                ];
+                )
+            ];
 
             // // a lending item must exist to be able to rent it
             ensureIsNotNull(item.lending);
@@ -424,12 +430,10 @@ contract ReNFT is IReNft {
 
             {
                 uint256 scale = 10**decimals;
-                uint256 rentPrice =
-                    _tp.rentDurations[i] *
-                        unpackPrice(item.lending.dailyRentPrice, scale);
-                uint256 nftPrice =
-                    item.lending.lentAmount *
-                        unpackPrice(item.lending.nftPrice, scale);
+                uint256 rentPrice = _tp.rentDurations[i] *
+                    unpackPrice(item.lending.dailyRentPrice, scale);
+                uint256 nftPrice = item.lending.lentAmount *
+                    unpackPrice(item.lending.nftPrice, scale);
 
                 // extra sanity checks, even though we have checked for zeros before
                 require(rentPrice > 0, "rent price is zero");
@@ -464,18 +468,17 @@ contract ReNFT is IReNft {
 
     function handleReturn(TwoPointer memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            LendingRenting storage item =
-                lendingRenting[
-                    keccak256(
-                        abi.encodePacked(
-                            // no need to use i, since the nft will repeat
-                            // so can access at the same memory location all the time
-                            _tp.nfts[_tp.lastIx],
-                            _tp.tokenIds[i],
-                            _tp.lendingIds[i]
-                        )
+            LendingRenting storage item = lendingRenting[
+                keccak256(
+                    abi.encodePacked(
+                        // no need to use i, since the nft will repeat
+                        // so can access at the same memory location all the time
+                        _tp.nfts[_tp.lastIx],
+                        _tp.tokenIds[i],
+                        _tp.lendingIds[i]
                     )
-                ];
+                )
+            ];
 
             // to return, there must be a lending item
             ensureIsNotNull(item.lending);
@@ -484,8 +487,8 @@ contract ReNFT is IReNft {
             // and that the return date is not yet due
             ensureIsReturnable(item.renting, msg.sender, block.timestamp);
 
-            uint256 secondsSinceRentStart =
-                block.timestamp - item.renting.rentedAt;
+            uint256 secondsSinceRentStart = block.timestamp -
+                item.renting.rentedAt;
             distributePayments(item, secondsSinceRentStart);
 
             emit Returned(_tp.lendingIds[i], uint32(block.timestamp));
@@ -501,18 +504,17 @@ contract ReNFT is IReNft {
 
     function handleStopLending(TwoPointer memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            LendingRenting storage item =
-                lendingRenting[
-                    keccak256(
-                        abi.encodePacked(
-                            // no need to use i, since the nft will repeat
-                            // so can access at the same memory location all the time
-                            _tp.nfts[_tp.lastIx],
-                            _tp.tokenIds[i],
-                            _tp.lendingIds[i]
-                        )
+            LendingRenting storage item = lendingRenting[
+                keccak256(
+                    abi.encodePacked(
+                        // no need to use i, since the nft will repeat
+                        // so can access at the same memory location all the time
+                        _tp.nfts[_tp.lastIx],
+                        _tp.tokenIds[i],
+                        _tp.lendingIds[i]
                     )
-                ];
+                )
+            ];
 
             // lending item must exist to stop lending
             ensureIsNotNull(item.lending);
@@ -535,16 +537,15 @@ contract ReNFT is IReNft {
      */
     function handleClaimCollateral(TwoPointer memory _tp) private {
         for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
-            LendingRenting storage item =
-                lendingRenting[
-                    keccak256(
-                        abi.encodePacked(
-                            _tp.nfts[_tp.lastIx],
-                            _tp.tokenIds[i],
-                            _tp.lendingIds[i]
-                        )
+            LendingRenting storage item = lendingRenting[
+                keccak256(
+                    abi.encodePacked(
+                        _tp.nfts[_tp.lastIx],
+                        _tp.tokenIds[i],
+                        _tp.lendingIds[i]
                     )
-                ];
+                )
+            ];
 
             // to claim the collateral, you need to have something in lending
             ensureIsNotNull(item.lending);
@@ -724,7 +725,7 @@ contract ReNFT is IReNft {
         uint256 _fromIx,
         uint256 _toIx
     ) private pure returns (uint256[] memory r) {
-        r = new uint256[](_arr.length);
+        r = new uint256[](_toIx - _fromIx);
         for (uint256 i = _fromIx; i < _toIx; i++) {
             r[i - _fromIx] = _arr[i];
         }
