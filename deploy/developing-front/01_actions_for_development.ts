@@ -6,21 +6,22 @@ import { E721B } from "../../frontend/src/hardhat/typechain/E721B";
 import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
 import { BigNumber } from "ethers";
 
-
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { getNamedAccounts, ethers, deployments, network } = hre;
   const { lender, deployer, beneficiary, renter } = await getNamedAccounts();
   const { deploy } = deployments;
 
   const signer = await ethers.getSigner(deployer);
-  const gasPrice = (await signer.getGasPrice()).add(ethers.utils.parseUnits("10", "gwei")) ?? ethers.utils.parseUnits("50", "gwei");
-  let opts = { gasPrice }
+  const gasPrice =
+    (await signer.getGasPrice()).add(ethers.utils.parseUnits("10", "gwei")) ??
+    ethers.utils.parseUnits("50", "gwei");
+  let opts = { gasPrice };
 
   await deploy("Resolver", {
     from: deployer,
     log: true,
     args: [deployer],
-    gasPrice
+    gasPrice,
   });
 
   const resolver = <Resolver>await ethers.getContract("Resolver", deployer);
@@ -29,14 +30,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     from: deployer,
     log: true,
     args: [resolver.address, beneficiary, deployer],
-    gasPrice
+    gasPrice,
   });
 
-  const nftReceiver = (network.name == "localhost" || network.name == "hardhat") ? lender : deployer;
+  const nftReceiver =
+    network.name == "localhost" || network.name == "hardhat"
+      ? lender
+      : deployer;
   const e721 = <E721>await ethers.getContract("E721", nftReceiver);
   const e721b = <E721B>await ethers.getContract("E721B", nftReceiver);
 
-  opts = (network.name == "localhost" || network.name == "hardhat") ? { gasPrice: ethers.utils.parseUnits("1", "gwei") } : opts
+  opts =
+    network.name == "localhost" || network.name == "hardhat"
+      ? { gasPrice: ethers.utils.parseUnits("1", "gwei") }
+      : opts;
 
   await (await e721.award(opts)).wait();
   await (await e721.award(opts)).wait();
@@ -60,7 +67,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await (await e721b.award(opts)).wait();
   await (await e721b.award(opts)).wait();
 
-  console.log(" 🎨  nfts awarded 🎨 ")
+  console.log(" 🎨  nfts awarded 🎨 ");
 
   // * also send through 100 erc20 tokens to everyone
   const weth = <ERC20>await ethers.getContract("WETH", deployer);
@@ -99,7 +106,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   await (await tusd.transfer(beneficiary, amtToSend, opts)).wait();
   await (await tusd.transfer(renter, amtToSend, opts)).wait();
 
-  console.log(" 💵  payment tokens distributed 💵 ")
+  console.log(" 💵  payment tokens distributed 💵 ");
 };
 
 export default func;

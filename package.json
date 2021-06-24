@@ -1,8 +1,8 @@
 {
   "name": "@renft/contracts",
   "version": "1.0.0",
-  "author": "Nazariy Vavryk <nazariy@inbox.ru>",
-  "license": "GPL-3.0-or-later",
+  "author": "nazariyv (https://github.com/nazariyv)",
+  "license": "MIT",
   "scripts": {
     "format": "yarn prettier --write \"**/*.{ts,js,sol}\"",
     "clean": "rm -rf artifacts cache frontend",

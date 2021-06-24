@@ -13,7 +13,49 @@ import "hardhat-gas-reporter";
 // * relating github issue: https://github.com/rhlsthrm/hardhat-typechain/issues/12
 import "hardhat-typechain";
 import "@typechain/ethers-v5";
-import { node_url, accounts } from "./utils/network";
+
+function node_url(networkName: string): string {
+  if (networkName) {
+    const uri = process.env["ETH_NODE_URI_" + networkName.toUpperCase()];
+    if (uri && uri !== "") {
+      return uri;
+    }
+  }
+
+  let uri = process.env.ETH_NODE_URI;
+  if (uri) {
+    uri = uri.replace("{{networkName}}", networkName);
+  }
+  if (!uri || uri === "") {
+    // throw new Error(`environment variable "ETH_NODE_URI" not configured `);
+    return "";
+  }
+  if (uri.indexOf("{{") >= 0) {
+    throw new Error(
+      `invalid uri or network not supported by nod eprovider : ${uri}`
+    );
+  }
+  return uri;
+}
+
+function getMnemonic(networkName?: string): string {
+  if (networkName) {
+    const mnemonic = process.env["MNEMONIC_" + networkName.toUpperCase()];
+    if (mnemonic && mnemonic !== "") {
+      return mnemonic;
+    }
+  }
+
+  const mnemonic = process.env.MNEMONIC;
+  if (!mnemonic || mnemonic === "") {
+    return "test test test test test test test test test test test junk";
+  }
+  return mnemonic;
+}
+
+function accounts(networkName?: string): { mnemonic: string } {
+  return { mnemonic: getMnemonic(networkName) };
+}
 
 const config: HardhatUserConfig = {
   solidity: {

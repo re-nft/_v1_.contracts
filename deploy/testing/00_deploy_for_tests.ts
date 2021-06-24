@@ -7,75 +7,80 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { lender, deployer, beneficiary } = await getNamedAccounts();
 
   const signer = await ethers.getSigner(deployer);
-  const gasPrice = (await signer.getGasPrice()).add(ethers.utils.parseUnits("10", "gwei")) ?? ethers.utils.parseUnits("50", "gwei");
+  const gasPrice =
+    (await signer.getGasPrice()).add(ethers.utils.parseUnits("10", "gwei")) ??
+    ethers.utils.parseUnits("50", "gwei");
 
   await deploy("WETH", {
     from: deployer,
     log: true,
     args: [deployer],
-    gasPrice
+    gasPrice,
   });
 
   await deploy("DAI", {
     from: deployer,
     log: true,
     args: [deployer],
-    gasPrice
+    gasPrice,
   });
 
   await deploy("USDC", {
     from: deployer,
     log: true,
     args: [deployer],
-    gasPrice
+    gasPrice,
   });
 
   await deploy("USDT", {
     from: deployer,
     log: true,
     args: [deployer],
-    gasPrice
+    gasPrice,
   });
 
   await deploy("TUSD", {
     from: deployer,
     log: true,
     args: [deployer],
-    gasPrice
+    gasPrice,
   });
 
   await deploy("E721", {
     from: deployer,
     log: true,
-    gasPrice
+    gasPrice,
   });
 
   await deploy("E721B", {
     from: deployer,
     log: true,
-    gasPrice
+    gasPrice,
   });
 
-  const nftArgs = (network.name == "localhost" || network.name == "hardhat") ? [deployer, beneficiary, lender] : [deployer, deployer, deployer]
+  const nftArgs =
+    network.name == "localhost" || network.name == "hardhat"
+      ? [deployer, beneficiary, lender]
+      : [deployer, deployer, deployer];
 
   await deploy("E1155", {
     from: deployer,
     log: true,
     args: nftArgs,
-    gasPrice
+    gasPrice,
   });
 
   await deploy("E1155B", {
     from: deployer,
     log: true,
     args: nftArgs,
-    gasPrice
+    gasPrice,
   });
 
   await deploy("Utils", {
     from: deployer,
     log: true,
-    gasPrice
+    gasPrice,
   });
 };
 

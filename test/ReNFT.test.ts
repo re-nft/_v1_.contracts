@@ -61,18 +61,18 @@ const setup = deployments.createFixture(async () => {
   // beneficiary is the party that receives the rent fee cuts
   const { deployer, beneficiary, renter, lender } = await getNamedAccounts();
   const signers = await ethers.getSigners();
-  const resolver = (await ethers.getContract(
+  const resolver = ((await ethers.getContract(
     "Resolver"
-  )) as unknown as Resolver;
-  const weth = (await ethers.getContract("WETH")) as unknown as ERC20;
-  const dai = (await ethers.getContract("DAI")) as unknown as ERC20;
-  const usdc = (await ethers.getContract("USDC")) as unknown as ERC20;
-  const e721 = (await ethers.getContract("E721")) as unknown as E721;
-  const e721b = (await ethers.getContract("E721B")) as unknown as E721B;
-  const e1155 = (await ethers.getContract("E1155")) as unknown as E1155;
-  const e1155b = (await ethers.getContract("E1155B")) as unknown as E1155B;
-  const utils = (await ethers.getContract("Utils")) as unknown as Utils;
-  const renft = (await ethers.getContract("ReNFT")) as unknown as ReNFT;
+  )) as unknown) as Resolver;
+  const weth = ((await ethers.getContract("WETH")) as unknown) as ERC20;
+  const dai = ((await ethers.getContract("DAI")) as unknown) as ERC20;
+  const usdc = ((await ethers.getContract("USDC")) as unknown) as ERC20;
+  const e721 = ((await ethers.getContract("E721")) as unknown) as E721;
+  const e721b = ((await ethers.getContract("E721B")) as unknown) as E721B;
+  const e1155 = ((await ethers.getContract("E1155")) as unknown) as E1155;
+  const e1155b = ((await ethers.getContract("E1155B")) as unknown) as E1155B;
+  const utils = ((await ethers.getContract("Utils")) as unknown) as Utils;
+  const renft = ((await ethers.getContract("ReNFT")) as unknown) as ReNFT;
 
   await weth.transfer(renter, ERC20_SEND_AMT);
   await weth.transfer(lender, ERC20_SEND_AMT);
@@ -81,70 +81,70 @@ const setup = deployments.createFixture(async () => {
   await usdc.transfer(renter, ERC20_SEND_AMT);
   await usdc.transfer(lender, ERC20_SEND_AMT);
 
-  const renftRenter = (await ethers.getContract(
+  const renftRenter = ((await ethers.getContract(
     "ReNFT",
     renter
-  )) as unknown as ReNFT;
-  const renftLender = (await ethers.getContract(
+  )) as unknown) as ReNFT;
+  const renftLender = ((await ethers.getContract(
     "ReNFT",
     lender
-  )) as unknown as ReNFT;
-  const wethRenter = (await ethers.getContract(
+  )) as unknown) as ReNFT;
+  const wethRenter = ((await ethers.getContract(
     "WETH",
     renter
-  )) as unknown as ERC20;
-  const wethLender = (await ethers.getContract(
+  )) as unknown) as ERC20;
+  const wethLender = ((await ethers.getContract(
     "WETH",
     lender
-  )) as unknown as ERC20;
-  const daiRenter = (await ethers.getContract(
+  )) as unknown) as ERC20;
+  const daiRenter = ((await ethers.getContract(
     "DAI",
     renter
-  )) as unknown as ERC20;
-  const daiLender = (await ethers.getContract(
+  )) as unknown) as ERC20;
+  const daiLender = ((await ethers.getContract(
     "DAI",
     lender
-  )) as unknown as ERC20;
-  const usdcRenter = (await ethers.getContract(
+  )) as unknown) as ERC20;
+  const usdcRenter = ((await ethers.getContract(
     "USDC",
     renter
-  )) as unknown as ERC20;
-  const usdcLender = (await ethers.getContract(
+  )) as unknown) as ERC20;
+  const usdcLender = ((await ethers.getContract(
     "USDC",
     lender
-  )) as unknown as ERC20;
-  const e721Renter = (await ethers.getContract(
+  )) as unknown) as ERC20;
+  const e721Renter = ((await ethers.getContract(
     "E721",
     renter
-  )) as unknown as E721;
-  const e721Lender = (await ethers.getContract(
+  )) as unknown) as E721;
+  const e721Lender = ((await ethers.getContract(
     "E721",
     lender
-  )) as unknown as E721;
-  const e721bRenter = (await ethers.getContract(
+  )) as unknown) as E721;
+  const e721bRenter = ((await ethers.getContract(
     "E721B",
     renter
-  )) as unknown as E721;
-  const e721bLender = (await ethers.getContract(
+  )) as unknown) as E721;
+  const e721bLender = ((await ethers.getContract(
     "E721B",
     lender
-  )) as unknown as E721;
-  const e1155Renter = (await ethers.getContract(
+  )) as unknown) as E721;
+  const e1155Renter = ((await ethers.getContract(
     "E1155",
     renter
-  )) as unknown as E1155;
-  const e1155Lender = (await ethers.getContract(
+  )) as unknown) as E1155;
+  const e1155Lender = ((await ethers.getContract(
     "E1155",
     lender
-  )) as unknown as E1155;
-  const e1155bRenter = (await ethers.getContract(
+  )) as unknown) as E1155;
+  const e1155bRenter = ((await ethers.getContract(
     "E1155B",
     renter
-  )) as unknown as E1155;
-  const e1155bLender = (await ethers.getContract(
+  )) as unknown) as E1155;
+  const e1155bLender = ((await ethers.getContract(
     "E1155B",
     lender
-  )) as unknown as E1155;
+  )) as unknown) as E1155;
 
   await wethRenter.approve(renft.address, ethers.constants.MaxUint256);
   await wethLender.approve(renft.address, ethers.constants.MaxUint256);
@@ -754,7 +754,13 @@ describe("ReNFT", function () {
         rentAmounts
       );
 
-      const tx = await ReNFT.rent([E1155.address], [1], [1], [1], rentDurations);
+      const tx = await ReNFT.rent(
+        [E1155.address],
+        [1],
+        [1],
+        [1],
+        rentDurations
+      );
 
       const balancesPost = await captureBalances([renter, ReNFT], [WETH]);
       expect(balancesPost[1]).to.be.equal(pmtAmount);
@@ -1553,12 +1559,7 @@ describe("ReNFT", function () {
       const beneficiaryUSDCPre = await USDC.balanceOf(beneficiary);
       const balancesPre = await captureBalances([lender], [WETH, USDC]);
 
-      const tx = await lender.renft.claimCollateral(
-        _nft,
-        _tokenId,
-        [1],
-        _id
-      );
+      const tx = await lender.renft.claimCollateral(_nft, _tokenId, [1], _id);
 
       const beneficiaryWETHPost = await WETH.balanceOf(beneficiary);
       const beneficiaryUSDCPost = await USDC.balanceOf(beneficiary);
@@ -1752,10 +1753,10 @@ describe("ReNFT", function () {
   context("Admin", async () => {
     it("sets the rentFee", async () => {
       const { deployer } = await setup();
-      const deployerRenft = (await ethers.getContract(
+      const deployerRenft = ((await ethers.getContract(
         "ReNFT",
         deployer
-      )) as unknown as ReNFT;
+      )) as unknown) as ReNFT;
       await deployerRenft.setRentFee("559");
       const rentFee = await deployerRenft.rentFee();
       expect(rentFee).to.be.equal("559");
@@ -1768,10 +1769,10 @@ describe("ReNFT", function () {
 
     it("disallows to set the fee that exceeds 100", async () => {
       const { deployer } = await setup();
-      const deployerRenft = (await ethers.getContract(
+      const deployerRenft = ((await ethers.getContract(
         "ReNFT",
         deployer
-      )) as unknown as ReNFT;
+      )) as unknown) as ReNFT;
       await expect(deployerRenft.setRentFee("123456789")).to.be.revertedWith(
         ""
       );
@@ -1779,10 +1780,10 @@ describe("ReNFT", function () {
 
     it("sets the beneficiary", async () => {
       const { deployer, signers } = await setup();
-      const deployerRenft = (await ethers.getContract(
+      const deployerRenft = ((await ethers.getContract(
         "ReNFT",
         deployer
-      )) as unknown as ReNFT;
+      )) as unknown) as ReNFT;
       await deployerRenft.setBeneficiary(signers[4].address);
     });
 
@@ -1806,10 +1807,10 @@ describe("ReNFT", function () {
         ["0x0000ffff"],
         [2]
       );
-      const dai = (await ethers.getContract(
+      const dai = ((await ethers.getContract(
         "DAI",
         deployer
-      )) as unknown as ERC20;
+      )) as unknown) as ERC20;
       await dai.transfer(renter.address, ethers.utils.parseEther("11000"));
       const renterBalancePre = await dai.balanceOf(renter.address);
       await renter.renft.rent([renter.e721.address], [1], [1], [1], [1]);
@@ -1831,10 +1832,10 @@ describe("ReNFT", function () {
         ["0x00000001"],
         [2]
       );
-      const dai = (await ethers.getContract(
+      const dai = ((await ethers.getContract(
         "DAI",
         deployer
-      )) as unknown as ERC20;
+      )) as unknown) as ERC20;
       await dai.transfer(renter.address, ethers.utils.parseEther("11000"));
       const renterBalancePre = await dai.balanceOf(renter.address);
       await renter.renft.rent([renter.e721.address], [1], [1], [1], [1]);
