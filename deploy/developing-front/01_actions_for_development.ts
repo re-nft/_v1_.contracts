@@ -4,6 +4,7 @@ import { ERC20 } from "../../frontend/src/hardhat/typechain/ERC20";
 import { E721 } from "../../frontend/src/hardhat/typechain/E721";
 import { E721B } from "../../frontend/src/hardhat/typechain/E721B";
 import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
+import { BigNumber } from "ethers";
 
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -13,7 +14,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const signer = await ethers.getSigner(deployer);
   const gasPrice = (await signer.getGasPrice()).add(ethers.utils.parseUnits("10", "gwei")) ?? ethers.utils.parseUnits("50", "gwei");
-  const opts = { gasPrice }
+  let opts = { gasPrice }
 
   await deploy("Resolver", {
     from: deployer,
@@ -34,6 +35,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const nftReceiver = (network.name == "localhost" || network.name == "hardhat") ? lender : deployer;
   const e721 = <E721>await ethers.getContract("E721", nftReceiver);
   const e721b = <E721B>await ethers.getContract("E721B", nftReceiver);
+
+  opts = (network.name == "localhost" || network.name == "hardhat") ? { gasPrice: ethers.utils.parseUnits("1", "gwei") } : opts
 
   await (await e721.award(opts)).wait();
   await (await e721.award(opts)).wait();
@@ -74,7 +77,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   console.log(" 💠  resolver set payment tokens 💠 ");
 
-  const amtToSend = ethers.utils.parseEther("10000");
+  const amtToSend = ethers.utils.parseEther("100000000");
 
   await (await weth.transfer(lender, amtToSend, opts)).wait();
   await (await weth.transfer(beneficiary, amtToSend, opts)).wait();
