@@ -1178,7 +1178,7 @@ describe("ReNFT", function () {
       }
     };
 
-    it("returns ok - USDC", async () => {
+    it("returns ok - USDC - e721", async () => {
       const rentDuration = 1;
       const drp = 1.6921;
       const col = 0.0001;

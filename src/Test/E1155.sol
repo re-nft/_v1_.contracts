@@ -29,9 +29,9 @@ contract E1155 is ERC1155 {
         return tokenId;
     }
 
-    // to stay consistent with erc20s
-    function faucet() public {
+    function faucet(uint256 _amount) public {
+        require(_amount < 11, "too many");
         tokenId++;
-        _mint(msg.sender, tokenId, 2, "");
+        _mint(msg.sender, tokenId, _amount, "");
     }
 }

@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts, ethers } = hre;
+  const { deployments, getNamedAccounts, ethers, network } = hre;
   const { deploy } = deployments;
   const { lender, deployer, beneficiary } = await getNamedAccounts();
 
@@ -56,17 +56,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     gasPrice
   });
 
+  const nftArgs = (network.name == "localhost" || network.name == "hardhat") ? [deployer, beneficiary, lender] : [deployer, deployer, deployer]
+
   await deploy("E1155", {
     from: deployer,
     log: true,
-    args: [deployer, beneficiary, lender],
+    args: nftArgs,
     gasPrice
   });
 
   await deploy("E1155B", {
     from: deployer,
     log: true,
-    args: [deployer, beneficiary, lender],
+    args: nftArgs,
     gasPrice
   });
 

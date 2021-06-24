@@ -1,17 +1,25 @@
 name: CI
-on: push
+on: [push]
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  build:
+    name: Build, format, test on Node ${{ matrix.node }} and ${{ matrix.os }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        node: ["12.x", "14.x"]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout repo
+        uses: actions/checkout@v1
         with:
           fetch-depth: 1
 
-      - name: Setup Node.js
+      - name: Use Node ${{ matrix.node }}
         uses: actions/setup-node@v1
         with:
-          node-version: 12.20.1
+          node-version: ${{ matrix.node }}
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path

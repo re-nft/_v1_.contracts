@@ -696,7 +696,7 @@ contract ReNFT is IReNft {
         ensureIsUnpackablePrice(_price, _scale);
 
         // whole := if _price is 0x00120034, then whole is uint16(0x0012)
-        // decimal := uin16(0x0034)
+        // decimal := uint16(0x0034)
         // we only support dp4 precision for decimals. i.e. you can only have
         // numerals after the decimal place ABCD.wxyz. e.g. 1.8271
         // 1.8271 represents amount in the default scale of the payment token
