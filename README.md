@@ -1,4 +1,4 @@
-# 🥂 **ReNFT Contracts**
+# 🥂 **ReNFT Contract**
 
 ## **Table of content**
 
