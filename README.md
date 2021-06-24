@@ -36,23 +36,3 @@
 `claimCollateral` - called by lender if the renter missed their return date.
 
 `stopLending` - called by lender to release their lent NFT back to them. This marks end of the interaction with ReNFT smart contract.
-
----
-
-### **❤ Dev like a ReNFTer**
-
----
-
-![hackerman](https://external-preview.redd.it/4lnFFyQJ8ZuV11zAkHW9q3VUfPHS-KL29kb76c0RM2s.jpg?auto=webp&s=20de54cd38fe99d817d283f802053c16f08e4ad9)
-
-## _kʌmfi vscode plugins_
-
-[better comments](https://marketplace.visualstudio.com/items?itemName=aaron-bond.better-comments)
-
-[markdownlint](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
-
----
-
-1. Note that `test:gas` will not work since node needs to run as a daemon. You need to open a terminal, open two tabs, in one run the node, and in another one run the test. Now you will have gas estimates.
-
-2. Note that gas reporter will appear to be working with `test:quick`, but it should not! It will not work. It will only work if you run separately a node, and separetely a test with `localhost` network to ping the node.
