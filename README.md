@@ -13,9 +13,9 @@
 
 ## 🖼️ What is ReNFT
 
-ReNFT is an Ethereum protocol for ERC-721 and ERC-1155 lending and renting. Protocol is incredibly minimalistic.
+ReNFT is an Ethereum protocol for ERC-721 and ERC-1155 lending and renting. The protocol is incredibly minimalistic.
 The core contract is implemented in `src/ReNFT.sol`, you can find the interface in `src/interfaces/IReNFT.sol`.
-It allows for a combination of ERC-721 and ERC-1155 to be lent in a single transaction. There is a complementary [npm package](https://github.com/re-nft/sdk), that will help you pass the arguments to the contract correctly, such that your users save the gas. This library prepares the arguments to be passed to the contract such that ERC1155s invoke their batch functions.
+It allows for a combination of ERC-721 and ERC-1155 to be lent in a single transaction. There is a complementary [npm package](https://github.com/re-nft/sdk), that will help you pass the arguments to the contract correctly, such that your users save on gas. This library prepares the arguments to be passed to the contract such that ERC1155s invoke their batch functions.
 
 There is a subgraph implementation, you can find it [here](https://github.com/re-nft/subgraph).
 
