@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 import "./interfaces/IResolver.sol";
 import "./interfaces/IReNFT.sol";
@@ -29,7 +32,7 @@ import "./interfaces/IReNFT.sol";
 //                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
 //                   @@@@@@@@@@@@@@@@&        @@@@@@@@@@@@@@@@
 
-contract ReNFT is IReNft {
+contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     using SafeERC20 for ERC20;
 
     IResolver private resolver;
@@ -564,52 +567,6 @@ contract ReNFT is IReNft {
 
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
     // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
-
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure override returns (bytes4) {
-        // 0xf0b9e5ba === `bytes4(keccak256("onERC721Received(address,uint256,bytes)"))`
-        // 0xf0b9e5ba === `ERC721Receiver(0).onERC721Received.selector`
-        return 0xf0b9e5ba;
-    }
-
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external pure override returns (bytes4) {
-        // bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`
-        return 0xbc197c81;
-    }
-
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external pure override returns (bytes4) {
-        // bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")) = 0xf23a6e61
-        // ! note that single 1155 receives are not supported. So if you send something
-        // ! directly, it will be forever lost
-        return 0xf23a6e61;
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        external
-        pure
-        override
-        returns (bool)
-    {
-        return
-            (interfaceId == type(IERC721Receiver).interfaceId) ||
-            (interfaceId == type(IERC1155Receiver).interfaceId);
-    }
 
     function is721(address _nft) private view returns (bool) {
         return IERC165(_nft).supportsInterface(type(IERC721).interfaceId);
