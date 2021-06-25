@@ -1138,7 +1138,7 @@ describe("ReNFT", function () {
       maxRentDurations = Array(tokenIds.length).fill(MAX_RENT_DURATION),
       dailyRentPrices = Array(tokenIds.length).fill(DAILY_RENT_PRICE),
       nftPrices = Array(tokenIds.length).fill(NFT_PRICE),
-    }: lendBatchArgs & { paymentTokens: number[], nfts?: string[] }) => {
+    }: lendBatchArgs & { paymentTokens: number[]; nfts?: string[] }) => {
       await lender.renft.lend(
         nfts,
         tokenIds,

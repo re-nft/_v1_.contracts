@@ -232,14 +232,12 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
-        uint256 rentPrice = unpackPrice(
-            _lendingRenting.lending.dailyRentPrice,
-            scale
-        );
-        uint256 totalRenterPmtWoCollateral = rentPrice *
-            _lendingRenting.renting.rentDuration;
-        uint256 sendLenderAmt = (_secondsSinceRentStart * rentPrice) /
-            SECONDS_IN_DAY;
+        uint256 rentPrice =
+            unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
+        uint256 totalRenterPmtWoCollateral =
+            rentPrice * _lendingRenting.renting.rentDuration;
+        uint256 sendLenderAmt =
+            (_secondsSinceRentStart * rentPrice) / SECONDS_IN_DAY;
 
         require(
             totalRenterPmtWoCollateral > 0,
@@ -248,10 +246,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         require(sendLenderAmt > 0, "ReNFT::lender payment is zero");
         uint256 sendRenterAmt = totalRenterPmtWoCollateral - sendLenderAmt;
 
-        uint256 takenFee = takeFee(
-            sendLenderAmt,
-            _lendingRenting.lending.paymentToken
-        );
+        uint256 takenFee =
+            takeFee(sendLenderAmt, _lendingRenting.lending.paymentToken);
 
         sendLenderAmt -= takenFee;
         sendRenterAmt += nftPrice;
@@ -276,16 +272,12 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256 decimals = ERC20(paymentToken).decimals();
         uint256 scale = 10**decimals;
         uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
-        uint256 rentPrice = unpackPrice(
-            _lendingRenting.lending.dailyRentPrice,
-            scale
-        );
-        uint256 maxRentPayment = rentPrice *
-            _lendingRenting.renting.rentDuration;
-        uint256 takenFee = takeFee(
-            maxRentPayment,
-            IResolver.PaymentToken(paymentTokenIx)
-        );
+        uint256 rentPrice =
+            unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
+        uint256 maxRentPayment =
+            rentPrice * _lendingRenting.renting.rentDuration;
+        uint256 takenFee =
+            takeFee(maxRentPayment, IResolver.PaymentToken(paymentTokenIx));
         uint256 finalAmt = maxRentPayment + nftPrice;
 
         require(maxRentPayment > 0, "ReNFT::collateral plus rent is zero");
@@ -327,15 +319,16 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         for (uint256 i = _cd.left; i < _cd.right; i++) {
             ensureIsLendable(_cd, i);
 
-            LendingRenting storage item = lendingRenting[
-                keccak256(
-                    abi.encodePacked(
-                        _cd.nfts[_cd.left],
-                        _cd.tokenIds[i],
-                        lendingId
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _cd.nfts[_cd.left],
+                            _cd.tokenIds[i],
+                            lendingId
+                        )
                     )
-                )
-            ];
+                ];
 
             ensureIsNull(item.lending);
             ensureIsNull(item.renting);
@@ -371,15 +364,16 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
     function handleRent(CallData memory _cd) private {
         for (uint256 i = _cd.left; i < _cd.right; i++) {
-            LendingRenting storage item = lendingRenting[
-                keccak256(
-                    abi.encodePacked(
-                        _cd.nfts[_cd.left],
-                        _cd.tokenIds[i],
-                        _cd.lendingIds[i]
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _cd.nfts[_cd.left],
+                            _cd.tokenIds[i],
+                            _cd.lendingIds[i]
+                        )
                     )
-                )
-            ];
+                ];
 
             ensureIsNotNull(item.lending);
             ensureIsNull(item.renting);
@@ -392,10 +386,12 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
             {
                 uint256 scale = 10**decimals;
-                uint256 rentPrice = _cd.rentDurations[i] *
-                    unpackPrice(item.lending.dailyRentPrice, scale);
-                uint256 nftPrice = item.lending.lentAmount *
-                    unpackPrice(item.lending.nftPrice, scale);
+                uint256 rentPrice =
+                    _cd.rentDurations[i] *
+                        unpackPrice(item.lending.dailyRentPrice, scale);
+                uint256 nftPrice =
+                    item.lending.lentAmount *
+                        unpackPrice(item.lending.nftPrice, scale);
 
                 require(rentPrice > 0, "ReNFT::rent price is zero");
                 require(nftPrice > 0, "ReNFT::nft price is zero");
@@ -424,21 +420,22 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
     function handleReturn(CallData memory _cd) private {
         for (uint256 i = _cd.left; i < _cd.right; i++) {
-            LendingRenting storage item = lendingRenting[
-                keccak256(
-                    abi.encodePacked(
-                        _cd.nfts[_cd.left],
-                        _cd.tokenIds[i],
-                        _cd.lendingIds[i]
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _cd.nfts[_cd.left],
+                            _cd.tokenIds[i],
+                            _cd.lendingIds[i]
+                        )
                     )
-                )
-            ];
+                ];
 
             ensureIsNotNull(item.lending);
             ensureIsReturnable(item.renting, msg.sender, block.timestamp);
 
-            uint256 secondsSinceRentStart = block.timestamp -
-                item.renting.rentedAt;
+            uint256 secondsSinceRentStart =
+                block.timestamp - item.renting.rentedAt;
             distributePayments(item, secondsSinceRentStart);
 
             emit Returned(_cd.lendingIds[i], uint32(block.timestamp));
@@ -451,15 +448,16 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
     function handleStopLending(CallData memory _cd) private {
         for (uint256 i = _cd.left; i < _cd.right; i++) {
-            LendingRenting storage item = lendingRenting[
-                keccak256(
-                    abi.encodePacked(
-                        _cd.nfts[_cd.left],
-                        _cd.tokenIds[i],
-                        _cd.lendingIds[i]
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _cd.nfts[_cd.left],
+                            _cd.tokenIds[i],
+                            _cd.lendingIds[i]
+                        )
                     )
-                )
-            ];
+                ];
 
             ensureIsNotNull(item.lending);
             ensureIsNull(item.renting);
@@ -475,15 +473,16 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
     function handleClaimCollateral(CallData memory _cd) private {
         for (uint256 i = _cd.left; i < _cd.right; i++) {
-            LendingRenting storage item = lendingRenting[
-                keccak256(
-                    abi.encodePacked(
-                        _cd.nfts[_cd.left],
-                        _cd.tokenIds[i],
-                        _cd.lendingIds[i]
+            LendingRenting storage item =
+                lendingRenting[
+                    keccak256(
+                        abi.encodePacked(
+                            _cd.nfts[_cd.left],
+                            _cd.tokenIds[i],
+                            _cd.lendingIds[i]
+                        )
                     )
-                )
-            ];
+                ];
 
             ensureIsNotNull(item.lending);
             ensureIsNotNull(item.renting);
