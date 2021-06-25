@@ -231,14 +231,13 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256 decimals = ERC20(paymentToken).decimals();
 
         uint256 scale = 10**decimals;
-        uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
+        uint256 nftPrice = _lendingRenting.lending.lentAmount * unpackPrice(_lendingRenting.lending.nftPrice, scale);
         uint256 rentPrice =
             unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
         uint256 totalRenterPmtWoCollateral =
             rentPrice * _lendingRenting.renting.rentDuration;
         uint256 sendLenderAmt =
             (_secondsSinceRentStart * rentPrice) / SECONDS_IN_DAY;
-
         require(
             totalRenterPmtWoCollateral > 0,
             "ReNFT::total payment wo collateral is zero"
@@ -271,7 +270,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
         uint256 decimals = ERC20(paymentToken).decimals();
         uint256 scale = 10**decimals;
-        uint256 nftPrice = unpackPrice(_lendingRenting.lending.nftPrice, scale);
+        uint256 nftPrice = _lendingRenting.lending.lentAmount * unpackPrice(_lendingRenting.lending.nftPrice, scale);
         uint256 rentPrice =
             unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
         uint256 maxRentPayment =
