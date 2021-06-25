@@ -69,8 +69,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     mapping(bytes32 => LendingRenting) private lendingRenting;
 
     struct CallData {
-        uint256 lastIx;
-        uint256 currIx;
+        uint256 left;
+        uint256 right;
         address[] nfts;
         uint256[] tokenIds;
         uint256[] lentAmounts;
@@ -96,27 +96,23 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         admin = _admin;
     }
 
-    function bundleCall(function(CallData memory) f, CallData memory _tp)
+    function bundleCall(function(CallData memory) _handler, CallData memory _cd)
         private
     {
-        require(_tp.nfts.length > 0, "invalid nfts len");
-        if (_tp.nfts.length < 2) {
-            f(_tp);
-            return;
-        }
-        while (_tp.currIx < _tp.nfts.length) {
+        require(_cd.nfts.length > 0, "ReNFT::no nfts");
+        while (_cd.right != _cd.nfts.length) {
             if (
-                (_tp.nfts[_tp.lastIx] == _tp.nfts[_tp.currIx]) &&
-                (is1155(_tp.nfts[_tp.currIx]))
+                (_cd.nfts[_cd.left] == _cd.nfts[_cd.right]) &&
+                (is1155(_cd.nfts[_cd.right]))
             ) {
-                _tp.currIx++;
-                continue;
+                _cd.right++;
+            } else {
+                _handler(_cd);
+                _cd.left = _cd.right;
+                _cd.right++;
             }
-            f(_tp);
-            _tp.lastIx = _tp.currIx;
-            _tp.currIx++;
         }
-        f(_tp);
+        _handler(_cd);
     }
 
     // lend, rent, return, stop, claim
@@ -312,22 +308,22 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         address _from,
         address _to
     ) private {
-        if (is721(_tp.nfts[_tp.lastIx])) {
-            IERC721(_tp.nfts[_tp.lastIx]).transferFrom(
+        if (is721(_tp.nfts[_tp.left])) {
+            IERC721(_tp.nfts[_tp.left]).transferFrom(
                 _from,
                 _to,
-                _tp.tokenIds[_tp.lastIx]
+                _tp.tokenIds[_tp.left]
             );
-        } else if (is1155(_tp.nfts[_tp.lastIx])) {
-            IERC1155(_tp.nfts[_tp.lastIx]).safeBatchTransferFrom(
+        } else if (is1155(_tp.nfts[_tp.left])) {
+            IERC1155(_tp.nfts[_tp.left]).safeBatchTransferFrom(
                 _from,
                 _to,
-                sliceArr(_tp.tokenIds, _tp.lastIx, _tp.currIx),
-                sliceArr(_tp.lentAmounts, _tp.lastIx, _tp.currIx),
+                sliceArr(_tp.tokenIds, _tp.left, _tp.right),
+                sliceArr(_tp.lentAmounts, _tp.left, _tp.right),
                 ""
             );
         } else {
-            revert("unsupported token type");
+            revert("ReNFT::unsupported token type");
         }
     }
 
@@ -338,7 +334,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         // for individual tokenIds within the same 1155
         // or
         // for ERC721s
-        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
+        for (uint256 i = _tp.left; i < _tp.right; i++) {
             ensureIsLendable(_tp, i);
 
             LendingRenting storage item = lendingRenting[
@@ -346,7 +342,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
                     abi.encodePacked(
                         // no need to use i, since the nft will repeat
                         // so can access at the same memory location all the time
-                        _tp.nfts[_tp.lastIx],
+                        _tp.nfts[_tp.left],
                         _tp.tokenIds[i],
                         // makes the whole thing unique, in case someone else turns
                         // up with the same nft and tokenId
@@ -382,7 +378,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
             });
 
             emit Lent(
-                _tp.nfts[_tp.lastIx],
+                _tp.nfts[_tp.left],
                 _tp.tokenIds[i],
                 nftIs721 ? 1 : uint8(_tp.lentAmounts[i]),
                 lendingId,
@@ -402,13 +398,13 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     }
 
     function handleRent(CallData memory _tp) private {
-        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
+        for (uint256 i = _tp.left; i < _tp.right; i++) {
             LendingRenting storage item = lendingRenting[
                 keccak256(
                     abi.encodePacked(
                         // no need to use i, since the nft will repeat
                         // so can access at the same memory location all the time
-                        _tp.nfts[_tp.lastIx],
+                        _tp.nfts[_tp.left],
                         _tp.tokenIds[i],
                         _tp.lendingIds[i]
                     )
@@ -469,13 +465,13 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     }
 
     function handleReturn(CallData memory _tp) private {
-        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
+        for (uint256 i = _tp.left; i < _tp.right; i++) {
             LendingRenting storage item = lendingRenting[
                 keccak256(
                     abi.encodePacked(
                         // no need to use i, since the nft will repeat
                         // so can access at the same memory location all the time
-                        _tp.nfts[_tp.lastIx],
+                        _tp.nfts[_tp.left],
                         _tp.tokenIds[i],
                         _tp.lendingIds[i]
                     )
@@ -505,13 +501,13 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     }
 
     function handleStopLending(CallData memory _tp) private {
-        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
+        for (uint256 i = _tp.left; i < _tp.right; i++) {
             LendingRenting storage item = lendingRenting[
                 keccak256(
                     abi.encodePacked(
                         // no need to use i, since the nft will repeat
                         // so can access at the same memory location all the time
-                        _tp.nfts[_tp.lastIx],
+                        _tp.nfts[_tp.left],
                         _tp.tokenIds[i],
                         _tp.lendingIds[i]
                     )
@@ -538,11 +534,11 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
      * 2. isPastReturnDate
      */
     function handleClaimCollateral(CallData memory _tp) private {
-        for (uint256 i = _tp.lastIx; i < _tp.currIx; i++) {
+        for (uint256 i = _tp.left; i < _tp.right; i++) {
             LendingRenting storage item = lendingRenting[
                 keccak256(
                     abi.encodePacked(
-                        _tp.nfts[_tp.lastIx],
+                        _tp.nfts[_tp.left],
                         _tp.tokenIds[i],
                         _tp.lendingIds[i]
                     )
@@ -588,8 +584,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         IResolver.PaymentToken[] memory _paymentTokens
     ) private pure returns (CallData memory tp) {
         tp = CallData({
-            lastIx: 0,
-            currIx: 1,
+            left: 0,
+            right: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
             lentAmounts: _lendAmounts,
@@ -610,8 +606,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint8[] memory _rentDurations
     ) private pure returns (CallData memory tp) {
         tp = CallData({
-            lastIx: 0,
-            currIx: 1,
+            left: 0,
+            right: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
             lentAmounts: _lendAmounts,
@@ -631,8 +627,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256[] memory _lendingIds
     ) private pure returns (CallData memory tp) {
         tp = CallData({
-            lastIx: 0,
-            currIx: 1,
+            left: 0,
+            right: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
             lentAmounts: _lendAmounts,
