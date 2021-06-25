@@ -554,7 +554,7 @@ describe("ReNFT", function () {
       const tokenIds = [1];
       await expect(
         lendBatch({ tokenIds, maxRentDurations: [0] })
-      ).to.be.revertedWith("must be at least one day lend");
+      ).to.be.revertedWith("ReNFT::duration is zero");
     });
 
     it("disallows zero day maxRentDuration - 1155", async () => {
@@ -566,7 +566,7 @@ describe("ReNFT", function () {
           maxRentDurations: [0],
           nftAddresses: [e1155.address],
         })
-      ).to.be.revertedWith("must be at least one day lend");
+      ).to.be.revertedWith("ReNFT::duration is zero");
     });
   });
 
@@ -1052,7 +1052,7 @@ describe("ReNFT", function () {
       const rentDuration = [0];
       await expect(
         ReNFT.rent(nftAddress, tokenId, [1], lendingId, rentDuration)
-      ).to.be.revertedWith("should rent for at least a day");
+      ).to.be.revertedWith("ReNFT::duration is zero");
     });
 
     it("does not rent - rent duration exceeds max duration", async () => {
@@ -1065,7 +1065,7 @@ describe("ReNFT", function () {
       });
       await expect(
         ReNFT.rent([E721.address], [1], [1], [1], [4])
-      ).to.be.revertedWith("max rent duration exceeded");
+      ).to.be.revertedWith("ReNFT::rent duration exceeds allowed max");
     });
 
     it("does not rent - already rented", async () => {
@@ -1667,7 +1667,7 @@ describe("ReNFT", function () {
       await advanceTime(SECONDS_IN_A_DAY - 10);
       await expect(
         lender.renft.claimCollateral(_nft, _tokenId, [1], _id)
-      ).to.be.revertedWith("cant claim yet");
+      ).to.be.revertedWith("ReNFT::return date not passed");
     });
   });
 
