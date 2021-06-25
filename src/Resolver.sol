@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.0;
+pragma solidity =0.8.6;
 
 import "./interfaces/IResolver.sol";
 
@@ -21,10 +21,12 @@ contract Resolver is IResolver {
     }
 
     function setPaymentToken(uint8 _pt, address _v) external override {
-        require(_pt != 0, "");
-        require(addresses[_pt] == address(0), "cannot reset the address");
-        require(msg.sender == admin, "");
-
+        require(_pt != 0, "ReNFT::cant set sentinel");
+        require(
+            addresses[_pt] == address(0),
+            "ReNFT::cannot reset the address"
+        );
+        require(msg.sender == admin, "ReNFT::only admin");
         addresses[_pt] = _v;
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.0;
+pragma solidity =0.8.6;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -11,9 +11,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./IResolver.sol";
 
 interface IReNft is IERC721Receiver, IERC1155Receiver {
-    /// @dev quick test showed that LentBatch with arrays
-    /// @dev would cost more than the non-array version
-    /// @dev like the below
     event Lent(
         address indexed nftAddress,
         uint256 indexed tokenId,
@@ -41,8 +38,8 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     event LendingStopped(uint256 indexed lendingId, uint32 stoppedAt);
 
     /**
-     * @dev lend will send your NFT to ReNft contract, it acts as an escrow
-     * contract between the lender and the renter
+     * @dev sends your NFT to ReNFT contract, which acts as an escrow
+     * between the lender and the renter
      */
     function lend(
         address[] memory _nft,
@@ -55,9 +52,9 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     ) external;
 
     /**
-     * @dev on calling this, renter sends rentDuration * dailyRentPrice
+     * @dev renter sends rentDuration * dailyRentPrice
      * to cover for the potentially full cost of renting. They also
-     * must send the collateral - nft price set by the lender
+     * must send the collateral (nft price set by the lender in lend)
      */
     function rent(
         address[] memory _nft,
@@ -90,8 +87,8 @@ interface IReNft is IERC721Receiver, IERC1155Receiver {
     ) external;
 
     /**
-     * @dev stop lending releases the NFT from our escrow and sends it back
-     * to you
+     * @dev stop lending releases the NFT from escrow and sends it back
+     * to the lender
      */
     function stopLending(
         address[] memory _nft,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.0;
+pragma solidity =0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -68,7 +68,6 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         Renting renting;
     }
 
-    // 32 bytes key to 64 bytes struct
     mapping(bytes32 => LendingRenting) private lendingRenting;
 
     struct CallData {
