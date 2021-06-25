@@ -1,0 +1,35 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "src/Test/Utils.sol": {
+      "content": "//SPDX-License-Identifier: MIT\npragma solidity =0.8.6;\n\ncontract Utils {\n    /// @dev for tests only. this must be exact replica of the one in\n    /// ReNft.sol\n    function unpackPrice(bytes4 _price, uint256 _scale)\n        public\n        pure\n        returns (uint256)\n    {\n        ensureIsUnpackablePrice(_price, _scale);\n\n        // whole := if _price is 0x00120034, then whole is uint16(0x0012)\n        // decimal := uin16(0x0034)\n        // we only support dp4 precision for decimals. i.e. you can only have\n        // numerals after the decimal place ABCD.wxyz. e.g. 1.8271\n        // 1.8271 represents amount in the default scale of the payment token\n        // i.e. if .decimals() of the ERC20 is 6, then 1.8271 * (10 ** 6)\n        uint16 whole = uint16(bytes2(_price));\n        uint16 decimal = uint16(bytes2(_price << 16));\n        uint256 decimalScale = _scale / 10000;\n\n        if (whole > 9999) {\n            whole = 9999;\n        }\n        if (decimal > 9999) {\n            decimal = 9999;\n        }\n\n        uint256 w = whole * _scale;\n        uint256 d = decimal * decimalScale;\n        uint256 price = w + d;\n\n        return price;\n    }\n\n    function ensureIsUnpackablePrice(bytes4 _price, uint256 _scale)\n        private\n        pure\n    {\n        require(uint32(_price) > 0, \"invalid price\");\n        require(_scale >= 10000, \"invalid scale\");\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

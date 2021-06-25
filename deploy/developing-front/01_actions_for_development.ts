@@ -4,7 +4,6 @@ import { ERC20 } from "../../frontend/src/hardhat/typechain/ERC20";
 import { E721 } from "../../frontend/src/hardhat/typechain/E721";
 import { E721B } from "../../frontend/src/hardhat/typechain/E721B";
 import { Resolver } from "../../frontend/src/hardhat/typechain/Resolver";
-import { BigNumber } from "ethers";
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { getNamedAccounts, ethers, deployments, network } = hre;

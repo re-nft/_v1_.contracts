@@ -1,5 +1,5 @@
 {
-  "address": "0xB0fA5aCEf7Aa85F7338a255B010cfDCc6abb19A7",
+  "address": "0x433B83E330D3B26E8dd95f85780c7Bb3e3101cd3",
   "abi": [
     {
       "inputs": [
@@ -50,39 +50,32 @@
       "type": "function"
     }
   ],
-  "transactionHash": "0x8bcbc43ee23d3a120c1f2d1217f775bdc7ad96fc492738ed89d025151541a517",
+  "transactionHash": "0x5b95e77aa708392b2c0b2fc5185a89f8af0fe6b2817c309ef9e4400e79ffae7b",
   "receipt": {
     "to": null,
     "from": "0x4F8645e873Af2355afD7E971736D6056c1758aBF",
-    "contractAddress": "0xB0fA5aCEf7Aa85F7338a255B010cfDCc6abb19A7",
-    "transactionIndex": 4,
-    "gasUsed": "208714",
+    "contractAddress": "0x433B83E330D3B26E8dd95f85780c7Bb3e3101cd3",
+    "transactionIndex": 2,
+    "gasUsed": "217602",
     "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-    "blockHash": "0x59f7e66d13c640217e47c8d5d73eadce4da50203568852792f27cbf9bbf5d11d",
-    "transactionHash": "0x8bcbc43ee23d3a120c1f2d1217f775bdc7ad96fc492738ed89d025151541a517",
+    "blockHash": "0x7ea70de6b5bf21b188763a17cdb2ded7b6779867008715ddcc76ed3c2adac08a",
+    "transactionHash": "0x5b95e77aa708392b2c0b2fc5185a89f8af0fe6b2817c309ef9e4400e79ffae7b",
     "logs": [],
-    "blockNumber": 10395106,
-    "cumulativeGasUsed": "465085",
+    "blockNumber": 10507560,
+    "cumulativeGasUsed": "273856",
     "status": 1,
     "byzantium": true
   },
   "args": [
     "0x4F8645e873Af2355afD7E971736D6056c1758aBF"
   ],
-  "solcInputHash": "83cc30e9192a43402c9328dfcc027bb0",
-  "metadata": "{\"compiler\":{\"version\":\"0.8.0+commit.c7dfd78e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_admin\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"_pt\",\"type\":\"uint8\"}],\"name\":\"getPaymentToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"_pt\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"_v\",\"type\":\"address\"}],\"name\":\"setPaymentToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"getPaymentToken(uint8)\":{\"details\":\"util function to avoid guessing getter name if addresses was public\"},\"setPaymentToken(uint8,address)\":{\"details\":\"Gives us the ability to set new payment tokens down the line\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/Resolver.sol\":\"Resolver\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/Resolver.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.0;\\n\\nimport \\\"./interfaces/IResolver.sol\\\";\\n\\ncontract Resolver is IResolver {\\n    address private admin;\\n    mapping(uint8 => address) private addresses;\\n\\n    constructor(address _admin) {\\n        admin = _admin;\\n    }\\n\\n    function getPaymentToken(uint8 _pt)\\n        external\\n        view\\n        override\\n        returns (address)\\n    {\\n        return addresses[_pt];\\n    }\\n\\n    function setPaymentToken(uint8 _pt, address _v) external override {\\n        require(_pt != 0, \\\"\\\");\\n        require(addresses[_pt] == address(0), \\\"cannot reset the address\\\");\\n        require(msg.sender == admin, \\\"\\\");\\n\\n        addresses[_pt] = _v;\\n    }\\n}\\n\",\"keccak256\":\"0x497b06665e70c88a39d13ff5ac2ffafcba79bf0ceb85afeb50825fa36ad8d119\",\"license\":\"MIT\"},\"src/interfaces/IResolver.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.0;\\n\\ninterface IResolver {\\n    enum PaymentToken {\\n        SENTINEL, // 0 <- marks non-existence, nil of the payment tokens\\n        WETH, // 1\\n        DAI, // 2\\n        USDC, // 3\\n        USDT, // 4\\n        TUSD, // 5\\n        RENT // 6\\n    }\\n\\n    /**\\n     * @dev util function to avoid guessing getter name if addresses was public\\n     */\\n    function getPaymentToken(uint8 _pt) external view returns (address);\\n\\n    /**\\n     * @dev Gives us the ability to set new payment tokens down the line\\n     */\\n    function setPaymentToken(uint8 _pt, address _v) external;\\n}\\n\",\"keccak256\":\"0x2fef77ea0a54ff045d64c0f9d66f561b68f8f1e1e8c717093f3df5e13db8dbfb\",\"license\":\"MIT\"}},\"version\":1}",
-  "bytecode": "0x608060405234801561001057600080fd5b506040516102f03803806102f083398101604081905261002f91610054565b600080546001600160a01b0319166001600160a01b0392909216919091179055610082565b600060208284031215610065578081fd5b81516001600160a01b038116811461007b578182fd5b9392505050565b61025f806100916000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c8063321c6aea1461003b578063c6ee427f14610050575b600080fd5b61004e61004936600461018c565b610079565b005b61006361005e36600461016b565b610138565b60405161007091906101cd565b60405180910390f35b60ff82166100a25760405162461bcd60e51b815260040161009990610218565b60405180910390fd5b60ff82166000908152600160205260409020546001600160a01b0316156100db5760405162461bcd60e51b8152600401610099906101e1565b6000546001600160a01b031633146101055760405162461bcd60e51b815260040161009990610218565b60ff91909116600090815260016020526040902080546001600160a01b0319166001600160a01b03909216919091179055565b60ff81166000908152600160205260409020546001600160a01b03165b919050565b803560ff8116811461015557600080fd5b60006020828403121561017c578081fd5b6101858261015a565b9392505050565b6000806040838503121561019e578081fd5b6101a78361015a565b915060208301356001600160a01b03811681146101c2578182fd5b809150509250929050565b6001600160a01b0391909116815260200190565b60208082526018908201527f63616e6e6f742072657365742074686520616464726573730000000000000000604082015260600190565b60208082526000908201526040019056fea2646970667358221220220f7262c44286fe991eb7e8166c85b13dfe92ccd5c45ab76c70686e84e8284564736f6c63430008000033",
-  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100365760003560e01c8063321c6aea1461003b578063c6ee427f14610050575b600080fd5b61004e61004936600461018c565b610079565b005b61006361005e36600461016b565b610138565b60405161007091906101cd565b60405180910390f35b60ff82166100a25760405162461bcd60e51b815260040161009990610218565b60405180910390fd5b60ff82166000908152600160205260409020546001600160a01b0316156100db5760405162461bcd60e51b8152600401610099906101e1565b6000546001600160a01b031633146101055760405162461bcd60e51b815260040161009990610218565b60ff91909116600090815260016020526040902080546001600160a01b0319166001600160a01b03909216919091179055565b60ff81166000908152600160205260409020546001600160a01b03165b919050565b803560ff8116811461015557600080fd5b60006020828403121561017c578081fd5b6101858261015a565b9392505050565b6000806040838503121561019e578081fd5b6101a78361015a565b915060208301356001600160a01b03811681146101c2578182fd5b809150509250929050565b6001600160a01b0391909116815260200190565b60208082526018908201527f63616e6e6f742072657365742074686520616464726573730000000000000000604082015260600190565b60208082526000908201526040019056fea2646970667358221220220f7262c44286fe991eb7e8166c85b13dfe92ccd5c45ab76c70686e84e8284564736f6c63430008000033",
+  "solcInputHash": "c0cea6219d6a01c103c9be8ede3ddaa8",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.6+commit.11564f7e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_admin\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"_pt\",\"type\":\"uint8\"}],\"name\":\"getPaymentToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"_pt\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"_v\",\"type\":\"address\"}],\"name\":\"setPaymentToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/Resolver.sol\":\"Resolver\"},\"evmVersion\":\"berlin\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"src/Resolver.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity =0.8.6;\\n\\nimport \\\"./interfaces/IResolver.sol\\\";\\n\\ncontract Resolver is IResolver {\\n    address private admin;\\n    mapping(uint8 => address) private addresses;\\n\\n    constructor(address _admin) {\\n        admin = _admin;\\n    }\\n\\n    function getPaymentToken(uint8 _pt)\\n        external\\n        view\\n        override\\n        returns (address)\\n    {\\n        return addresses[_pt];\\n    }\\n\\n    function setPaymentToken(uint8 _pt, address _v) external override {\\n        require(_pt != 0, \\\"ReNFT::cant set sentinel\\\");\\n        require(\\n            addresses[_pt] == address(0),\\n            \\\"ReNFT::cannot reset the address\\\"\\n        );\\n        require(msg.sender == admin, \\\"ReNFT::only admin\\\");\\n        addresses[_pt] = _v;\\n    }\\n}\\n\",\"keccak256\":\"0x959043011f3d94551f4614fc9c573f3b4ce9da2a1c2389db8709c82ccfa8fb04\",\"license\":\"MIT\"},\"src/interfaces/IResolver.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity =0.8.6;\\n\\ninterface IResolver {\\n    enum PaymentToken {\\n        SENTINEL,\\n        WETH,\\n        DAI,\\n        USDC,\\n        USDT,\\n        TUSD,\\n        RENT\\n    }\\n\\n    function getPaymentToken(uint8 _pt) external view returns (address);\\n\\n    function setPaymentToken(uint8 _pt, address _v) external;\\n}\\n\",\"keccak256\":\"0x8c5ebd2f5bc5f484cddfc53cbc94df63f6e5c416bac364312b5600af1cfc28f0\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b5060405161031b38038061031b83398101604081905261002f91610054565b600080546001600160a01b0319166001600160a01b0392909216919091179055610084565b60006020828403121561006657600080fd5b81516001600160a01b038116811461007d57600080fd5b9392505050565b610288806100936000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c8063321c6aea1461003b578063c6ee427f14610050575b600080fd5b61004e61004936600461020f565b610098565b005b61007c61005e3660046101ed565b60ff166000908152600160205260409020546001600160a01b031690565b6040516001600160a01b03909116815260200160405180910390f35b60ff82166100ed5760405162461bcd60e51b815260206004820152601860248201527f52654e46543a3a63616e74207365742073656e74696e656c000000000000000060448201526064015b60405180910390fd5b60ff82166000908152600160205260409020546001600160a01b0316156101565760405162461bcd60e51b815260206004820152601f60248201527f52654e46543a3a63616e6e6f742072657365742074686520616464726573730060448201526064016100e4565b6000546001600160a01b031633146101a45760405162461bcd60e51b81526020600482015260116024820152702932a7232a1d1d37b7363c9030b236b4b760791b60448201526064016100e4565b60ff91909116600090815260016020526040902080546001600160a01b0319166001600160a01b03909216919091179055565b803560ff811681146101e857600080fd5b919050565b6000602082840312156101ff57600080fd5b610208826101d7565b9392505050565b6000806040838503121561022257600080fd5b61022b836101d7565b915060208301356001600160a01b038116811461024757600080fd5b80915050925092905056fea2646970667358221220c73afaaeb9d0bb710d9502b6384d6cb94ee220671b9e03e5b0fa9529466e6afa64736f6c63430008060033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100365760003560e01c8063321c6aea1461003b578063c6ee427f14610050575b600080fd5b61004e61004936600461020f565b610098565b005b61007c61005e3660046101ed565b60ff166000908152600160205260409020546001600160a01b031690565b6040516001600160a01b03909116815260200160405180910390f35b60ff82166100ed5760405162461bcd60e51b815260206004820152601860248201527f52654e46543a3a63616e74207365742073656e74696e656c000000000000000060448201526064015b60405180910390fd5b60ff82166000908152600160205260409020546001600160a01b0316156101565760405162461bcd60e51b815260206004820152601f60248201527f52654e46543a3a63616e6e6f742072657365742074686520616464726573730060448201526064016100e4565b6000546001600160a01b031633146101a45760405162461bcd60e51b81526020600482015260116024820152702932a7232a1d1d37b7363c9030b236b4b760791b60448201526064016100e4565b60ff91909116600090815260016020526040902080546001600160a01b0319166001600160a01b03909216919091179055565b803560ff811681146101e857600080fd5b919050565b6000602082840312156101ff57600080fd5b610208826101d7565b9392505050565b6000806040838503121561022257600080fd5b61022b836101d7565b915060208301356001600160a01b038116811461024757600080fd5b80915050925092905056fea2646970667358221220c73afaaeb9d0bb710d9502b6384d6cb94ee220671b9e03e5b0fa9529466e6afa64736f6c63430008060033",
   "devdoc": {
     "kind": "dev",
-    "methods": {
-      "getPaymentToken(uint8)": {
-        "details": "util function to avoid guessing getter name if addresses was public"
-      },
-      "setPaymentToken(uint8,address)": {
-        "details": "Gives us the ability to set new payment tokens down the line"
-      }
-    },
+    "methods": {},
     "version": 1
   },
   "userdoc": {
@@ -93,7 +86,7 @@
   "storageLayout": {
     "storage": [
       {
-        "astId": 6310,
+        "astId": 6348,
         "contract": "src/Resolver.sol:Resolver",
         "label": "admin",
         "offset": 0,
@@ -101,7 +94,7 @@
         "type": "t_address"
       },
       {
-        "astId": 6314,
+        "astId": 6352,
         "contract": "src/Resolver.sol:Resolver",
         "label": "addresses",
         "offset": 0,

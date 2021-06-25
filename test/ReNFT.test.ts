@@ -14,7 +14,6 @@ import { Utils } from "../frontend/src/hardhat/typechain/Utils";
 
 import {
   packPrice,
-  getBalance,
   takeFee,
   getEvents,
   advanceTime,
@@ -26,9 +25,9 @@ const MAX_RENT_DURATION = 1; // 1 day
 const DAILY_RENT_PRICE = packPrice(2);
 const NFT_PRICE = packPrice(3);
 const PAYMENT_TOKEN_WETH = 1; // default token is WETH
-const PAYMENT_TOKEN_DAI = 2;
+// const PAYMENT_TOKEN_DAI = 2;
 const PAYMENT_TOKEN_USDC = 3;
-const PAYMENT_TOKEN_USDT = 4;
+// const PAYMENT_TOKEN_USDT = 4;
 
 const SECONDS_IN_A_DAY = 86400;
 const DP18 = ethers.utils.parseEther("1");
