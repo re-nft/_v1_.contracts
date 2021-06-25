@@ -216,6 +216,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         fee = _rent * rentFee;
         fee /= 10000;
         uint8 paymentTokenIx = uint8(_paymentToken);
+        ensureTokenNotSentinel(paymentTokenIx);
         ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
         paymentToken.safeTransfer(beneficiary, fee);
     }
@@ -225,6 +226,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256 _secondsSinceRentStart
     ) private {
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
+        ensureTokenNotSentinel(paymentTokenIx);
         address paymentToken = resolver.getPaymentToken(paymentTokenIx);
         uint256 decimals = ERC20(paymentToken).decimals();
 
@@ -268,6 +270,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         private
     {
         uint8 paymentTokenIx = uint8(_lendingRenting.lending.paymentToken);
+        ensureTokenNotSentinel(paymentTokenIx);
         ERC20 paymentToken = ERC20(resolver.getPaymentToken(paymentTokenIx));
 
         uint256 decimals = ERC20(paymentToken).decimals();
@@ -383,6 +386,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
             ensureIsRentable(item.lending, _cd, i, msg.sender);
 
             uint8 paymentTokenIx = uint8(item.lending.paymentToken);
+            ensureTokenNotSentinel(paymentTokenIx);
             address paymentToken = resolver.getPaymentToken(paymentTokenIx);
             uint256 decimals = ERC20(paymentToken).decimals();
 
@@ -411,7 +415,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
                 _cd.lendingIds[i],
                 msg.sender,
                 _cd.rentDurations[i],
-                uint32(block.timestamp)
+                item.renting.rentedAt
             );
         }
 
@@ -651,11 +655,11 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     function ensureIsLendable(CallData memory _cd, uint256 _i) private pure {
         require(_cd.lentAmounts[_i] > 0, "ReNFT::lend amount is zero");
         require(_cd.lentAmounts[_i] <= type(uint8).max, "ReNFT::not uint8");
+        require(_cd.maxRentDurations[_i] > 0, "ReNFT::duration is zero");
         require(
             _cd.maxRentDurations[_i] <= type(uint8).max,
             "ReNFT::not uint8"
         );
-        require(_cd.maxRentDurations[_i] > 0, "ReNFT::duration is zero");
         require(
             uint32(_cd.dailyRentPrices[_i]) > 0,
             "ReNFT::rent price is zero"
@@ -716,6 +720,10 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     {
         require(uint32(_price) > 0, "ReNFT::invalid price");
         require(_scale >= 10000, "ReNFT::invalid scale");
+    }
+
+    function ensureTokenNotSentinel(uint8 _paymentIx) private pure {
+        require(_paymentIx > 0, "ReNFT::token is sentinel");
     }
 
     function isPastReturnDate(Renting memory _renting, uint256 _now)
