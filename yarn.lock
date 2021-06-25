@@ -2541,9 +2541,9 @@ bip66@^1.1.5:
     safe-buffer "^5.0.1"
 
 blakejs@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/blakejs/-/blakejs-1.1.0.tgz#69df92ef953aa88ca51a32df6ab1c54a155fc7a5"
-  integrity sha1-ad+S75U6qIylGjLfarHFShVfx6U=
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/blakejs/-/blakejs-1.1.1.tgz#bf313053978b2cd4c444a48795710be05c785702"
+  integrity sha512-bLG6PHOCZJKNshTjGRBvET0vTciwQE6zFKOKKXPDJfwFBd4Ac0yBfPZqcGvGJap50l7ktvlpFqc2jGVaUgbJgg==
 
 bluebird@^3.5.0, bluebird@^3.5.2:
   version "3.7.2"
@@ -3181,9 +3181,9 @@ copy-descriptor@^0.1.0:
   integrity sha1-Z29us8OZl8LuGsOpJP1hJHSPV40=
 
 core-js-pure@^3.0.1:
-  version "3.15.0"
-  resolved "https://registry.yarnpkg.com/core-js-pure/-/core-js-pure-3.15.0.tgz#c19349ae0be197b8bcf304acf4d91c5e29ae2091"
-  integrity sha512-RO+LFAso8DB6OeBX9BAcEGvyth36QtxYon1OyVsITNVtSKr/Hos0BXZwnsOJ7o+O6KHtK+O+cJIEj9NGg6VwFA==
+  version "3.15.1"
+  resolved "https://registry.yarnpkg.com/core-js-pure/-/core-js-pure-3.15.1.tgz#8356f6576fa2aa8e54ca6fe02620968ff010eed7"
+  integrity sha512-OZuWHDlYcIda8sJLY4Ec6nWq2hRjlyCqCZ+jCflyleMkVt3tPedDVErvHslyS2nbO+SlBFMSBJYvtLMwxnrzjA==
 
 core-js@^2.4.0, core-js@^2.5.0:
   version "2.6.12"
@@ -5273,9 +5273,9 @@ hardhat-typechain@0.3.5:
   integrity sha512-w9lm8sxqTJACY+V7vijiH+NkPExnmtiQEjsV9JKD1KgMdVk2q8y+RhvU/c4B7+7b1+HylRUCxpOIvFuB3rE4+w==
 
 hardhat@^2.3.0:
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.4.0.tgz#b0db7a6e07fa72414665634ced149bbb10252499"
-  integrity sha512-IMh7Ws/7fIO5RRkm4nhqS2JWEct0690K35BcFVuIOoIRMcDLKc/7+JSxhey3RkXc5M4qUvdxfQI0LRQx4aqBZw==
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.4.1.tgz#2cd1e86ee6ca3a6a473eeb0f55bd3124c8c59250"
+  integrity sha512-vwllrFypukeE/Q+4ZfWj7j7nUo4ncUhRpsAYUM0Ruuuk6pQlKmRa0A6c0kxRSvvVgQsMud6j+/weYhbMX1wPmQ==
   dependencies:
     "@ethereumjs/block" "^3.3.0"
     "@ethereumjs/blockchain" "^5.3.0"
