@@ -1345,7 +1345,7 @@ describe("ReNFT", function () {
       const warpTime = 10_000;
       await advanceTime(warpTime);
 
-      tx = await renter.renft.returnIt([renter.e721.address], [1], [1], [1]);
+      tx = await renter.renft.returnIt([renter.e1155.address], [1], [1], [1]);
 
       receipt = await tx.wait();
       es = getEvents(receipt.events ?? [], "Returned");
