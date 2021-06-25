@@ -2132,6 +2132,12 @@ describe("ReNFT", function () {
     });
   });
 
+  // TODO: add test for pausing
+  // TODO: add test for multisig interacting with this contract in admin section
+  // TODO: add test for multisig interacting with token vesting contracts
+  // TODO: test balances of NFTs
+  // TODO: claim collateral on multiple
+
   context("Admin", async () => {
     it("sets the rentFee", async () => {
       const { deployer } = await setup();
