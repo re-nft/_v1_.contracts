@@ -139,7 +139,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     ) external override notPaused {
         bundleCall(
             handleLend,
-            createLendTP(
+            createLendCallData(
                 _nfts,
                 _tokenIds,
                 _lendAmounts,
@@ -154,55 +154,45 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     function rent(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
     ) external override notPaused {
         bundleCall(
             handleRent,
-            createRentTP(
-                _nfts,
-                _tokenIds,
-                _lendAmounts,
-                _lendingIds,
-                _rentDurations
-            )
+            createRentCallData(_nfts, _tokenIds, _lendingIds, _rentDurations)
         );
     }
 
     function returnIt(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override notPaused {
         bundleCall(
             handleReturn,
-            createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
+            createActionCallData(_nfts, _tokenIds, _lendingIds)
         );
     }
 
     function stopLending(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override notPaused {
         bundleCall(
             handleStopLending,
-            createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
+            createActionCallData(_nfts, _tokenIds, _lendingIds)
         );
     }
 
     function claimCollateral(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
     ) external override notPaused {
         bundleCall(
             handleClaimCollateral,
-            createActionTP(_nfts, _tokenIds, _lendAmounts, _lendingIds)
+            createActionCallData(_nfts, _tokenIds, _lendingIds)
         );
     }
 
@@ -231,7 +221,9 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         uint256 decimals = ERC20(paymentToken).decimals();
 
         uint256 scale = 10**decimals;
-        uint256 nftPrice = _lendingRenting.lending.lentAmount * unpackPrice(_lendingRenting.lending.nftPrice, scale);
+        uint256 nftPrice =
+            _lendingRenting.lending.lentAmount *
+                unpackPrice(_lendingRenting.lending.nftPrice, scale);
         uint256 rentPrice =
             unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
         uint256 totalRenterPmtWoCollateral =
@@ -270,7 +262,9 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
 
         uint256 decimals = ERC20(paymentToken).decimals();
         uint256 scale = 10**decimals;
-        uint256 nftPrice = _lendingRenting.lending.lentAmount * unpackPrice(_lendingRenting.lending.nftPrice, scale);
+        uint256 nftPrice =
+            _lendingRenting.lending.lentAmount *
+                unpackPrice(_lendingRenting.lending.nftPrice, scale);
         uint256 rentPrice =
             unpackPrice(_lendingRenting.lending.dailyRentPrice, scale);
         uint256 maxRentPayment =
@@ -290,7 +284,9 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     function safeTransfer(
         CallData memory _cd,
         address _from,
-        address _to
+        address _to,
+        uint256[] memory _tokenIds,
+        uint256[] memory _lentAmounts
     ) private {
         if (is721(_cd.nfts[_cd.left])) {
             IERC721(_cd.nfts[_cd.left]).transferFrom(
@@ -302,8 +298,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
             IERC1155(_cd.nfts[_cd.left]).safeBatchTransferFrom(
                 _from,
                 _to,
-                sliceArr(_cd.tokenIds, _cd.left, _cd.right),
-                sliceArr(_cd.lentAmounts, _cd.left, _cd.right),
+                _tokenIds,
+                _lentAmounts,
                 ""
             );
         } else {
@@ -358,10 +354,18 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
             lendingId++;
         }
 
-        safeTransfer(_cd, msg.sender, address(this));
+        safeTransfer(
+            _cd,
+            msg.sender,
+            address(this),
+            sliceArr(_cd.tokenIds, _cd.left, _cd.right, 0),
+            sliceArr(_cd.lentAmounts, _cd.left, _cd.right, 0)
+        );
     }
 
     function handleRent(CallData memory _cd) private {
+        uint256[] memory lentAmounts = new uint256[](_cd.right - _cd.left);
+
         for (uint256 i = _cd.left; i < _cd.right; i++) {
             LendingRenting storage item =
                 lendingRenting[
@@ -402,6 +406,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
                 );
             }
 
+            lentAmounts[i - _cd.left] = item.lending.lentAmount;
+
             item.renting.renterAddress = payable(msg.sender);
             item.renting.rentDuration = _cd.rentDurations[i];
             item.renting.rentedAt = uint32(block.timestamp);
@@ -414,10 +420,18 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
             );
         }
 
-        safeTransfer(_cd, address(this), msg.sender);
+        safeTransfer(
+            _cd,
+            address(this),
+            msg.sender,
+            sliceArr(_cd.tokenIds, _cd.left, _cd.right, 0),
+            sliceArr(lentAmounts, _cd.left, _cd.right, _cd.left)
+        );
     }
 
     function handleReturn(CallData memory _cd) private {
+        uint256[] memory lentAmounts = new uint256[](_cd.right - _cd.left);
+
         for (uint256 i = _cd.left; i < _cd.right; i++) {
             LendingRenting storage item =
                 lendingRenting[
@@ -437,15 +451,25 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
                 block.timestamp - item.renting.rentedAt;
             distributePayments(item, secondsSinceRentStart);
 
+            lentAmounts[i - _cd.left] = item.lending.lentAmount;
+
             emit Returned(_cd.lendingIds[i], uint32(block.timestamp));
 
             delete item.renting;
         }
 
-        safeTransfer(_cd, msg.sender, address(this));
+        safeTransfer(
+            _cd,
+            msg.sender,
+            address(this),
+            sliceArr(_cd.tokenIds, _cd.left, _cd.right, 0),
+            sliceArr(lentAmounts, _cd.left, _cd.right, _cd.left)
+        );
     }
 
     function handleStopLending(CallData memory _cd) private {
+        uint256[] memory lentAmounts = new uint256[](_cd.right - _cd.left);
+
         for (uint256 i = _cd.left; i < _cd.right; i++) {
             LendingRenting storage item =
                 lendingRenting[
@@ -462,12 +486,20 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
             ensureIsNull(item.renting);
             ensureIsStoppable(item.lending, msg.sender);
 
+            lentAmounts[i - _cd.left] = item.lending.lentAmount;
+
             emit LendingStopped(_cd.lendingIds[i], uint32(block.timestamp));
 
             delete item.lending;
         }
 
-        safeTransfer(_cd, address(this), msg.sender);
+        safeTransfer(
+            _cd,
+            address(this),
+            msg.sender,
+            sliceArr(_cd.tokenIds, _cd.left, _cd.right, 0),
+            sliceArr(lentAmounts, _cd.left, _cd.right, _cd.left)
+        );
     }
 
     function handleClaimCollateral(CallData memory _cd) private {
@@ -510,7 +542,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     //      .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.     .-.
     // `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'   `._.'
 
-    function createLendTP(
+    function createLendCallData(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
         uint256[] memory _lendAmounts,
@@ -518,8 +550,8 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         bytes4[] memory _dailyRentPrices,
         bytes4[] memory _nftPrices,
         IResolver.PaymentToken[] memory _paymentTokens
-    ) private pure returns (CallData memory tp) {
-        tp = CallData({
+    ) private pure returns (CallData memory cd) {
+        cd = CallData({
             left: 0,
             right: 1,
             nfts: _nfts,
@@ -534,19 +566,18 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         });
     }
 
-    function createRentTP(
+    function createRentCallData(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds,
         uint8[] memory _rentDurations
-    ) private pure returns (CallData memory tp) {
-        tp = CallData({
+    ) private pure returns (CallData memory cd) {
+        cd = CallData({
             left: 0,
             right: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
-            lentAmounts: _lendAmounts,
+            lentAmounts: new uint256[](0),
             lendingIds: _lendingIds,
             rentDurations: _rentDurations,
             maxRentDurations: new uint8[](0),
@@ -556,18 +587,17 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
         });
     }
 
-    function createActionTP(
+    function createActionCallData(
         address[] memory _nfts,
         uint256[] memory _tokenIds,
-        uint256[] memory _lendAmounts,
         uint256[] memory _lendingIds
-    ) private pure returns (CallData memory tp) {
-        tp = CallData({
+    ) private pure returns (CallData memory cd) {
+        cd = CallData({
             left: 0,
             right: 1,
             nfts: _nfts,
             tokenIds: _tokenIds,
-            lentAmounts: _lendAmounts,
+            lentAmounts: new uint256[](0),
             lendingIds: _lendingIds,
             rentDurations: new uint8[](0),
             maxRentDurations: new uint8[](0),
@@ -605,11 +635,12 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     function sliceArr(
         uint256[] memory _arr,
         uint256 _fromIx,
-        uint256 _toIx
+        uint256 _toIx,
+        uint256 _arrOffset
     ) private pure returns (uint256[] memory r) {
         r = new uint256[](_toIx - _fromIx);
         for (uint256 i = _fromIx; i < _toIx; i++) {
-            r[i - _fromIx] = _arr[i];
+            r[i - _fromIx] = _arr[i - _arrOffset];
         }
     }
 

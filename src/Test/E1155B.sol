@@ -10,6 +10,7 @@ contract E1155B is ERC1155 {
     uint256 public constant THORS_HAMMER = 1002;
     uint256 public constant SWORD = 1003;
     uint256 public constant SHIELD = 1004;
+    uint256 public constant GUN = 1005;
 
     constructor(
         address deployer,
@@ -21,6 +22,7 @@ contract E1155B is ERC1155 {
         _mint(beneficiary, THORS_HAMMER, 20, "");
         _mint(lender, SWORD, 1, "");
         _mint(lender, SHIELD, 20, "");
+        _mint(lender, GUN, 30, "");
     }
 
     function award() public returns (uint256) {

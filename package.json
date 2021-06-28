@@ -9,7 +9,7 @@
     "clean:deployments": "rm -rf deployments",
     "compile": "yarn hardhat compile",
     "test": "yarn clean && yarn compile && yarn cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat coverage",
-    "test:gas": "yarn clean && yarn hardhat node && yarn hardhat --network localhost test",
+    "test:gas": "yarn clean && yarn compile && yarn hardhat --network localhost test",
     "test:quick": "yarn clean && yarn compile && yarn cross-env HARDHAT_DEPLOY_FIXTURE=true hardhat test",
     "dev": "yarn hardhat node --watch --export contractsInfo.json",
     "deploy:mainnet": "yarn hardhat --network mainnet deploy --tags ReNFT",
