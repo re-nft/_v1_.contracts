@@ -2209,6 +2209,7 @@ describe("ReNFT", function () {
   context("Admin", async () => {
     it("sets the rentFee", async () => {
       const { deployer } = await setup();
+      // type convestion should be internalised in some function: getRenft(signer)
       const deployerRenft = ((await ethers.getContract(
         "ReNFT",
         deployer
@@ -2216,6 +2217,130 @@ describe("ReNFT", function () {
       await deployerRenft.setRentFee("559");
       const rentFee = await deployerRenft.rentFee();
       expect(rentFee).to.be.equal("559");
+    });
+
+    it("pauses the contract", async () => {
+      const { deployer } = await setup();
+      const renft = await ethers.getContract("ReNFT", deployer);
+      await renft.setPaused(true);
+      expect(await renft.paused()).to.be.true;
+    });
+
+    it("disallows non-deployer to change paused", async () => {
+      const { lender } = await setup();
+      const { renft } = lender;
+      expect(renft.setPaused(true)).to.be.reverted;
+    });
+
+    it("pausing disables lend", async () => {
+      const { lender, deployer } = await setup();
+      const { renft: renftLender } = lender;
+      const renftDeployer = await ethers.getContract("ReNFT", deployer);
+      await renftDeployer.setPaused(true);
+      expect(
+        renftLender.lend(
+          [lender.e721.address],
+          [1],
+          [1],
+          [1],
+          [packPrice(1)],
+          [packPrice(1)],
+          [1]
+        )
+      ).to.be.revertedWith("ReNFT::paused");
+    });
+
+    it("pausing disables rent", async () => {
+      const { lender, deployer, renter } = await setup();
+      const { renft: renftLender } = lender;
+      const { renft: renftRenter } = renter;
+      const renftDeployer = await ethers.getContract("ReNFT", deployer);
+      await renftLender.lend(
+        [lender.e721.address],
+        [1],
+        [1],
+        [1],
+        [packPrice(1)],
+        [packPrice(1)],
+        [1]
+      );
+      await renftDeployer.setPaused(true);
+      expect(
+        renftRenter.rent([renter.e721.address], [1], [1], [1])
+      ).to.be.revertedWith("ReNFT::paused");
+    });
+
+    it("pausing diables return", async () => {
+      const { lender, deployer, renter } = await setup();
+      const { renft: renftLender } = lender;
+      const { renft: renftRenter } = renter;
+      const renftDeployer = await ethers.getContract("ReNFT", deployer);
+      await renftLender.lend(
+        [lender.e721.address],
+        [1],
+        [1],
+        [1],
+        [packPrice(1)],
+        [packPrice(1)],
+        [1]
+      );
+      await renftRenter.rent([lender.e721.address], [1], [1], [1]);
+      await renftDeployer.setPaused(true);
+      advanceTime(1_000);
+      expect(
+        renftRenter.returnIt([lender.e721.address], [1], [1])
+      ).to.be.revertedWith("ReNFT::paused");
+    });
+
+    it("pausing disables stop lend", async () => {
+      const { lender, deployer } = await setup();
+      const { renft: renftLender } = lender;
+      const renftDeployer = await ethers.getContract("ReNFT", deployer);
+      await renftLender.lend(
+        [lender.e721.address],
+        [1],
+        [1],
+        [1],
+        [packPrice(1)],
+        [packPrice(1)],
+        [1]
+      );
+      await renftDeployer.setPaused(true);
+      expect(
+        renftLender.stopLending([lender.e721.address], [1], [1])
+      ).to.be.revertedWith("ReNFT::paused");
+    });
+
+    it("pausing disables claim collateral", async () => {
+      const { lender, deployer, renter } = await setup();
+      const { renft: renftLender } = lender;
+      const { renft: renftRenter } = renter;
+      const renftDeployer = await ethers.getContract("ReNFT", deployer);
+      await renftLender.lend(
+        [lender.e721.address],
+        [1],
+        [1],
+        [1],
+        [packPrice(1)],
+        [packPrice(1)],
+        [1]
+      );
+      await renftRenter.rent([renter.e721.address], [1], [1], [1]);
+      await renftDeployer.setPaused(true);
+      const offset_epsilon = 10;
+      advanceTime(SECONDS_IN_A_DAY + offset_epsilon);
+      expect(
+        renftLender.claimCollateral([lender.e721.address], [1], [1])
+      ).to.be.revertedWith("ReNFT::paused");
+    });
+
+    it("un-paused the contract", async () => {
+      const { deployer } = await setup();
+      const renft = await ethers.getContract("ReNFT", deployer);
+      await renft.setPaused(true);
+      expect(await renft.paused()).to.be.true;
+      await renft.setPaused(false);
+      expect(await renft.paused()).to.be.false;
     });
 
     it("disallows non deployer to set the rentFee", async () => {

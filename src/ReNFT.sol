@@ -39,7 +39,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     address private admin;
     address payable private beneficiary;
     uint256 private lendingId = 1;
-    bool private paused = false;
+    bool public paused = false;
 
     // in bps. so 1000 => 1%
     uint256 public rentFee = 1000;
