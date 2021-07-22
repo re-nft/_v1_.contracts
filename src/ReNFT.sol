@@ -42,7 +42,7 @@ contract ReNFT is IReNft, ERC721Holder, ERC1155Receiver, ERC1155Holder {
     bool public paused = false;
 
     // in bps. so 1000 => 1%
-    uint256 public rentFee = 1000;
+    uint256 public rentFee = 0;
 
     uint256 private constant SECONDS_IN_DAY = 86400;
 
