@@ -15,7 +15,7 @@ contract TestStopLend is Test {
     uint256 public tokenId;
     uint256 public lendingId;
     uint256 public mainnetFork;
-    uint256 public constant startingBlock = 12875508;
+    uint256 public constant startingBlock = 14416095 + 100;
 
     function setUp() public {
         escrow = IReNft(address(0x94D8f036a0fbC216Bb532D33bDF6564157Af0cD7));
@@ -41,7 +41,7 @@ contract TestStopLend is Test {
      * https://etherscan.io/tokenholdings?a=0x94D8f036a0fbC216Bb532D33bDF6564157Af0cD7
      */
     function testUserIsOwnerOfNFT() public {
-        assertEq(nft.ownerOf(tokenId), user);
+        assertEq(nft.ownerOf(tokenId), address(escrow));
 
         // there should be no one approved to move nft
         assertEq(nft.getApproved(tokenId), address(0));
