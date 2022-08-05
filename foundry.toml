@@ -6,7 +6,7 @@ optimizer_runs=15000
 fuzz_runs=256
 fuzz_max_global_rejects=1_000_000
 fuzz_max_local_rejects=10_000
-remappings = ['@openzeppelin/=lib/openzeppelin-contracts/', '@src/=src/contracts/', '@test/=test/', '@scripts/=src/scripts/']
+remappings = ['@openzeppelin/=lib/openzeppelin-contracts/', '@src/=src/', '@test/=test/', '@scripts/=src/scripts/']
 ignored_error_codes = [5574]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
