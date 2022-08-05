@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract TestStopLend is Test {
 
+    // Lend Transaction: https://etherscan.io/tx/0xcd81283b04be331224d91bf935785a7bdd310306e03d0b638b5d4943b24b49ab
+
     IReNft public escrow;
     address public user;
     IERC721 public nft;
@@ -40,6 +42,9 @@ contract TestStopLend is Test {
      */
     function testUserIsOwnerOfNFT() public {
         assertEq(nft.ownerOf(tokenId), user);
+
+        // there should be no one approved to move nft
+        assertEq(nft.getApproved(tokenId), address(0));
     }
 
     /**
@@ -64,7 +69,7 @@ contract TestStopLend is Test {
     * lendingRenting mapping is stored in 7th memory slot of escrow contract
     * the individual entries are stored at keccak256(key, slot)
     */
-    function testLendingRentingData() public {
+    function testLendingRentingDataIsNull() public {
         bytes32 lrKey = keccak256(
                         abi.encodePacked(
                             address(nft),
